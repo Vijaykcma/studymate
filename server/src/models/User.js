@@ -1,0 +1,107 @@
+import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, 'Please provide your full name'],
+      trim: true,
+      minlength: 2,
+      maxlength: 50,
+    },
+    email: {
+      type: String,
+      required: [true, 'Please provide an email address'],
+      unique: true,
+      lowercase: true,
+      trim: true,
+      match: [/^\S+@\S+\.\S+$/, 'Please provide a valid email address'],
+    },
+    password: {
+      type: String,
+      required: [true, 'Please provide a password'],
+      minlength: 6,
+      select: false,
+    },
+    department: {
+      type: String,
+      required: [true, 'Please select your department'],
+      trim: true,
+      default: 'General',
+    },
+    semester: {
+      type: String,
+      required: [true, 'Please select your semester'],
+      trim: true,
+      default: '1st Semester',
+    },
+    college: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    registrationNumber: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    bio: {
+      type: String,
+      trim: true,
+      maxlength: 300,
+      default: '',
+    },
+    avatar: {
+      type: String,
+      default: '',
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user',
+    },
+    status: {
+      type: String,
+      enum: ['active', 'suspended'],
+      default: 'active',
+    },
+    suspendedReason: {
+      type: String,
+      default: '',
+    },
+    suspendedUntil: {
+      type: Date,
+      default: null,
+    },
+    settings: {
+      notifications: { type: Boolean, default: true },
+      emailNotifications: { type: Boolean, default: true },
+      groupInvites: { type: Boolean, default: true },
+      profileVisible: { type: Boolean, default: true },
+      darkMode: { type: Boolean, default: true },
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) return next();
+  const salt = await bcrypt.genSalt(10);
+  this.password = await bcrypt.hash(this.password, salt);
+  next();
+});
+
+userSchema.methods.matchPassword = async function (enteredPassword) {
+  return bcrypt.compare(enteredPassword, this.password);
+};
+
+userSchema.methods.toJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
+
+export const User = mongoose.model('User', userSchema);
