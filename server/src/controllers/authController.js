@@ -1,8 +1,9 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { PlatformSettings } from '../models/PlatformSettings.js';
+import { sendVerificationEmail } from '../utils/sendEmail.js';
 
-export const sendTokenCookie = (user, statusCode, res) => {
+export const sendTokenCookie = (user, statusCode, res, extraData = {}) => {
   const token = jwt.sign(
     { id: user._id, role: user.role },
     process.env.JWT_SECRET || 'studymate_default_secret_key_123456',
@@ -19,10 +20,13 @@ export const sendTokenCookie = (user, statusCode, res) => {
 
   res.cookie('token', token, cookieOptions);
 
+  const sanitizedUser = user.toJSON ? user.toJSON() : user;
+
   return res.status(statusCode).json({
     success: true,
     token,
-    user,
+    user: sanitizedUser,
+    ...extraData,
   });
 };
 
@@ -37,8 +41,9 @@ export const register = async (req, res, next) => {
     }
 
     const { name, email, password, department, semester } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -46,15 +51,29 @@ export const register = async (req, res, next) => {
       });
     }
 
-    const user = await User.create({
+    const user = new User({
       name,
-      email,
+      email: normalizedEmail,
       password,
       department,
       semester,
+      isEmailVerified: false,
     });
 
-    sendTokenCookie(user, 201, res);
+    const otp = user.generateEmailVerificationOtp();
+    await user.save();
+
+    // Dispatch verification email (or log to terminal in dev mode)
+    sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      otp,
+    }).catch((err) => console.error('[Registration Email Error]:', err.message));
+
+    sendTokenCookie(user, 201, res, {
+      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+    });
   } catch (error) {
     next(error);
   }
@@ -63,8 +82,9 @@ export const register = async (req, res, next) => {
 export const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -98,6 +118,131 @@ export const login = async (req, res, next) => {
     }
 
     sendTokenCookie(user, 200, res);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { email, otp } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+password +emailVerificationOtp +emailVerificationExpires +emailVerificationAttempts'
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address.',
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'Your email address is already verified.',
+        user: user.toJSON(),
+      });
+    }
+
+    if (!user.emailVerificationOtp || !user.emailVerificationExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending verification request. Please request a new verification code.',
+      });
+    }
+
+    if (new Date() > new Date(user.emailVerificationExpires)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Verification code has expired. Please request a new one.',
+      });
+    }
+
+    if (user.emailVerificationAttempts >= 5) {
+      return res.status(429).json({
+        success: false,
+        message: 'Too many incorrect attempts. Please request a new verification code.',
+      });
+    }
+
+    if (user.emailVerificationOtp !== otp.trim()) {
+      user.emailVerificationAttempts = (user.emailVerificationAttempts || 0) + 1;
+      await user.save();
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid verification code. Please check your email and try again.',
+        attemptsLeft: Math.max(0, 5 - user.emailVerificationAttempts),
+      });
+    }
+
+    // Verification successful! Mark verified
+    user.isEmailVerified = true;
+    user.emailVerificationOtp = undefined;
+    user.emailVerificationExpires = undefined;
+    user.emailVerificationAttempts = 0;
+    await user.save();
+
+    sendTokenCookie(user, 200, res, {
+      message: 'Email verified successfully! You are now an authorized and verified user.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resendVerificationOtp = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+emailVerificationOtp +emailVerificationExpires +emailVerificationAttempts'
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account found with this email address.',
+      });
+    }
+
+    if (user.isEmailVerified) {
+      return res.status(200).json({
+        success: true,
+        message: 'This email is already verified.',
+      });
+    }
+
+    // Cooldown rate-limit: 60 seconds
+    if (user.emailVerificationExpires) {
+      const msElapsed = 15 * 60 * 1000 - (new Date(user.emailVerificationExpires) - new Date());
+      if (msElapsed > 0 && msElapsed < 60 * 1000) {
+        const secondsRemaining = Math.ceil((60 * 1000 - msElapsed) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${secondsRemaining}s before requesting another verification code.`,
+          secondsRemaining,
+        });
+      }
+    }
+
+    const otp = user.generateEmailVerificationOtp();
+    await user.save();
+
+    await sendVerificationEmail({
+      to: user.email,
+      name: user.name,
+      otp,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'A new 6-digit verification code has been sent to your email.',
+      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+    });
   } catch (error) {
     next(error);
   }

@@ -24,6 +24,8 @@ import StudyMaterials from './pages/StudyMaterials';
 import Messages from './pages/Messages';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
+import VerifyEmail from './pages/VerifyEmail';
+import RealTimeExecutor from './pages/RealTimeExecutor';
 import NotFound from './pages/NotFound';
 
 // Administrator Pages
@@ -65,6 +67,7 @@ function App() {
                 </PublicOnlyRoute>
               }
             />
+            <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Administrator Auth Route */}
             <Route
@@ -144,6 +147,16 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Messages />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Real-Time Code Executor */}
+            <Route
+              path="/executor"
+              element={
+                <ProtectedRoute>
+                  <RealTimeExecutor />
                 </ProtectedRoute>
               }
             />

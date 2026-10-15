@@ -28,6 +28,8 @@ apiClient.interceptors.response.use(
 export const authAPI = {
   register: (data) => apiClient.post('/auth/register', data).then((res) => res.data),
   login: (data) => apiClient.post('/auth/login', data).then((res) => res.data),
+  verifyEmail: (data) => apiClient.post('/auth/verify-email', data).then((res) => res.data),
+  resendOtp: (data) => apiClient.post('/auth/resend-otp', data).then((res) => res.data),
   logout: () => apiClient.post('/auth/logout').then((res) => res.data),
   getMe: () => apiClient.get('/auth/me').then((res) => res.data),
 };
@@ -110,6 +112,7 @@ export const adminAPI = {
   getUserDetails: (userId) => apiClient.get(`/admin/users/${userId}`).then((res) => res.data),
   updateUserStatus: (userId, data) => apiClient.patch(`/admin/users/${userId}/status`, data).then((res) => res.data),
   updateUserRole: (userId, data) => apiClient.patch(`/admin/users/${userId}/role`, data).then((res) => res.data),
+  updateUserVerification: (userId, data) => apiClient.patch(`/admin/users/${userId}/verification`, data).then((res) => res.data),
   updateUserDetails: (userId, data) => apiClient.patch(`/admin/users/${userId}`, data).then((res) => res.data),
   deleteUser: (userId) => apiClient.delete(`/admin/users/${userId}`).then((res) => res.data),
 
@@ -151,6 +154,12 @@ export const adminAPI = {
   getProfile: () => apiClient.get('/admin/profile').then((res) => res.data),
   updateProfile: (data) => apiClient.patch('/admin/profile', data).then((res) => res.data),
   updatePassword: (data) => apiClient.patch('/admin/profile/password', data).then((res) => res.data),
+};
+
+// Real-Time Code Executor API
+export const executorAPI = {
+  run: (data) => apiClient.post('/executor/run', data).then((res) => res.data),
+  share: (data) => apiClient.post('/executor/share', data).then((res) => res.data),
 };
 
 export default apiClient;

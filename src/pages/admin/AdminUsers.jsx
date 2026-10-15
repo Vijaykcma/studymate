@@ -16,6 +16,7 @@ import {
   Calendar,
   Layers,
   BookOpen,
+  ShieldCheck,
 } from 'lucide-react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { adminAPI } from '../../services/api';
@@ -30,6 +31,7 @@ const AdminUsers = () => {
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [verificationFilter, setVerificationFilter] = useState('all');
   const [page, setPage] = useState(1);
 
   // Modals & Drawers state
@@ -63,6 +65,7 @@ const AdminUsers = () => {
         search,
         role: roleFilter,
         status: statusFilter,
+        verificationStatus: verificationFilter,
       });
       if (res.success && res.data) {
         setUsers(res.data.users);
@@ -77,7 +80,7 @@ const AdminUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [page, roleFilter, statusFilter]);
+  }, [page, roleFilter, statusFilter, verificationFilter]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -97,6 +100,20 @@ const AdminUsers = () => {
       setAlert({ type: 'error', message: 'Failed to fetch user details.' });
     } finally {
       setDetailsLoading(false);
+    }
+  };
+
+  const handleToggleVerification = async (targetUser) => {
+    try {
+      const res = await adminAPI.updateUserVerification(targetUser._id, {
+        isEmailVerified: !targetUser.isEmailVerified,
+      });
+      if (res.success) {
+        setAlert({ type: 'success', message: res.message });
+        fetchUsers();
+      }
+    } catch (err) {
+      setAlert({ type: 'error', message: err.userMessage || 'Failed to update email verification.' });
     }
   };
 
@@ -235,6 +252,21 @@ const AdminUsers = () => {
               <option value="suspended" className="bg-slate-950">Suspended Accounts</option>
             </select>
           </div>
+
+          <div className="flex items-center gap-2 bg-slate-950 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+            <select
+              value={verificationFilter}
+              onChange={(e) => {
+                setVerificationFilter(e.target.value);
+                setPage(1);
+              }}
+              className="bg-transparent focus:outline-none text-xs"
+            >
+              <option value="all" className="bg-slate-950">All Verifications</option>
+              <option value="verified" className="bg-slate-950">Verified Real Users</option>
+              <option value="unverified" className="bg-slate-950">Unverified Users</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -247,6 +279,7 @@ const AdminUsers = () => {
                 <th className="py-3.5 px-4 sm:px-6">User Account</th>
                 <th className="py-3.5 px-4">Role</th>
                 <th className="py-3.5 px-4">Status</th>
+                <th className="py-3.5 px-4">Verification</th>
                 <th className="py-3.5 px-4 hidden md:table-cell">Department / Reg</th>
                 <th className="py-3.5 px-4 hidden lg:table-cell">Registered</th>
                 <th className="py-3.5 px-4 text-right">Actions</th>
@@ -320,6 +353,19 @@ const AdminUsers = () => {
                         </span>
                       </td>
 
+                      <td className="py-3.5 px-4">
+                        <span
+                          className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
+                            u.isEmailVerified
+                              ? 'bg-emerald-500/10 text-emerald-300 border border-emerald-500/20'
+                              : 'bg-amber-500/10 text-amber-300 border border-amber-500/20'
+                          }`}
+                        >
+                          <ShieldCheck size={11} className={u.isEmailVerified ? 'text-emerald-400' : 'text-amber-400'} />
+                          {u.isEmailVerified ? 'Verified' : 'Unverified'}
+                        </span>
+                      </td>
+
                       <td className="py-3.5 px-4 hidden md:table-cell text-slate-400">
                         {u.department} {u.registrationNumber && `(${u.registrationNumber})`}
                       </td>
@@ -357,6 +403,19 @@ const AdminUsers = () => {
                             title={u.status === 'active' ? 'Suspend Account' : 'Reactivate Account'}
                           >
                             {u.status === 'active' ? <UserX size={15} /> : <UserCheck size={15} />}
+                          </button>
+
+                          {/* Toggle Email Verification */}
+                          <button
+                            onClick={() => handleToggleVerification(u)}
+                            className={`p-1.5 rounded-lg transition ${
+                              u.isEmailVerified
+                                ? 'text-emerald-400 hover:bg-emerald-500/10'
+                                : 'text-amber-400 hover:bg-amber-500/10'
+                            }`}
+                            title={u.isEmailVerified ? 'Toggle: Mark Unverified' : 'Toggle: Verify Real User'}
+                          >
+                            <ShieldCheck size={15} />
                           </button>
 
                           {/* Role Toggle */}

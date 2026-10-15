@@ -58,8 +58,11 @@ function Register() {
     try {
       setSubmitting(true);
       setError('');
-      await register(formData);
-      navigate('/dashboard', { replace: true });
+      const res = await register(formData);
+      navigate('/verify-email', {
+        replace: true,
+        state: { email: formData.email, devOtp: res?.devOtp },
+      });
     } catch (err) {
       setError(err.userMessage || 'Registration failed. Please try again.');
     } finally {

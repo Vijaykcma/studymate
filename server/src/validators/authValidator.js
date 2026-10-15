@@ -13,6 +13,15 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const verifyEmailSchema = z.object({
+  email: z.string().trim().email('Invalid email address').toLowerCase(),
+  otp: z.string().trim().length(6, 'Verification code must be exactly 6 digits'),
+});
+
+export const resendOtpSchema = z.object({
+  email: z.string().trim().email('Invalid email address').toLowerCase(),
+});
+
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(50).optional(),
   department: z.string().trim().optional(),

@@ -16,6 +16,7 @@ import {
   updateUserStatus,
   updateUserRole,
   updateUserDetails,
+  updateUserVerification,
   deleteUserByAdmin,
 } from '../controllers/adminUserController.js';
 
@@ -94,6 +95,7 @@ router.get('/users', getAdminUsers);
 router.get('/users/:userId', getAdminUserDetails);
 router.patch('/users/:userId/status', updateUserStatus);
 router.patch('/users/:userId/role', updateUserRole);
+router.patch('/users/:userId/verification', updateUserVerification);
 router.patch('/users/:userId', updateUserDetails);
 router.delete('/users/:userId', deleteUserByAdmin);
 

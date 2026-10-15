@@ -54,6 +54,15 @@ export const AuthProvider = ({ children }) => {
     return data;
   };
 
+  const verifyEmail = async (verificationData) => {
+    const data = await authAPI.verifyEmail(verificationData);
+    if (data.success && data.user) {
+      setUser(data.user);
+      initSocket();
+    }
+    return data;
+  };
+
   const logout = async () => {
     try {
       if (user?.role === 'admin') {
@@ -72,7 +81,18 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, adminLogin, register, logout, updateUser }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        loading,
+        login,
+        adminLogin,
+        register,
+        verifyEmail,
+        logout,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

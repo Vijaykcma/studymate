@@ -10,6 +10,7 @@ import {
   Users,
   Layers,
   Wrench,
+  Mail,
 } from 'lucide-react';
 import { AdminLayout } from '../../layouts/AdminLayout';
 import { adminAPI } from '../../services/api';
@@ -20,6 +21,7 @@ const AdminSettings = () => {
     allowStudentRegistration: true,
     allowGroupCreation: true,
     allowMaterialUploads: true,
+    requireEmailVerification: true,
     maxUploadSizeMB: 15,
     systemAnnouncement: '',
     systemAnnouncementActive: false,
@@ -221,6 +223,33 @@ const AdminSettings = () => {
                   <span
                     className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
                       settings.allowMaterialUploads ? 'translate-x-5' : 'translate-x-0'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Mandatory Email Verification */}
+              <div className="pt-4 flex items-center justify-between">
+                <div>
+                  <h4 className="text-sm font-semibold text-white flex items-center gap-2">
+                    <Mail size={16} className="text-purple-400" />
+                    <span>Mandatory Email Verification</span>
+                  </h4>
+                  <p className="text-xs text-slate-400 mt-0.5">
+                    Requires new students to verify a 6-digit OTP sent to their email to confirm authorized real user status.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggle('requireEmailVerification')}
+                  className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                    settings.requireEmailVerification ? 'bg-purple-600' : 'bg-slate-800'
+                  }`}
+                >
+                  <span
+                    className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                      settings.requireEmailVerification ? 'translate-x-5' : 'translate-x-0'
                     }`}
                   />
                 </button>

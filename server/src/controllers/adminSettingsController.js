@@ -20,6 +20,7 @@ export const updateAdminSettings = async (req, res, next) => {
       allowStudentRegistration,
       allowGroupCreation,
       allowMaterialUploads,
+      requireEmailVerification,
       maxUploadSizeMB,
       systemAnnouncement,
       systemAnnouncementActive,
@@ -32,6 +33,7 @@ export const updateAdminSettings = async (req, res, next) => {
       allowStudentRegistration: settings.allowStudentRegistration,
       allowGroupCreation: settings.allowGroupCreation,
       allowMaterialUploads: settings.allowMaterialUploads,
+      requireEmailVerification: settings.requireEmailVerification,
       maxUploadSizeMB: settings.maxUploadSizeMB,
       systemAnnouncementActive: settings.systemAnnouncementActive,
     };
@@ -40,6 +42,7 @@ export const updateAdminSettings = async (req, res, next) => {
     if (allowStudentRegistration !== undefined) settings.allowStudentRegistration = Boolean(allowStudentRegistration);
     if (allowGroupCreation !== undefined) settings.allowGroupCreation = Boolean(allowGroupCreation);
     if (allowMaterialUploads !== undefined) settings.allowMaterialUploads = Boolean(allowMaterialUploads);
+    if (requireEmailVerification !== undefined) settings.requireEmailVerification = Boolean(requireEmailVerification);
     if (maxUploadSizeMB !== undefined) {
       const parsedSize = Number(maxUploadSizeMB);
       if (parsedSize >= 1 && parsedSize <= 100) {
@@ -65,6 +68,7 @@ export const updateAdminSettings = async (req, res, next) => {
           allowStudentRegistration: settings.allowStudentRegistration,
           allowGroupCreation: settings.allowGroupCreation,
           allowMaterialUploads: settings.allowMaterialUploads,
+          requireEmailVerification: settings.requireEmailVerification,
           maxUploadSizeMB: settings.maxUploadSizeMB,
           systemAnnouncementActive: settings.systemAnnouncementActive,
         },

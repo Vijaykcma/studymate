@@ -14,6 +14,9 @@ import {
   X,
   User,
   Shield,
+  Terminal,
+  ShieldCheck,
+  AlertTriangle,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -35,6 +38,7 @@ export const DashboardLayout = ({ children }) => {
     { label: 'Study Sessions', path: '/sessions', icon: CalendarDays },
     { label: 'Study Materials', path: '/materials', icon: BookOpen },
     { label: 'Messages', path: '/messages', icon: MessageCircle },
+    { label: 'Real-Time Executor', path: '/executor', icon: Terminal },
   ];
 
   const accountItems = [
@@ -227,7 +231,24 @@ export const DashboardLayout = ({ children }) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden">
+        <main className="flex-1 overflow-x-hidden flex flex-col">
+          {user && !user.isEmailVerified && (
+            <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200">
+              <div className="flex items-center gap-2">
+                <AlertTriangle size={16} className="text-amber-400 shrink-0" />
+                <span>
+                  <strong>Email Verification Pending:</strong> Your account (<span className="text-white font-medium">{user.email}</span>) needs verification to unlock all verified student privileges.
+                </span>
+              </div>
+              <Link
+                to="/verify-email"
+                state={{ email: user.email }}
+                className="px-3.5 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold transition shrink-0 shadow text-xs"
+              >
+                Verify Email Now
+              </Link>
+            </div>
+          )}
           {children}
         </main>
       </div>

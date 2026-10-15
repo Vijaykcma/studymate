@@ -40,6 +40,7 @@ const seedDatabase = async () => {
       semester: '2nd Semester',
       college: 'Apex Institute of Technology',
       registrationNumber: 'MCA2026-001',
+      isEmailVerified: true,
       bio: 'MCA student passionate about databases, backend engineering, and distributed systems.',
     });
 
@@ -51,6 +52,7 @@ const seedDatabase = async () => {
       semester: '2nd Semester',
       college: 'Apex Institute of Technology',
       registrationNumber: 'MCA2026-042',
+      isEmailVerified: true,
       bio: 'Frontend enthusiast working on React, UI/UX design, and web accessibility.',
     });
 
@@ -62,6 +64,7 @@ const seedDatabase = async () => {
       semester: '4th Semester',
       college: 'Apex Institute of Technology',
       registrationNumber: 'BT2024-112',
+      isEmailVerified: true,
       bio: 'Competitive programming & algorithms enthusiast.',
     });
 
@@ -73,6 +76,7 @@ const seedDatabase = async () => {
       semester: '3rd Semester',
       college: 'Apex Institute of Technology',
       registrationNumber: 'BCA2025-089',
+      isEmailVerified: true,
       bio: 'Computer networks and cybersecurity explorer.',
     });
 
@@ -86,6 +90,7 @@ const seedDatabase = async () => {
       registrationNumber: 'ADMIN-001',
       role: 'admin',
       status: 'active',
+      isEmailVerified: true,
       bio: 'Verified StudyMate platform administrator and system overseer.',
     });
 

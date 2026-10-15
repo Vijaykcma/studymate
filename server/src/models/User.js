@@ -81,6 +81,23 @@ const userSchema = new mongoose.Schema(
       profileVisible: { type: Boolean, default: true },
       darkMode: { type: Boolean, default: true },
     },
+    isEmailVerified: {
+      type: Boolean,
+      default: false,
+    },
+    emailVerificationOtp: {
+      type: String,
+      select: false,
+    },
+    emailVerificationExpires: {
+      type: Date,
+      select: false,
+    },
+    emailVerificationAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -98,9 +115,20 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return bcrypt.compare(enteredPassword, this.password);
 };
 
+userSchema.methods.generateEmailVerificationOtp = function () {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.emailVerificationOtp = otp;
+  this.emailVerificationExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+  this.emailVerificationAttempts = 0;
+  return otp;
+};
+
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
+  delete obj.emailVerificationOtp;
+  delete obj.emailVerificationExpires;
+  delete obj.emailVerificationAttempts;
   return obj;
 };
 

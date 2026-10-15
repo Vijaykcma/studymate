@@ -370,4 +370,62 @@ describe('StudyMate Complete API Test Suite', () => {
     const res404 = await request(app).get('/api/v1/non-existent-route');
     expect(res404.status).toBe(404);
   });
+
+  // 17. Email Verification Flow
+  test('Generates OTP on registration and verifies real user with valid code', async () => {
+    const regRes = await request(app).post('/api/v1/auth/register').send({
+      name: 'Charlie Davis',
+      email: 'charlie@example.com',
+      password: 'SecurePassword123!',
+      department: 'Data Science',
+      semester: '1st Semester',
+    });
+
+    expect(regRes.status).toBe(201);
+    expect(regRes.body.user.isEmailVerified).toBe(false);
+    expect(regRes.body.devOtp).toBeDefined();
+
+    const devOtp = regRes.body.devOtp;
+
+    // Test rejection of invalid OTP
+    const invalidVerify = await request(app)
+      .post('/api/v1/auth/verify-email')
+      .send({ email: 'charlie@example.com', otp: '000000' });
+
+    expect(invalidVerify.status).toBe(400);
+    expect(invalidVerify.body.success).toBe(false);
+
+    // Test successful verification with valid OTP
+    const validVerify = await request(app)
+      .post('/api/v1/auth/verify-email')
+      .send({ email: 'charlie@example.com', otp: devOtp });
+
+    expect(validVerify.status).toBe(200);
+    expect(validVerify.body.success).toBe(true);
+    expect(validVerify.body.user.isEmailVerified).toBe(true);
+  });
+
+  // 18. Real-Time Code Execution Engine
+  test('Executes sandboxed JavaScript and returns stdout and execution metrics', async () => {
+    const reg = await request(app).post('/api/v1/auth/register').send({
+      name: 'Coder Student',
+      email: 'coder@example.com',
+      password: 'Password123!',
+      department: 'MCA',
+      semester: '2nd Semester',
+    });
+
+    const execRes = await request(app)
+      .post('/api/v1/executor/run')
+      .set('Authorization', `Bearer ${reg.body.token}`)
+      .send({
+        language: 'javascript',
+        code: 'const a = 10; const b = 20; console.log("Sum:", a + b);',
+      });
+
+    expect(execRes.status).toBe(200);
+    expect(execRes.body.success).toBe(true);
+    expect(execRes.body.output).toContain('Sum: 30');
+    expect(execRes.body.executionTimeMs).toBeGreaterThanOrEqual(0);
+  });
 });

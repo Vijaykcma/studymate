@@ -13,6 +13,7 @@ export const getAdminUsers = async (req, res, next) => {
       search = '',
       role = 'all',
       status = 'all',
+      verificationStatus = 'all',
       sortBy = 'createdAt',
       sortOrder = 'desc',
     } = req.query;
@@ -34,6 +35,12 @@ export const getAdminUsers = async (req, res, next) => {
 
     if (status && status !== 'all') {
       query.status = status;
+    }
+
+    if (verificationStatus === 'verified') {
+      query.isEmailVerified = true;
+    } else if (verificationStatus === 'unverified') {
+      query.isEmailVerified = false;
     }
 
     const sortDirection = sortOrder === 'asc' ? 1 : -1;
@@ -360,3 +367,50 @@ export const deleteUserByAdmin = async (req, res, next) => {
     next(error);
   }
 };
+
+export const updateUserVerification = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const { isEmailVerified } = req.body;
+
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found.',
+      });
+    }
+
+    const previousStatus = user.isEmailVerified;
+    user.isEmailVerified = isEmailVerified !== undefined ? Boolean(isEmailVerified) : !user.isEmailVerified;
+    if (user.isEmailVerified) {
+      user.emailVerificationOtp = undefined;
+      user.emailVerificationExpires = undefined;
+      user.emailVerificationAttempts = 0;
+    }
+    await user.save();
+
+    await recordAuditLog({
+      actor: req.user,
+      action: 'USER_VERIFICATION_UPDATE',
+      resourceType: 'User',
+      resourceId: String(user._id),
+      status: 'SUCCESS',
+      details: {
+        targetUserEmail: user.email,
+        previousVerified: previousStatus,
+        newVerified: user.isEmailVerified,
+      },
+      req,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: `User email has been successfully ${user.isEmailVerified ? 'verified' : 'marked unverified'}.`,
+      user: user.toJSON(),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+

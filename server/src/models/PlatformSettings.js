@@ -24,6 +24,10 @@ const platformSettingsSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    requireEmailVerification: {
+      type: Boolean,
+      default: true,
+    },
     maxUploadSizeMB: {
       type: Number,
       default: 15,

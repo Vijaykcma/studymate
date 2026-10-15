@@ -6,6 +6,7 @@ import {
   AlertCircle,
   Loader2,
   CheckCircle2,
+  ShieldCheck,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { userAPI, groupsAPI } from '../services/api';
@@ -187,6 +188,27 @@ function Profile() {
                     {formData.department} • {formData.semester}
                   </p>
                   <p className="text-xs text-slate-500 mt-1">{formData.email}</p>
+                  
+                  {user?.isEmailVerified ? (
+                    <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px] font-semibold mt-2.5">
+                      <ShieldCheck size={13} className="text-emerald-400" />
+                      <span>Authorized Real User (Verified)</span>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center gap-1.5 mt-2.5">
+                      <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-[11px] font-semibold">
+                        <AlertCircle size={13} className="text-amber-400" />
+                        <span>Email Not Verified</span>
+                      </div>
+                      <Link
+                        to="/verify-email"
+                        state={{ email: user?.email }}
+                        className="text-xs text-indigo-400 hover:text-indigo-300 underline font-medium"
+                      >
+                        Verify Email Now
+                      </Link>
+                    </div>
+                  )}
                 </div>
 
                 {formData.bio && (

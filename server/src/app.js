@@ -19,6 +19,7 @@ import userRoutes from './routes/userRoutes.js';
 import statsRoutes from './routes/statsRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
+import executorRoutes from './routes/executorRoutes.js';
 import { PlatformSettings } from './models/PlatformSettings.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
@@ -117,6 +118,7 @@ app.use('/api/v1/materials', materialRoutes);
 app.use('/api/v1/groups', messageRoutes); // for /api/v1/groups/:groupId/messages
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/stats', statsRoutes);
+app.use('/api/v1/executor', executorRoutes);
 
 // Serve static client build assets in production
 if (process.env.NODE_ENV === 'production') {

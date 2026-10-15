@@ -85,6 +85,7 @@ const createOrPromoteAdmin = async () => {
 
       existingUser.role = 'admin';
       existingUser.status = 'active';
+      existingUser.isEmailVerified = true;
       existingUser.suspendedReason = '';
       existingUser.suspendedUntil = null;
       await existingUser.save();
