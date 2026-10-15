@@ -16,9 +16,17 @@ const getTransporter = async () => {
     (host && host.toLowerCase().includes('gmail')) ||
     (user && user.toLowerCase().endsWith('@gmail.com'));
 
+  let rawFrom = (process.env.EMAIL_FROM || process.env.FROM_EMAIL || '').trim();
+  // Clean up any outer quotes entered in web dashboards like Render
+  if ((rawFrom.startsWith('"') && rawFrom.endsWith('"')) || (rawFrom.startsWith("'") && rawFrom.endsWith("'"))) {
+    const inner = rawFrom.slice(1, -1).trim();
+    if (inner.includes('<') && inner.includes('>')) {
+      rawFrom = inner;
+    }
+  }
+
   const fromAddress =
-    process.env.EMAIL_FROM ||
-    process.env.FROM_EMAIL ||
+    rawFrom ||
     (user ? `"StudyMate Platform" <${user}>` : '"StudyMate Platform" <no-reply@studymate.internal>');
 
   // 0. Automated Test Mock (keeps Jest test suite fast and avoids hitting Gmail rate limits during CI/testing)
