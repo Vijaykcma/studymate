@@ -63,16 +63,18 @@ export const register = async (req, res, next) => {
     const otp = user.generateEmailVerificationOtp();
     await user.save();
 
-    // Dispatch verification email (or log to terminal in dev mode)
-    sendVerificationEmail({
+    // Dispatch verification email
+    const emailResult = await sendVerificationEmail({
       to: user.email,
       name: user.name,
       otp,
-    }).catch((err) => console.error('[Registration Email Error]:', err.message));
+    });
 
     sendTokenCookie(user, 201, res, {
       message: 'Registration successful! A 6-digit verification code has been sent to your email.',
       devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      emailSent: emailResult?.success ?? false,
+      previewUrl: emailResult?.previewUrl,
     });
   } catch (error) {
     next(error);
@@ -232,7 +234,7 @@ export const resendVerificationOtp = async (req, res, next) => {
     const otp = user.generateEmailVerificationOtp();
     await user.save();
 
-    await sendVerificationEmail({
+    const emailResult = await sendVerificationEmail({
       to: user.email,
       name: user.name,
       otp,
@@ -240,8 +242,10 @@ export const resendVerificationOtp = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: 'A new 6-digit verification code has been sent to your email.',
+      message: 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.',
       devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      emailSent: emailResult?.success ?? false,
+      previewUrl: emailResult?.previewUrl,
     });
   } catch (error) {
     next(error);

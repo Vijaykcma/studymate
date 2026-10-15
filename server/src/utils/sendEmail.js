@@ -1,23 +1,41 @@
+import path from 'path';
+import { fileURLToPath } from 'url';
+import dotenv from 'dotenv';
 import nodemailer from 'nodemailer';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+// Ensure environment variables are loaded regardless of launch directory
+dotenv.config({ path: path.resolve(__dirname, '../../../server/.env') });
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config();
+
+const cleanEnv = (val) => {
+  if (!val) return '';
+  let str = String(val).trim();
+  if ((str.startsWith('"') && str.endsWith('"')) || (str.startsWith("'") && str.endsWith("'"))) {
+    str = str.slice(1, -1).trim();
+  }
+  return str;
+};
 
 /**
  * Creates and configures the nodemailer transporter.
  * Supports Gmail (via service: 'gmail'), custom SMTP, or automatic test accounts.
  */
 const getTransporter = async () => {
-  const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
-  const rawPass = (process.env.EMAIL_PASS || process.env.SMTP_PASS || '').trim();
+  const user = cleanEnv(process.env.EMAIL_USER || process.env.SMTP_USER);
+  const rawPass = cleanEnv(process.env.EMAIL_PASS || process.env.SMTP_PASS);
   const pass = rawPass ? rawPass.replace(/\s+/g, '') : '';
-  const host = process.env.SMTP_HOST?.trim();
-  const port = Number(process.env.SMTP_PORT) || 587;
+  const host = cleanEnv(process.env.SMTP_HOST);
+  const port = Number(cleanEnv(process.env.SMTP_PORT)) || 587;
+  const service = cleanEnv(process.env.EMAIL_SERVICE || process.env.SMTP_SERVICE);
   const isGmail =
-    process.env.EMAIL_SERVICE?.toLowerCase() === 'gmail' ||
-    process.env.SMTP_SERVICE?.toLowerCase() === 'gmail' ||
+    service.toLowerCase() === 'gmail' ||
     (host && host.toLowerCase().includes('gmail')) ||
     (user && user.toLowerCase().endsWith('@gmail.com'));
 
-  let rawFrom = (process.env.EMAIL_FROM || process.env.FROM_EMAIL || '').trim();
-  // Clean up any outer quotes entered in web dashboards like Render
+  let rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.FROM_EMAIL);
   if ((rawFrom.startsWith('"') && rawFrom.endsWith('"')) || (rawFrom.startsWith("'") && rawFrom.endsWith("'"))) {
     const inner = rawFrom.slice(1, -1).trim();
     if (inner.includes('<') && inner.includes('>')) {
@@ -182,9 +200,14 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
         previewUrl,
         otp,
       };
-    }
   } catch (err) {
-    console.error(`[Email Service Error] Failed sending to ${to}: ${err.message}`);
+    console.error(`[Email Service Error] Failed sending to ${to}:`, err);
+    return {
+      success: false,
+      error: err.message,
+      simulated: true,
+      otp,
+    };
   }
 
   // Terminal dev fallback
@@ -276,9 +299,14 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
         previewUrl,
         otp,
       };
-    }
   } catch (err) {
-    console.error(`[Email Service Error] Failed sending password reset to ${to}: ${err.message}`);
+    console.error(`[Email Service Error] Failed sending password reset to ${to}:`, err);
+    return {
+      success: false,
+      error: err.message,
+      simulated: true,
+      otp,
+    };
   }
 
   // Terminal dev fallback

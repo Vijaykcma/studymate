@@ -23,6 +23,7 @@ function VerifyEmail() {
   // Retrieve email and potential dev OTP from state or current user
   const initialEmail = location.state?.email || user?.email || '';
   const initialDevOtp = location.state?.devOtp || '';
+  const justRegistered = Boolean(location.state?.justRegistered);
 
   const [email, setEmail] = useState(initialEmail);
   const [devOtp, setDevOtp] = useState(initialDevOtp);
@@ -31,7 +32,7 @@ function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
-  const [cooldown, setCooldown] = useState(60);
+  const [cooldown, setCooldown] = useState(justRegistered ? 60 : 0);
   const [isVerified, setIsVerified] = useState(user?.isEmailVerified || false);
 
   const inputRefs = useRef([]);
@@ -306,20 +307,20 @@ function VerifyEmail() {
               </button>
 
               {/* Resend Code Section */}
-              <div className="flex items-center justify-between text-xs text-slate-400 pt-2 border-t border-white/10">
-                <span>Didn't receive the email?</span>
+              <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10 gap-2">
+                <span>Didn't receive the email? Check spam or:</span>
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={cooldown > 0 || resending}
-                  className="inline-flex items-center gap-1.5 font-semibold text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 transition cursor-pointer"
+                  className="inline-flex items-center gap-1.5 font-semibold text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 transition cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 disabled:bg-transparent"
                 >
                   {resending ? (
                     <Loader2 size={13} className="animate-spin" />
                   ) : (
                     <RotateCcw size={13} />
                   )}
-                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Resend Code'}
+                  {cooldown > 0 ? `Resend in ${cooldown}s` : 'Send / Resend Code'}
                 </button>
               </div>
             </form>
