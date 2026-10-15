@@ -44,6 +44,32 @@ const studyGroupSchema = new mongoose.Schema(
         },
       },
     ],
+    joinRequests: [
+      {
+        user: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'User',
+          required: true,
+        },
+        status: {
+          type: String,
+          enum: ['pending', 'approved', 'rejected'],
+          default: 'pending',
+        },
+        message: {
+          type: String,
+          default: '',
+          maxlength: 300,
+        },
+        requestedAt: {
+          type: Date,
+          default: Date.now,
+        },
+        reviewedAt: {
+          type: Date,
+        },
+      },
+    ],
     maxMembers: {
       type: Number,
       default: 10,
@@ -109,5 +135,6 @@ studyGroupSchema.index({ subject: 1 });
 studyGroupSchema.index({ skillLevel: 1 });
 studyGroupSchema.index({ creator: 1 });
 studyGroupSchema.index({ 'members.user': 1 });
+studyGroupSchema.index({ 'joinRequests.user': 1 });
 
 export const StudyGroup = mongoose.model('StudyGroup', studyGroupSchema);

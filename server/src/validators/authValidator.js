@@ -22,6 +22,16 @@ export const resendOtpSchema = z.object({
   email: z.string().trim().email('Invalid email address').toLowerCase(),
 });
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email('Invalid email address').toLowerCase(),
+});
+
+export const resetPasswordSchema = z.object({
+  email: z.string().trim().email('Invalid email address').toLowerCase(),
+  otp: z.string().trim().length(6, 'Reset code must be exactly 6 digits'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
+
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(2).max(50).optional(),
   department: z.string().trim().optional(),

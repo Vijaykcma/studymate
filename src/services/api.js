@@ -30,6 +30,8 @@ export const authAPI = {
   login: (data) => apiClient.post('/auth/login', data).then((res) => res.data),
   verifyEmail: (data) => apiClient.post('/auth/verify-email', data).then((res) => res.data),
   resendOtp: (data) => apiClient.post('/auth/resend-otp', data).then((res) => res.data),
+  forgotPassword: (data) => apiClient.post('/auth/forgot-password', data).then((res) => res.data),
+  resetPassword: (data) => apiClient.post('/auth/reset-password', data).then((res) => res.data),
   logout: () => apiClient.post('/auth/logout').then((res) => res.data),
   getMe: () => apiClient.get('/auth/me').then((res) => res.data),
 };
@@ -41,9 +43,12 @@ export const groupsAPI = {
   create: (data) => apiClient.post('/groups', data).then((res) => res.data),
   update: (id, data) => apiClient.patch(`/groups/${id}`, data).then((res) => res.data),
   delete: (id) => apiClient.delete(`/groups/${id}`).then((res) => res.data),
-  join: (id) => apiClient.post(`/groups/${id}/join`).then((res) => res.data),
+  join: (id, data) => apiClient.post(`/groups/${id}/join`, data).then((res) => res.data),
   leave: (id) => apiClient.post(`/groups/${id}/leave`).then((res) => res.data),
   getMembers: (id) => apiClient.get(`/groups/${id}/members`).then((res) => res.data),
+  getJoinRequests: (id) => apiClient.get(`/groups/${id}/requests`).then((res) => res.data),
+  handleJoinRequest: (groupId, userId, action) =>
+    apiClient.patch(`/groups/${groupId}/requests/${userId}`, { action }).then((res) => res.data),
   getMyGroups: () => apiClient.get('/users/me/groups').then((res) => res.data),
 };
 

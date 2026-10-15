@@ -98,6 +98,19 @@ const userSchema = new mongoose.Schema(
       default: 0,
       select: false,
     },
+    passwordResetOtp: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
+    passwordResetAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
   },
   {
     timestamps: true,
@@ -123,12 +136,23 @@ userSchema.methods.generateEmailVerificationOtp = function () {
   return otp;
 };
 
+userSchema.methods.generatePasswordResetOtp = function () {
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  this.passwordResetOtp = otp;
+  this.passwordResetExpires = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+  this.passwordResetAttempts = 0;
+  return otp;
+};
+
 userSchema.methods.toJSON = function () {
   const obj = this.toObject();
   delete obj.password;
   delete obj.emailVerificationOtp;
   delete obj.emailVerificationExpires;
   delete obj.emailVerificationAttempts;
+  delete obj.passwordResetOtp;
+  delete obj.passwordResetExpires;
+  delete obj.passwordResetAttempts;
   return obj;
 };
 

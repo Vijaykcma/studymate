@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Clock,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI } from '../services/api';
@@ -90,13 +91,13 @@ function FindGroups() {
       setError('');
       const res = await groupsAPI.join(groupId);
       if (res.success) {
-        setActionSuccess('Joined group successfully!');
-        setTimeout(() => setActionSuccess(''), 3000);
+        setActionSuccess(res.message || 'Join request sent! Awaiting approval from the group creator.');
+        setTimeout(() => setActionSuccess(''), 4000);
         // Refresh groups
         fetchGroups();
       }
     } catch (err) {
-      setError(err.userMessage || 'Failed to join group.');
+      setError(err.userMessage || 'Failed to submit join request.');
     } finally {
       setJoiningId(null);
     }
@@ -312,6 +313,11 @@ function FindGroups() {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
               {groups.map((group) => {
                 const member = isMember(group);
+                const isOwner = (group.creator?._id || group.creator) === user?._id;
+                const myRequest = (group.joinRequests || []).find(
+                  (r) => (r.user?._id || r.user) === user?._id
+                );
+                const hasPending = myRequest?.status === 'pending';
                 const isFull = (group.members?.length || 0) >= group.maxMembers;
                 const isJoining = joiningId === group._id;
 
@@ -327,13 +333,23 @@ function FindGroups() {
                           <BookOpen size={20} />
                         </div>
 
-                        <div className="flex items-center gap-1.5">
+                        <div className="flex items-center gap-1.5 flex-wrap justify-end">
                           <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 text-xs font-medium">
                             {group.skillLevel}
                           </span>
-                          {member && (
+                          {isOwner && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-semibold">
+                              Creator
+                            </span>
+                          )}
+                          {member && !isOwner && (
                             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-medium">
                               Joined
+                            </span>
+                          )}
+                          {hasPending && (
+                            <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-xs font-medium flex items-center gap-1">
+                              <Clock size={11} /> Pending
                             </span>
                           )}
                         </div>
@@ -383,27 +399,31 @@ function FindGroups() {
                         View Details
                       </Link>
 
-                      {!member ? (
-                        <button
-                          onClick={() => handleJoin(group._id)}
-                          disabled={isFull || isJoining}
-                          className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-center text-xs font-semibold transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-1.5"
-                        >
-                          {isJoining ? (
-                            <Loader2 size={14} className="animate-spin" />
-                          ) : isFull ? (
-                            'Full'
-                          ) : (
-                            'Join Group'
-                          )}
-                        </button>
-                      ) : (
+                      {isOwner || member ? (
                         <Link
                           to={`/groups/${group._id}`}
                           className="flex-1 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-center text-xs font-semibold text-emerald-400 transition"
                         >
                           Open Group
                         </Link>
+                      ) : hasPending ? (
+                        <div className="flex-1 py-2.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-center text-xs font-semibold text-amber-300 transition flex items-center justify-center gap-1.5">
+                          <Clock size={13} /> Pending Review
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => handleJoin(group._id)}
+                          disabled={isFull || isJoining}
+                          className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-center text-xs font-semibold transition shadow-md shadow-indigo-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          {isJoining ? (
+                            <Loader2 size={14} className="animate-spin" />
+                          ) : isFull ? (
+                            'Full'
+                          ) : (
+                            'Request to Join'
+                          )}
+                        </button>
                       )}
                     </div>
                   </div>

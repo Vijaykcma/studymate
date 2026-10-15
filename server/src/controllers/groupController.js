@@ -52,6 +52,7 @@ export const getGroups = async (req, res, next) => {
     const groups = await StudyGroup.find(query)
       .populate('creator', 'name email department semester')
       .populate('members.user', 'name email department semester')
+      .populate('joinRequests.user', 'name email department semester')
       .sort(sort)
       .skip(skip)
       .limit(limitNum);
@@ -125,7 +126,8 @@ export const getGroupById = async (req, res, next) => {
   try {
     const group = await StudyGroup.findById(req.params.groupId)
       .populate('creator', 'name email department semester bio')
-      .populate('members.user', 'name email department semester');
+      .populate('members.user', 'name email department semester avatar')
+      .populate('joinRequests.user', 'name email department semester avatar');
 
     if (!group) {
       return res.status(404).json({
@@ -215,7 +217,15 @@ export const joinGroup = async (req, res, next) => {
       });
     }
 
-    // Check if already a member
+    // Check if user is the creator
+    if (group.creator.toString() === req.user._id.toString()) {
+      return res.status(400).json({
+        success: false,
+        message: 'You are the creator and administrator of this study group.',
+      });
+    }
+
+    // Check if already an approved member
     const alreadyMember = group.members.some(
       (m) => m.user.toString() === req.user._id.toString()
     );
@@ -234,21 +244,42 @@ export const joinGroup = async (req, res, next) => {
       });
     }
 
-    group.members.push({
-      user: req.user._id,
-      role: 'member',
-      joinedAt: new Date(),
-    });
+    // Check existing join requests
+    const existingIndex = (group.joinRequests || []).findIndex(
+      (r) => r.user.toString() === req.user._id.toString()
+    );
+
+    if (existingIndex >= 0) {
+      if (group.joinRequests[existingIndex].status === 'pending') {
+        return res.status(400).json({
+          success: false,
+          message: 'Your join request is already pending approval from the group creator.',
+        });
+      }
+      // Re-apply if previously rejected
+      group.joinRequests[existingIndex].status = 'pending';
+      group.joinRequests[existingIndex].requestedAt = new Date();
+      group.joinRequests[existingIndex].message = req.body.message || '';
+    } else {
+      group.joinRequests.push({
+        user: req.user._id,
+        status: 'pending',
+        requestedAt: new Date(),
+        message: req.body.message || '',
+      });
+    }
 
     await group.save();
 
     const updatedGroup = await StudyGroup.findById(group._id)
-      .populate('creator', 'name email department semester')
-      .populate('members.user', 'name email department semester');
+      .populate('creator', 'name email department semester bio')
+      .populate('members.user', 'name email department semester avatar')
+      .populate('joinRequests.user', 'name email department semester avatar');
 
     res.status(200).json({
       success: true,
-      message: 'Successfully joined study group!',
+      message: 'Join request sent! Awaiting approval from the group creator.',
+      status: 'pending',
       group: updatedGroup,
     });
   } catch (error) {
@@ -286,6 +317,17 @@ export const leaveGroup = async (req, res, next) => {
     }
 
     group.members.splice(memberIndex, 1);
+
+    // Clean up any existing join request for this user
+    if (group.joinRequests && group.joinRequests.length > 0) {
+      const reqIdx = group.joinRequests.findIndex(
+        (r) => r.user.toString() === req.user._id.toString()
+      );
+      if (reqIdx !== -1) {
+        group.joinRequests.splice(reqIdx, 1);
+      }
+    }
+
     await group.save();
 
     const updatedGroup = await StudyGroup.findById(group._id)
@@ -297,6 +339,135 @@ export const leaveGroup = async (req, res, next) => {
       message: 'Successfully left the study group.',
       group: updatedGroup,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getGroupJoinRequests = async (req, res, next) => {
+  try {
+    const group = await StudyGroup.findById(req.params.groupId).populate(
+      'joinRequests.user',
+      'name email department semester avatar college registrationNumber'
+    );
+
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study group not found.',
+      });
+    }
+
+    if (group.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the group creator can view join requests.',
+      });
+    }
+
+    const pendingRequests = (group.joinRequests || []).filter((r) => r.status === 'pending');
+
+    res.status(200).json({
+      success: true,
+      count: pendingRequests.length,
+      requests: pendingRequests,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const handleJoinRequest = async (req, res, next) => {
+  try {
+    const { action } = req.body;
+    const { groupId, userId } = req.params;
+
+    if (!['approve', 'reject'].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "Action must be either 'approve' or 'reject'.",
+      });
+    }
+
+    const group = await StudyGroup.findById(groupId);
+    if (!group) {
+      return res.status(404).json({
+        success: false,
+        message: 'Study group not found.',
+      });
+    }
+
+    // Only the group creator (or admin) can approve/reject
+    if (group.creator.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+      return res.status(403).json({
+        success: false,
+        message: 'Only the group creator can approve or reject join requests.',
+      });
+    }
+
+    const request = (group.joinRequests || []).find(
+      (r) => r.user.toString() === userId && r.status === 'pending'
+    );
+
+    if (!request) {
+      return res.status(404).json({
+        success: false,
+        message: 'Pending join request not found for this user.',
+      });
+    }
+
+    if (action === 'approve') {
+      if (group.members.length >= group.maxMembers) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot approve request. Study group has reached its maximum member capacity.',
+        });
+      }
+
+      request.status = 'approved';
+      request.reviewedAt = new Date();
+
+      const alreadyMember = group.members.some((m) => m.user.toString() === userId);
+      if (!alreadyMember) {
+        group.members.push({
+          user: userId,
+          role: 'member',
+          joinedAt: new Date(),
+        });
+      }
+
+      await group.save();
+
+      const updatedGroup = await StudyGroup.findById(groupId)
+        .populate('creator', 'name email department semester bio')
+        .populate('members.user', 'name email department semester avatar')
+        .populate('joinRequests.user', 'name email department semester avatar');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Member approved and added to the study group!',
+        action: 'approve',
+        group: updatedGroup,
+      });
+    }
+
+    if (action === 'reject') {
+      request.status = 'rejected';
+      request.reviewedAt = new Date();
+      await group.save();
+
+      const updatedGroup = await StudyGroup.findById(groupId)
+        .populate('creator', 'name email department semester bio')
+        .populate('members.user', 'name email department semester avatar')
+        .populate('joinRequests.user', 'name email department semester avatar');
+
+      return res.status(200).json({
+        success: true,
+        message: 'Join request declined.',
+        action: 'reject',
+        group: updatedGroup,
+      });
+    }
   } catch (error) {
     next(error);
   }
@@ -330,10 +501,21 @@ export const getUserGroups = async (req, res, next) => {
     // Groups created by user
     const createdGroups = await StudyGroup.find({ creator: userId })
       .populate('creator', 'name email department semester')
-      .populate('members.user', 'name email department semester');
+      .populate('members.user', 'name email department semester')
+      .populate('joinRequests.user', 'name email department semester');
 
     // Groups joined by user (where user is a member)
     const joinedGroups = await StudyGroup.find({ 'members.user': userId })
+      .populate('creator', 'name email department semester')
+      .populate('members.user', 'name email department semester');
+
+    // Groups where user has a pending join request awaiting creator approval
+    const pendingGroups = await StudyGroup.find({
+      'joinRequests.user': userId,
+      'joinRequests.status': 'pending',
+      'members.user': { $ne: userId },
+      creator: { $ne: userId },
+    })
       .populate('creator', 'name email department semester')
       .populate('members.user', 'name email department semester');
 
@@ -341,6 +523,7 @@ export const getUserGroups = async (req, res, next) => {
       success: true,
       created: createdGroups,
       joined: joinedGroups,
+      pending: pendingGroups,
     });
   } catch (error) {
     next(error);

@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { User } from '../models/User.js';
 import { PlatformSettings } from '../models/PlatformSettings.js';
-import { sendVerificationEmail } from '../utils/sendEmail.js';
+import { sendVerificationEmail, sendPasswordResetEmail } from '../utils/sendEmail.js';
 
 export const sendTokenCookie = (user, statusCode, res, extraData = {}) => {
   const token = jwt.sign(
@@ -267,4 +267,131 @@ export const getMe = async (req, res) => {
     success: true,
     user: req.user,
   });
+};
+
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+passwordResetOtp +passwordResetExpires +passwordResetAttempts'
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account registered with this email address.',
+      });
+    }
+
+    if (user.status === 'suspended') {
+      return res.status(403).json({
+        success: false,
+        message: 'This account is suspended. Please contact platform administrators.',
+      });
+    }
+
+    // Cooldown rate-limit: 60 seconds
+    if (user.passwordResetExpires) {
+      const msElapsed = 15 * 60 * 1000 - (new Date(user.passwordResetExpires) - new Date());
+      if (msElapsed > 0 && msElapsed < 60 * 1000) {
+        const secondsRemaining = Math.ceil((60 * 1000 - msElapsed) / 1000);
+        return res.status(429).json({
+          success: false,
+          message: `Please wait ${secondsRemaining}s before requesting another reset code.`,
+          secondsRemaining,
+        });
+      }
+    }
+
+    const otp = user.generatePasswordResetOtp();
+    await user.save();
+
+    const emailResult = await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      otp,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'A 6-digit password reset verification code has been dispatched to your email.',
+      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      previewUrl: emailResult?.previewUrl,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+    const normalizedEmail = email.toLowerCase().trim();
+
+    const user = await User.findOne({ email: normalizedEmail }).select(
+      '+password +passwordResetOtp +passwordResetExpires +passwordResetAttempts'
+    );
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'No account registered with this email address.',
+      });
+    }
+
+    if (!user.passwordResetOtp || !user.passwordResetExpires) {
+      return res.status(400).json({
+        success: false,
+        message: 'No pending password reset request. Please request a new code.',
+      });
+    }
+
+    if (new Date() > new Date(user.passwordResetExpires)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Password reset code has expired. Please request a fresh one.',
+      });
+    }
+
+    if ((user.passwordResetAttempts || 0) >= 5) {
+      user.passwordResetOtp = undefined;
+      user.passwordResetExpires = undefined;
+      user.passwordResetAttempts = 0;
+      await user.save();
+      return res.status(429).json({
+        success: false,
+        message: 'Too many failed verification attempts. Please request a new reset code.',
+      });
+    }
+
+    if (user.passwordResetOtp !== otp.trim()) {
+      user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
+      await user.save();
+      const attemptsRemaining = 5 - user.passwordResetAttempts;
+      return res.status(400).json({
+        success: false,
+        message: `Invalid reset code. ${attemptsRemaining} attempt${
+          attemptsRemaining === 1 ? '' : 's'
+        } remaining.`,
+        attemptsRemaining,
+      });
+    }
+
+    // Success: set new password, clear reset fields, mark email verified
+    user.password = newPassword;
+    user.passwordResetOtp = undefined;
+    user.passwordResetExpires = undefined;
+    user.passwordResetAttempts = 0;
+    user.isEmailVerified = true;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Your password has been reset successfully! You can now log in with your new credentials.',
+    });
+  } catch (error) {
+    next(error);
+  }
 };

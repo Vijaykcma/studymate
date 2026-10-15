@@ -25,6 +25,7 @@ import Messages from './pages/Messages';
 import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import VerifyEmail from './pages/VerifyEmail';
+import ForgotPassword from './pages/ForgotPassword';
 import RealTimeExecutor from './pages/RealTimeExecutor';
 import NotFound from './pages/NotFound';
 
@@ -64,6 +65,14 @@ function App() {
               element={
                 <PublicOnlyRoute>
                   <Register />
+                </PublicOnlyRoute>
+              }
+            />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicOnlyRoute>
+                  <ForgotPassword />
                 </PublicOnlyRoute>
               }
             />

@@ -20,6 +20,10 @@ import {
   Trash2,
   UserMinus,
   ExternalLink,
+  Clock,
+  Check,
+  X,
+  UserCheck,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, sessionsAPI, materialsAPI } from '../services/api';
@@ -78,19 +82,62 @@ function GroupDetails() {
     (m) => (m.user?._id || m.user) === user?._id || m.user === user?._id
   );
 
-  const isCreator = group?.creator?._id === user?._id || group?.creator === user?._id;
+  const isCreator = (group?.creator?._id || group?.creator) === user?._id;
+
+  const myJoinRequest = group?.joinRequests?.find(
+    (r) => (r.user?._id || r.user) === user?._id
+  );
+  const isPending = myJoinRequest?.status === 'pending';
+  const isRejected = myJoinRequest?.status === 'rejected';
+
+  const pendingRequests = (group?.joinRequests || []).filter((r) => r.status === 'pending');
 
   const handleJoin = async () => {
     try {
       setActionLoading(true);
+      setError('');
       const res = await groupsAPI.join(groupId);
       if (res.success) {
-        setFeedback('You have joined this study group!');
-        setTimeout(() => setFeedback(''), 3000);
+        setFeedback(res.message || 'Join request sent! Awaiting approval from the group creator.');
+        setTimeout(() => setFeedback(''), 4500);
         loadGroupData();
       }
     } catch (err) {
-      setError(err.userMessage || 'Failed to join group.');
+      setError(err.userMessage || 'Failed to submit join request.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleApproveApplicant = async (applicantUserId) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      const res = await groupsAPI.handleJoinRequest(groupId, applicantUserId, 'approve');
+      if (res.success) {
+        setFeedback('Member approved and welcomed to the study group!');
+        setTimeout(() => setFeedback(''), 3500);
+        loadGroupData();
+      }
+    } catch (err) {
+      setError(err.userMessage || 'Failed to approve member.');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleRejectApplicant = async (applicantUserId) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      const res = await groupsAPI.handleJoinRequest(groupId, applicantUserId, 'reject');
+      if (res.success) {
+        setFeedback('Join request declined.');
+        setTimeout(() => setFeedback(''), 3500);
+        loadGroupData();
+      }
+    } catch (err) {
+      setError(err.userMessage || 'Failed to decline request.');
     } finally {
       setActionLoading(false);
     }
@@ -252,14 +299,26 @@ function GroupDetails() {
                     </button>
                   )}
                 </>
+              ) : isPending ? (
+                <div className="px-5 py-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
+                  <Clock size={16} /> Awaiting Creator Approval
+                </div>
               ) : (
                 <button
                   onClick={handleJoin}
                   disabled={actionLoading || (group.members?.length || 0) >= group.maxMembers}
-                  className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                  className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <UserPlus size={18} />
-                  {(group.members?.length || 0) >= group.maxMembers ? 'Group Full' : 'Join Group'}
+                  {actionLoading ? (
+                    <Loader2 size={18} className="animate-spin" />
+                  ) : (
+                    <UserPlus size={18} />
+                  )}
+                  {(group.members?.length || 0) >= group.maxMembers
+                    ? 'Group Full'
+                    : isRejected
+                    ? 'Re-apply to Join'
+                    : 'Request to Join Group'}
                 </button>
               )}
             </div>
@@ -294,11 +353,36 @@ function GroupDetails() {
           </div>
         </div>
 
+        {/* Creator Notification Banner */}
+        {isCreator && pendingRequests.length > 0 && (
+          <div className="p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+                <Clock size={18} />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-white">
+                  {pendingRequests.length} Pending Join Request{pendingRequests.length === 1 ? '' : 's'}
+                </p>
+                <p className="text-xs text-slate-400">
+                  Studymates are waiting for your approval to join this study group.
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab('requests')}
+              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shrink-0 cursor-pointer"
+            >
+              Review Requests ({pendingRequests.length})
+            </button>
+          </div>
+        )}
+
         {/* Tab Controls */}
-        <div className="flex border-b border-white/10 gap-6">
+        <div className="flex border-b border-white/10 gap-6 overflow-x-auto scrollbar-none">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'overview'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -308,7 +392,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'sessions'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -318,7 +402,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('materials')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'materials'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -326,6 +410,25 @@ function GroupDetails() {
           >
             Study Resources ({materials.length})
           </button>
+          {isCreator && (
+            <button
+              onClick={() => setActiveTab('requests')}
+              className={`pb-3 text-sm font-semibold transition border-b-2 flex items-center gap-2 whitespace-nowrap ${
+                activeTab === 'requests'
+                  ? 'border-amber-500 text-amber-400'
+                  : 'border-transparent text-slate-400 hover:text-white'
+              }`}
+            >
+              <span>Join Requests</span>
+              {pendingRequests.length > 0 ? (
+                <span className="px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 font-bold text-xs animate-pulse">
+                  {pendingRequests.length}
+                </span>
+              ) : (
+                <span className="text-xs text-slate-500">(0)</span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Tab Content */}
@@ -459,6 +562,110 @@ function GroupDetails() {
                     </a>
                   </div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Join Requests Tab (Creator Only) */}
+        {activeTab === 'requests' && isCreator && (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-white">Pending Membership Requests</h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  As the group creator, you have full authority to approve or decline studymates wishing to join.
+                </p>
+              </div>
+              <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+                Capacity: {group.members?.length || 0} / {group.maxMembers}
+              </span>
+            </div>
+
+            {pendingRequests.length === 0 ? (
+              <div className="p-12 rounded-3xl border border-dashed border-white/10 bg-white/[0.01] text-center space-y-2">
+                <CheckCircle2 size={36} className="text-emerald-400/50 mx-auto mb-1" />
+                <p className="text-sm font-semibold text-white">All caught up!</p>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                  There are no pending join requests awaiting review right now.
+                </p>
+              </div>
+            ) : (
+              <div className="grid sm:grid-cols-2 gap-4">
+                {pendingRequests.map((req) => {
+                  const applicant = req.user || {};
+                  return (
+                    <div
+                      key={applicant._id || req._id}
+                      className="p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.04] to-slate-900 flex flex-col justify-between gap-4 shadow-lg shadow-black/20"
+                    >
+                      <div className="flex items-start gap-3.5">
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-bold text-base text-white shrink-0 shadow-md shadow-amber-500/20">
+                          {applicant.name ? applicant.name[0].toUpperCase() : 'S'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-sm font-bold text-white truncate">
+                              {applicant.name || 'Studymate'}
+                            </h4>
+                            <span className="px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-300 text-[10px] font-semibold">
+                              Pending Review
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400 truncate mt-0.5">
+                            {applicant.email}
+                          </p>
+                          <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-300">
+                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                              {applicant.department || 'MCA'}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
+                              {applicant.semester || 'Semester'}
+                            </span>
+                            {applicant.registrationNumber && (
+                              <span className="text-slate-500">
+                                Reg: {applicant.registrationNumber}
+                              </span>
+                            )}
+                          </div>
+                          {req.message && (
+                            <p className="text-xs text-slate-400 italic mt-2.5 bg-black/30 p-2.5 rounded-lg border border-white/5">
+                              "{req.message}"
+                            </p>
+                          )}
+                          <p className="text-[10px] text-slate-500 mt-2">
+                            Requested {new Date(req.requestedAt).toLocaleDateString()} at{' '}
+                            {new Date(req.requestedAt).toLocaleTimeString([], {
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2.5 pt-3 border-t border-white/5">
+                        <button
+                          type="button"
+                          onClick={() => handleApproveApplicant(applicant._id)}
+                          disabled={
+                            actionLoading || (group.members?.length || 0) >= group.maxMembers
+                          }
+                          className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Check size={14} /> Approve & Admit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRejectApplicant(applicant._id)}
+                          disabled={actionLoading}
+                          className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-rose-400 hover:text-rose-300 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <X size={14} /> Decline
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

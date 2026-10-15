@@ -21,7 +21,8 @@ function MyGroups() {
   const { user } = useAuth();
   const [createdGroups, setCreatedGroups] = useState([]);
   const [joinedGroups, setJoinedGroups] = useState([]);
-  const [activeTab, setActiveTab] = useState('all'); // all | created | joined
+  const [pendingGroups, setPendingGroups] = useState([]);
+  const [activeTab, setActiveTab] = useState('all'); // all | created | joined | pending
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -33,6 +34,7 @@ function MyGroups() {
       if (data.success) {
         setCreatedGroups(data.created || []);
         setJoinedGroups(data.joined || []);
+        setPendingGroups(data.pending || []);
       }
     } catch (err) {
       setError(err.userMessage || 'Failed to load your study groups.');
@@ -47,8 +49,9 @@ function MyGroups() {
 
   const getDisplayedGroups = () => {
     if (activeTab === 'created') return createdGroups;
-    if (activeTab === 'joined') return joinedGroups.filter((g) => g.creator?._id !== user?._id);
-    // 'all': deduplicated list
+    if (activeTab === 'joined') return joinedGroups.filter((g) => (g.creator?._id || g.creator) !== user?._id);
+    if (activeTab === 'pending') return pendingGroups;
+    // 'all': deduplicated list of created and joined
     const ids = new Set();
     const all = [];
     [...createdGroups, ...joinedGroups].forEach((g) => {
@@ -98,10 +101,10 @@ function MyGroups() {
         )}
 
         {/* Tab Filters */}
-        <div className="flex border-b border-white/10 gap-6">
+        <div className="flex border-b border-white/10 gap-6 overflow-x-auto pb-px">
           <button
             onClick={() => setActiveTab('all')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'all'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -111,7 +114,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('created')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'created'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -121,13 +124,26 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('joined')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'joined'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
             }`}
           >
-            Joined as Member ({joinedGroups.filter((g) => g.creator?._id !== user?._id).length})
+            Joined as Member ({joinedGroups.filter((g) => (g.creator?._id || g.creator) !== user?._id).length})
+          </button>
+          <button
+            onClick={() => setActiveTab('pending')}
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
+              activeTab === 'pending'
+                ? 'border-amber-500 text-amber-400'
+                : 'border-transparent text-slate-400 hover:text-white'
+            }`}
+          >
+            Pending Approvals ({pendingGroups.length})
+            {pendingGroups.length > 0 && (
+              <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            )}
           </button>
         </div>
 
@@ -142,9 +158,13 @@ function MyGroups() {
             <div className="w-16 h-16 rounded-2xl bg-white/5 text-slate-400 flex items-center justify-center mx-auto mb-4">
               <Users size={28} />
             </div>
-            <h3 className="text-lg font-semibold text-white">No groups found</h3>
+            <h3 className="text-lg font-semibold text-white">
+              {activeTab === 'pending' ? 'No pending join requests' : 'No groups found'}
+            </h3>
             <p className="text-sm text-slate-400 mt-2 max-w-sm mx-auto">
-              You haven't joined or created any study groups in this category yet.
+              {activeTab === 'pending'
+                ? 'You do not have any pending requests to join groups. Once you request to join a group, it will appear here while awaiting the creator’s approval.'
+                : "You haven't joined or created any study groups in this category yet."}
             </p>
             <div className="mt-6 flex justify-center gap-3">
               <Link
@@ -159,6 +179,14 @@ function MyGroups() {
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
             {displayedGroups.map((group) => {
               const isAdmin = (group.creator?._id || group.creator) === user?._id;
+              const isPending =
+                activeTab === 'pending' ||
+                group.joinRequests?.some(
+                  (r) => (r.user?._id || r.user) === user?._id && r.status === 'pending'
+                );
+              const pendingRequestsCount = isAdmin
+                ? group.joinRequests?.filter((r) => r.status === 'pending').length || 0
+                : 0;
 
               return (
                 <div
@@ -166,20 +194,29 @@ function MyGroups() {
                   className="p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
                 >
                   <div>
-                    <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
                         <BookOpen size={20} />
                       </div>
 
-                      <span
-                        className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          isAdmin
-                            ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-400/20'
-                            : 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20'
-                        }`}
-                      >
-                        {isAdmin ? 'Admin' : 'Member'}
-                      </span>
+                      <div className="flex flex-col items-end gap-1.5">
+                        <span
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
+                            isAdmin
+                              ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-400/20'
+                              : isPending
+                              ? 'bg-amber-500/10 text-amber-400 border border-amber-400/20'
+                              : 'bg-emerald-500/10 text-emerald-400 border border-emerald-400/20'
+                          }`}
+                        >
+                          {isAdmin ? 'Creator' : isPending ? 'Pending Approval' : 'Member'}
+                        </span>
+                        {isAdmin && pendingRequestsCount > 0 && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                            {pendingRequestsCount} request{pendingRequestsCount > 1 ? 's' : ''} to review
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <p className="text-xs text-slate-400 mt-5">{group.subject}</p>
@@ -211,14 +248,20 @@ function MyGroups() {
                       to={`/groups/${group._id}`}
                       className="flex-1 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-center text-xs font-medium transition"
                     >
-                      Details
+                      {isAdmin && pendingRequestsCount > 0 ? 'Review Requests' : 'Details'}
                     </Link>
-                    <Link
-                      to="/messages"
-                      className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-center text-xs font-semibold transition flex items-center justify-center gap-1.5"
-                    >
-                      <MessageCircle size={14} /> Chat
-                    </Link>
+                    {isPending ? (
+                      <span className="flex-1 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center text-xs font-semibold text-amber-300 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                        <Clock3 size={14} /> Pending
+                      </span>
+                    ) : (
+                      <Link
+                        to="/messages"
+                        className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-center text-xs font-semibold transition flex items-center justify-center gap-1.5"
+                      >
+                        <MessageCircle size={14} /> Chat
+                      </Link>
+                    )}
                   </div>
                 </div>
               );

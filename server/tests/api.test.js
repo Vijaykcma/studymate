@@ -183,7 +183,7 @@ describe('StudyMate Complete API Test Suite', () => {
 
     const groupId = grp.body.group._id;
 
-    // Second user joins
+    // Second user sends join request
     const u2 = await request(app).post('/api/v1/auth/register').send({
       name: 'User Two',
       email: 'u2@example.com',
@@ -197,17 +197,26 @@ describe('StudyMate Complete API Test Suite', () => {
       .set('Authorization', `Bearer ${u2.body.token}`);
 
     expect(joinRes.status).toBe(200);
-    expect(joinRes.body.group.members.length).toBe(2);
+    expect(joinRes.body.status).toBe('pending');
 
-    // Duplicate join attempt by user 2
+    // Duplicate join attempt while pending
     const dupJoin = await request(app)
       .post(`/api/v1/groups/${groupId}/join`)
       .set('Authorization', `Bearer ${u2.body.token}`);
 
     expect(dupJoin.status).toBe(400);
-    expect(dupJoin.body.message).toMatch(/already a member/i);
+    expect(dupJoin.body.message).toMatch(/already pending approval/i);
 
-    // Third user tries to join but group is at capacity (2/2)
+    // Group creator approves the request
+    const approveRes = await request(app)
+      .patch(`/api/v1/groups/${groupId}/requests/${u2.body.user._id}`)
+      .set('Authorization', `Bearer ${u1.body.token}`)
+      .send({ action: 'approve' });
+
+    expect(approveRes.status).toBe(200);
+    expect(approveRes.body.group.members.length).toBe(2);
+
+    // Third user tries to join but group has reached capacity (2/2)
     const u3 = await request(app).post('/api/v1/auth/register').send({
       name: 'User Three',
       email: 'u3@example.com',
@@ -427,5 +436,50 @@ describe('StudyMate Complete API Test Suite', () => {
     expect(execRes.body.success).toBe(true);
     expect(execRes.body.output).toContain('Sum: 30');
     expect(execRes.body.executionTimeMs).toBeGreaterThanOrEqual(0);
+  });
+
+  // 19. Forgot Password & OTP Reset Flow
+  test('Handles forgot password request and resets password with valid OTP', async () => {
+    await request(app).post('/api/v1/auth/register').send({
+      name: 'Password Reset User',
+      email: 'resetuser@example.com',
+      password: 'OldPassword123!',
+      department: 'MCA',
+      semester: '1st Semester',
+    });
+
+    // Request reset code
+    const forgotRes = await request(app)
+      .post('/api/v1/auth/forgot-password')
+      .send({ email: 'resetuser@example.com' });
+
+    expect(forgotRes.status).toBe(200);
+    expect(forgotRes.body.success).toBe(true);
+    expect(forgotRes.body.devOtp).toBeDefined();
+
+    const resetOtp = forgotRes.body.devOtp;
+
+    // Reset password with valid OTP
+    const resetRes = await request(app)
+      .post('/api/v1/auth/reset-password')
+      .send({
+        email: 'resetuser@example.com',
+        otp: resetOtp,
+        newPassword: 'NewPassword999!',
+      });
+
+    expect(resetRes.status).toBe(200);
+    expect(resetRes.body.success).toBe(true);
+
+    // Verify user can login with new password
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'resetuser@example.com',
+        password: 'NewPassword999!',
+      });
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.token).toBeDefined();
   });
 });
