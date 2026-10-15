@@ -481,5 +481,5 @@ describe('StudyMate Complete API Test Suite', () => {
 
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.token).toBeDefined();
-  });
+  }, 25000);
 });

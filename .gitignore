@@ -34,3 +34,9 @@ server/uploads/*
 *.njsproj
 *.sln
 *.sw?
+
+# Credential screenshots & private assets
+app password*.png
+*.pem
+*.key
+

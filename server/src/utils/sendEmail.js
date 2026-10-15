@@ -5,15 +5,36 @@ import nodemailer from 'nodemailer';
  * Supports Gmail (via service: 'gmail'), custom SMTP, or automatic test accounts.
  */
 const getTransporter = async () => {
-  const user = process.env.SMTP_USER?.trim();
-  const rawPass = process.env.SMTP_PASS?.trim();
+  const user = (process.env.EMAIL_USER || process.env.SMTP_USER || '').trim();
+  const rawPass = (process.env.EMAIL_PASS || process.env.SMTP_PASS || '').trim();
   const pass = rawPass ? rawPass.replace(/\s+/g, '') : '';
   const host = process.env.SMTP_HOST?.trim();
   const port = Number(process.env.SMTP_PORT) || 587;
   const isGmail =
+    process.env.EMAIL_SERVICE?.toLowerCase() === 'gmail' ||
     process.env.SMTP_SERVICE?.toLowerCase() === 'gmail' ||
     (host && host.toLowerCase().includes('gmail')) ||
     (user && user.toLowerCase().endsWith('@gmail.com'));
+
+  const fromAddress =
+    process.env.EMAIL_FROM ||
+    process.env.FROM_EMAIL ||
+    (user ? `"StudyMate Platform" <${user}>` : '"StudyMate Platform" <no-reply@studymate.internal>');
+
+  // 0. Automated Test Mock (keeps Jest test suite fast and avoids hitting Gmail rate limits during CI/testing)
+  if (process.env.NODE_ENV === 'test' && process.env.TEST_REAL_EMAIL !== 'true') {
+    return {
+      transporter: {
+        sendMail: async (opts) => ({
+          messageId: `<test-${Date.now()}@studymate.internal>`,
+          response: '250 Test OK',
+        }),
+      },
+      from: fromAddress,
+      isLive: false,
+      serviceName: 'Test Environment',
+    };
+  }
 
   // 1. Live Gmail App Password transport
   if (user && pass && isGmail) {
@@ -22,7 +43,7 @@ const getTransporter = async () => {
         service: 'gmail',
         auth: { user, pass },
       }),
-      from: process.env.FROM_EMAIL || `"StudyMate Platform" <${user}>`,
+      from: fromAddress,
       isLive: true,
       serviceName: 'Gmail SMTP',
     };
