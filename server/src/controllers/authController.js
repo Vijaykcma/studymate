@@ -70,10 +70,18 @@ export const register = async (req, res, next) => {
       otp,
     });
 
+    const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
+    const provideOtpOnScreen =
+      !isLiveDelivered ||
+      process.env.ALLOW_OTP_PREVIEW === 'true' ||
+      process.env.NODE_ENV !== 'production';
+
     sendTokenCookie(user, 201, res, {
-      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
-      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
-      emailSent: emailResult?.success ?? false,
+      message: isLiveDelivered
+        ? 'Registration successful! A 6-digit verification code has been sent to your email.'
+        : `Registration successful! Email delivery is delayed or pending. Your verification code is: ${otp}`,
+      devOtp: provideOtpOnScreen ? otp : undefined,
+      emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });
   } catch (error) {
@@ -240,11 +248,19 @@ export const resendVerificationOtp = async (req, res, next) => {
       otp,
     });
 
+    const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
+    const provideOtpOnScreen =
+      !isLiveDelivered ||
+      process.env.ALLOW_OTP_PREVIEW === 'true' ||
+      process.env.NODE_ENV !== 'production';
+
     res.status(200).json({
       success: true,
-      message: 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.',
-      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
-      emailSent: emailResult?.success ?? false,
+      message: isLiveDelivered
+        ? 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.'
+        : `A new verification code has been generated: ${otp} (Email dispatch is delayed by mail server).`,
+      devOtp: provideOtpOnScreen ? otp : undefined,
+      emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });
   } catch (error) {
@@ -318,10 +334,19 @@ export const forgotPassword = async (req, res, next) => {
       otp,
     });
 
+    const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
+    const provideOtpOnScreen =
+      !isLiveDelivered ||
+      process.env.ALLOW_OTP_PREVIEW === 'true' ||
+      process.env.NODE_ENV !== 'production';
+
     res.status(200).json({
       success: true,
-      message: 'A 6-digit password reset verification code has been dispatched to your email.',
-      devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined,
+      message: isLiveDelivered
+        ? 'A 6-digit password reset verification code has been dispatched to your email.'
+        : `Password reset code: ${otp} (Email dispatch is delayed by mail server).`,
+      devOtp: provideOtpOnScreen ? otp : undefined,
+      emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });
   } catch (error) {

@@ -27,11 +27,15 @@ function VerifyEmail() {
 
   const [email, setEmail] = useState(initialEmail);
   const [devOtp, setDevOtp] = useState(initialDevOtp);
-  const [digits, setDigits] = useState(['', '', '', '', '', '']);
+  const [digits, setDigits] = useState(
+    initialDevOtp && initialDevOtp.length === 6 ? initialDevOtp.split('') : ['', '', '', '', '', '']
+  );
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
-  const [successMessage, setSuccessMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState(
+    initialDevOtp ? 'Verification code received! Click "Verify & Confirm" below.' : ''
+  );
   const [cooldown, setCooldown] = useState(justRegistered ? 60 : 0);
   const [isVerified, setIsVerified] = useState(user?.isEmailVerified || false);
 
@@ -146,9 +150,10 @@ function VerifyEmail() {
       const res = await authAPI.resendOtp({ email: email.trim() });
       if (res.success) {
         setCooldown(60);
-        setSuccessMessage('A new 6-digit verification code has been dispatched to your email.');
+        setSuccessMessage(res.message || 'A fresh 6-digit verification code has been dispatched.');
         if (res.devOtp) {
           setDevOtp(res.devOtp);
+          setDigits(res.devOtp.split(''));
         }
       }
     } catch (err) {
@@ -216,21 +221,22 @@ function VerifyEmail() {
             </div>
           )}
 
-          {/* Dev Mode OTP Banner Helper */}
+          {/* OTP Banner Helper */}
           {devOtp && !isVerified && (
-            <div className="mt-5 p-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2 truncate">
-                <KeyRound size={16} className="shrink-0 text-indigo-400" />
-                <span className="truncate">
-                  Demo/Local OTP: <strong className="text-white tracking-wider font-mono">{devOtp}</strong>
-                </span>
+            <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-cyan-500/15 border border-indigo-500/40 text-indigo-200 text-xs flex items-center justify-between gap-3 shadow-lg shadow-indigo-500/10">
+              <div className="flex items-center gap-2.5 truncate">
+                <KeyRound size={18} className="shrink-0 text-cyan-400" />
+                <div className="truncate">
+                  <p className="text-[11px] text-slate-400">Verification Passcode:</p>
+                  <p className="text-white tracking-widest font-mono text-base font-bold">{devOtp}</p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={autofillDevOtp}
-                className="shrink-0 px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-medium text-[11px] transition shadow"
+                className="shrink-0 px-3 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-md shadow-indigo-600/30 cursor-pointer"
               >
-                Auto-fill
+                Auto-fill Code
               </button>
             </div>
           )}
@@ -322,6 +328,17 @@ function VerifyEmail() {
                   )}
                   {cooldown > 0 ? `Resend in ${cooldown}s` : 'Send / Resend Code'}
                 </button>
+              </div>
+
+              {/* Skip for now & continue directly to dashboard */}
+              <div className="pt-2 text-center border-t border-white/5">
+                <Link
+                  to="/dashboard"
+                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition py-2 px-3 rounded-xl hover:bg-white/5"
+                >
+                  <span>Skip for now & explore study groups (verify later)</span>
+                  <ArrowRight size={14} />
+                </Link>
               </div>
             </form>
           )}

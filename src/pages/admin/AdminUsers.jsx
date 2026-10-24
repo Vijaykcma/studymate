@@ -103,20 +103,6 @@ const AdminUsers = () => {
     }
   };
 
-  const handleToggleVerification = async (targetUser) => {
-    try {
-      const res = await adminAPI.updateUserVerification(targetUser._id, {
-        isEmailVerified: !targetUser.isEmailVerified,
-      });
-      if (res.success) {
-        setAlert({ type: 'success', message: res.message });
-        fetchUsers();
-      }
-    } catch (err) {
-      setAlert({ type: 'error', message: err.userMessage || 'Failed to update email verification.' });
-    }
-  };
-
   const handleUpdateStatus = async () => {
     if (!statusModal.user) return;
     setStatusActionLoading(true);
@@ -176,6 +162,27 @@ const AdminUsers = () => {
       setAlert({ type: 'error', message: err.userMessage || 'Failed to delete user account.' });
     } finally {
       setDeleteLoading(false);
+    }
+  };
+
+  const handleToggleVerification = async (targetUser) => {
+    try {
+      const res = await adminAPI.updateUserVerification(targetUser._id, {
+        isEmailVerified: !targetUser.isEmailVerified,
+      });
+      setAlert({
+        type: 'success',
+        message: res.message || `User email verification status updated to ${!targetUser.isEmailVerified ? 'Verified' : 'Unverified'}.`,
+      });
+      fetchUsers();
+      if (selectedUser && selectedUser._id === targetUser._id) {
+        setSelectedUser((prev) => ({
+          ...prev,
+          isEmailVerified: !targetUser.isEmailVerified,
+        }));
+      }
+    } catch (err) {
+      setAlert({ type: 'error', message: err.userMessage || 'Failed to update email verification status.' });
     }
   };
 
@@ -570,6 +577,25 @@ const AdminUsers = () => {
                         )}
                       </div>
                     )}
+
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                      <p>
+                        <strong className="text-slate-400">Email Verification:</strong>{' '}
+                        <span className={selectedUser.isEmailVerified ? 'text-emerald-400 font-semibold' : 'text-amber-400 font-semibold'}>
+                          {selectedUser.isEmailVerified ? 'Verified Real User' : 'Unverified'}
+                        </span>
+                      </p>
+                      <button
+                        onClick={() => handleToggleVerification(selectedUser)}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition cursor-pointer ${
+                          selectedUser.isEmailVerified
+                            ? 'bg-amber-500/10 text-amber-300 hover:bg-amber-500/20 border border-amber-500/20'
+                            : 'bg-emerald-500/10 text-emerald-300 hover:bg-emerald-500/20 border border-emerald-500/20'
+                        }`}
+                      >
+                        {selectedUser.isEmailVerified ? 'Mark Unverified' : '1-Click Verify User'}
+                      </button>
+                    </div>
                   </div>
 
                   {/* Activity preview */}

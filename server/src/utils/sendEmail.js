@@ -21,7 +21,7 @@ const cleanEnv = (val) => {
 
 /**
  * Creates and configures the nodemailer transporter.
- * Supports Gmail (via service: 'gmail'), custom SMTP, or automatic test accounts.
+ * Supports Gmail (via direct IPv4 SMTP on port 465 / 587), custom SMTP, or test fallback.
  */
 const getTransporter = async () => {
   const user = cleanEnv(process.env.EMAIL_USER || process.env.SMTP_USER);
@@ -51,7 +51,7 @@ const getTransporter = async () => {
   if (process.env.NODE_ENV === 'test' && process.env.TEST_REAL_EMAIL !== 'true') {
     return {
       transporter: {
-        sendMail: async (opts) => ({
+        sendMail: async () => ({
           messageId: `<test-${Date.now()}@studymate.internal>`,
           response: '250 Test OK',
         }),
@@ -62,16 +62,30 @@ const getTransporter = async () => {
     };
   }
 
-  // 1. Live Gmail App Password transport
+  // 1. Live Gmail App Password transport with IPv4 enforcement & rapid fallback
   if (user && pass && isGmail) {
+    const primaryTransporter = nodemailer.createTransport({
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true,
+      auth: { user, pass },
+      family: 4, // Force IPv4 to prevent hanging on cloud containers without IPv6 routing
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 10000,
+      tls: {
+        rejectUnauthorized: false,
+      },
+    });
+
     return {
-      transporter: nodemailer.createTransport({
-        service: 'gmail',
-        auth: { user, pass },
-      }),
+      transporter: primaryTransporter,
+      fallbackPort: 587,
+      user,
+      pass,
       from: fromAddress,
       isLive: true,
-      serviceName: 'Gmail SMTP',
+      serviceName: 'Gmail SMTP (Port 465, IPv4)',
     };
   }
 
@@ -83,6 +97,10 @@ const getTransporter = async () => {
         port,
         secure: port === 465 || process.env.SMTP_SECURE === 'true',
         auth: { user, pass },
+        family: 4,
+        connectionTimeout: 8000,
+        greetingTimeout: 8000,
+        socketTimeout: 10000,
         tls: { rejectUnauthorized: false },
       }),
       from: process.env.FROM_EMAIL || `"StudyMate Platform" <${user}>`,
@@ -91,7 +109,13 @@ const getTransporter = async () => {
     };
   }
 
-  // 3. Fallback: Ethereal real test account dispatch or simulation
+  // Log clear diagnostic warning if credentials are not configured
+  console.warn(
+    '[Email Service Warning] EMAIL_USER / EMAIL_PASS environment variables are not set in the hosting environment. ' +
+      'If running in production (e.g. Render/Railway), please add EMAIL_USER and EMAIL_PASS to your dashboard Environment Variables.'
+  );
+
+  // 3. Fallback: Ethereal test account or offline simulation
   try {
     const testAccount = await nodemailer.createTestAccount();
     const testTransporter = nodemailer.createTransport({
@@ -102,6 +126,8 @@ const getTransporter = async () => {
         user: testAccount.user,
         pass: testAccount.pass,
       },
+      family: 4,
+      connectionTimeout: 5000,
     });
 
     return {
@@ -112,7 +138,6 @@ const getTransporter = async () => {
       serviceName: 'Ethereal Test Inbox',
     };
   } catch {
-    // Pure offline fallback
     return {
       transporter: null,
       from: '"StudyMate" <no-reply@studymate.internal>',
@@ -171,47 +196,74 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
 
   const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate verification code is: ${otp}\n\nThis 6-digit code is valid for 15 minutes. Enter it to verify that you are an authorized real user.\n\nBest regards,\nThe StudyMate Team`;
 
+  const mailOptions = {
+    to,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
   try {
     const config = await getTransporter();
 
     if (config.transporter) {
-      const info = await config.transporter.sendMail({
-        from: config.from,
-        to,
-        subject,
-        text: textContent,
-        html: htmlContent,
-      });
+      mailOptions.from = config.from;
+
+      let info;
+      try {
+        info = await config.transporter.sendMail(mailOptions);
+      } catch (primaryErr) {
+        // If primary port 465 timed out or failed, try port 587 with STARTTLS
+        if (config.fallbackPort && config.user && config.pass) {
+          console.warn(`[Email Service] Port 465 delivery attempt failed (${primaryErr.message}). Attempting port 587 STARTTLS...`);
+          const fallbackTransporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: { user: config.user, pass: config.pass },
+            family: 4,
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
+            tls: { rejectUnauthorized: false },
+          });
+          info = await fallbackTransporter.sendMail(mailOptions);
+        } else {
+          throw primaryErr;
+        }
+      }
 
       let previewUrl = null;
       if (config.isTestAccount) {
         previewUrl = nodemailer.getTestMessageUrl(info);
       }
 
-      console.log(`[Email Service (${config.serviceName})] Verification email sent to ${to}. MessageId: ${info.messageId}`);
+      console.log(`[Email Service (${config.serviceName})] Verification email delivered to ${to}. MessageId: ${info.messageId}`);
       if (previewUrl) {
         console.log(`[Email Service Preview URL]: ${previewUrl}`);
       }
 
       return {
         success: true,
+        emailDelivered: Boolean(config.isLive),
         messageId: info.messageId,
-        isLive: config.isLive,
+        isLive: Boolean(config.isLive),
         previewUrl,
         otp,
       };
     }
   } catch (err) {
-    console.error(`[Email Service Error] Failed sending to ${to}:`, err);
+    console.error(`[Email Service Error] Failed sending to ${to}:`, err.message);
     return {
       success: false,
+      emailDelivered: false,
       error: err.message,
       simulated: true,
       otp,
     };
   }
 
-  // Terminal dev fallback
+  // Terminal dev fallback log
   console.log('\n' + '='.repeat(68));
   console.log('📧 [StudyMate Email Service] Verification Code Dispatched:');
   console.log(`   Recipient : ${to} (${name || 'Student'})`);
@@ -219,7 +271,7 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
   console.log(`   🔑 OTP CODE: [ ${otp} ] (Valid for 15 minutes)`);
   console.log('='.repeat(68) + '\n');
 
-  return { success: true, simulated: true, otp };
+  return { success: false, emailDelivered: false, simulated: true, otp };
 };
 
 /**
@@ -271,17 +323,41 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
 
   const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate password reset code is: ${otp}\n\nThis 6-digit code is valid for 15 minutes. Enter it to reset your password.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nThe StudyMate Team`;
 
+  const mailOptions = {
+    to,
+    subject,
+    text: textContent,
+    html: htmlContent,
+  };
+
   try {
     const config = await getTransporter();
 
     if (config.transporter) {
-      const info = await config.transporter.sendMail({
-        from: config.from,
-        to,
-        subject,
-        text: textContent,
-        html: htmlContent,
-      });
+      mailOptions.from = config.from;
+
+      let info;
+      try {
+        info = await config.transporter.sendMail(mailOptions);
+      } catch (primaryErr) {
+        if (config.fallbackPort && config.user && config.pass) {
+          console.warn(`[Email Service] Port 465 delivery attempt failed (${primaryErr.message}). Attempting port 587 STARTTLS...`);
+          const fallbackTransporter = nodemailer.createTransport({
+            host: 'smtp.gmail.com',
+            port: 587,
+            secure: false,
+            auth: { user: config.user, pass: config.pass },
+            family: 4,
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
+            tls: { rejectUnauthorized: false },
+          });
+          info = await fallbackTransporter.sendMail(mailOptions);
+        } else {
+          throw primaryErr;
+        }
+      }
 
       let previewUrl = null;
       if (config.isTestAccount) {
@@ -295,16 +371,18 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
 
       return {
         success: true,
+        emailDelivered: Boolean(config.isLive),
         messageId: info.messageId,
-        isLive: config.isLive,
+        isLive: Boolean(config.isLive),
         previewUrl,
         otp,
       };
     }
   } catch (err) {
-    console.error(`[Email Service Error] Failed sending password reset to ${to}:`, err);
+    console.error(`[Email Service Error] Failed sending password reset to ${to}:`, err.message);
     return {
       success: false,
+      emailDelivered: false,
       error: err.message,
       simulated: true,
       otp,
@@ -319,5 +397,5 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
   console.log(`   🔑 OTP CODE: [ ${otp} ] (Valid for 15 minutes)`);
   console.log('='.repeat(68) + '\n');
 
-  return { success: true, simulated: true, otp };
+  return { success: false, emailDelivered: false, simulated: true, otp };
 };
