@@ -200,6 +200,7 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
         previewUrl,
         otp,
       };
+    }
   } catch (err) {
     console.error(`[Email Service Error] Failed sending to ${to}:`, err);
     return {
@@ -299,6 +300,7 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
         previewUrl,
         otp,
       };
+    }
   } catch (err) {
     console.error(`[Email Service Error] Failed sending password reset to ${to}:`, err);
     return {

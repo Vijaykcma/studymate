@@ -82,8 +82,8 @@ const seedDatabase = async () => {
 
     const admin = await User.create({
       name: 'System Administrator',
-      email: 'admin@studymate.internal',
-      password: demoPassword,
+      email: 'aiinterviewbotvk@gmail.com',
+      password: 'vk2005',
       department: 'Administration',
       semester: 'Staff',
       college: 'Apex Institute of Technology',
@@ -330,7 +330,7 @@ const seedDatabase = async () => {
       actor: admin._id,
       actorRole: 'admin',
       actorName: 'System Administrator',
-      actorEmail: 'admin@studymate.internal',
+      actorEmail: 'aiinterviewbotvk@gmail.com',
       action: 'SYSTEM_INITIALIZED',
       resourceType: 'PlatformSettings',
       resourceId: 'GLOBAL_SETTINGS',
@@ -348,7 +348,7 @@ const seedDatabase = async () => {
     console.log('4. rahul@example.com           | Password: Password123!');
     console.log('-------------------------------------------------');
     console.log('Platform Administrator Account:');
-    console.log('🔑 admin@studymate.internal    | Password: Password123!');
+    console.log('🔑 aiinterviewbotvk@gmail.com   | Password: vk2005');
     console.log('Admin Portal: http://localhost:5173/admin/login');
     console.log('=================================================\n');
 
