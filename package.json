@@ -7,7 +7,7 @@
     "dev": "vite",
     "dev:server": "npm --prefix server start",
     "dev:all": "concurrently -n \"SERVER,CLIENT\" -c \"blue,green\" \"npm --prefix server start\" \"vite\"",
-    "build": "vite build",
+    "build": "npm --prefix server install && vite build",
     "start": "node server/src/server.js",
     "lint": "oxlint",
     "preview": "vite preview"
