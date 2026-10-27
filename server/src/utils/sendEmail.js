@@ -148,6 +148,78 @@ const getTransporter = async () => {
 };
 
 /**
+ * Cloud HTTP-based email provider (Resend / Brevo).
+ * Communicates over standard HTTPS (Port 443), completely bypassing Render's SMTP port blocks.
+ */
+const sendViaHttpsProvider = async ({ to, name, subject, text, html }) => {
+  const resendKey = cleanEnv(process.env.RESEND_API_KEY);
+  if (resendKey) {
+    const rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.RESEND_FROM || 'StudyMate <onboarding@resend.dev>');
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: rawFrom,
+        to: [to],
+        subject,
+        html,
+        text,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || `Resend API Error: ${res.statusText}`);
+    }
+    console.log(`[Email Service (Resend HTTPS API)] Email delivered to ${to}. MessageId: ${data.id}`);
+    return {
+      success: true,
+      emailDelivered: true,
+      messageId: data.id,
+      isLive: true,
+      serviceName: 'Resend Cloud API (HTTPS)',
+    };
+  }
+
+  const brevoKey = cleanEnv(process.env.BREVO_API_KEY);
+  if (brevoKey) {
+    const senderEmail = cleanEnv(process.env.EMAIL_USER || process.env.BREVO_SENDER_EMAIL || 'aiinterviewbotvk@gmail.com');
+    const senderName = cleanEnv(process.env.BREVO_SENDER_NAME || 'StudyMate Platform');
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'api-key': brevoKey,
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to, name: name || 'Student' }],
+        subject,
+        htmlContent: html,
+        textContent: text,
+      }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.message || `Brevo API Error: ${res.statusText}`);
+    }
+    console.log(`[Email Service (Brevo HTTPS API)] Email delivered to ${to}. MessageId: ${data.messageId}`);
+    return {
+      success: true,
+      emailDelivered: true,
+      messageId: data.messageId,
+      isLive: true,
+      serviceName: 'Brevo Cloud API (HTTPS)',
+    };
+  }
+
+  return null;
+};
+
+/**
  * Sends a real 6-digit OTP verification email for account registration.
  */
 export const sendVerificationEmail = async ({ to, name, otp }) => {
@@ -202,6 +274,22 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
     text: textContent,
     html: htmlContent,
   };
+
+  // 1. HTTPS Cloud API (Bypasses Render/cloud SMTP port blocks on port 465/587)
+  try {
+    const httpsResult = await sendViaHttpsProvider({
+      to,
+      name,
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+    if (httpsResult) {
+      return { ...httpsResult, otp };
+    }
+  } catch (httpsErr) {
+    console.warn(`[Email Service] HTTPS provider error (${httpsErr.message}). Attempting SMTP fallback...`);
+  }
 
   try {
     const config = await getTransporter();
@@ -329,6 +417,22 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
     text: textContent,
     html: htmlContent,
   };
+
+  // 1. HTTPS Cloud API (Bypasses Render/cloud SMTP port blocks on port 465/587)
+  try {
+    const httpsResult = await sendViaHttpsProvider({
+      to,
+      name,
+      subject,
+      text: textContent,
+      html: htmlContent,
+    });
+    if (httpsResult) {
+      return { ...httpsResult, otp };
+    }
+  } catch (httpsErr) {
+    console.warn(`[Email Service] HTTPS provider error (${httpsErr.message}). Attempting SMTP fallback...`);
+  }
 
   try {
     const config = await getTransporter();
