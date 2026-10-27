@@ -71,16 +71,11 @@ export const register = async (req, res, next) => {
     });
 
     const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
-    const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-    const provideOtpOnScreen =
-      process.env.ALLOW_OTP_PREVIEW === 'true' ||
-      (isDev && !isLiveDelivered);
+    const isTestEnv = process.env.NODE_ENV === 'test';
 
     sendTokenCookie(user, 201, res, {
-      message: isLiveDelivered || !provideOtpOnScreen
-        ? 'Registration successful! A 6-digit verification code has been sent to your email.'
-        : `Registration successful! (Dev fallback code: ${otp})`,
-      devOtp: provideOtpOnScreen ? otp : undefined,
+      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+      devOtp: isTestEnv ? otp : undefined,
       emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });
@@ -249,17 +244,12 @@ export const resendVerificationOtp = async (req, res, next) => {
     });
 
     const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
-    const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-    const provideOtpOnScreen =
-      process.env.ALLOW_OTP_PREVIEW === 'true' ||
-      (isDev && !isLiveDelivered);
+    const isTestEnv = process.env.NODE_ENV === 'test';
 
     res.status(200).json({
       success: true,
-      message: isLiveDelivered || !provideOtpOnScreen
-        ? 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.'
-        : `A new verification code has been generated: ${otp} (Dev fallback code).`,
-      devOtp: provideOtpOnScreen ? otp : undefined,
+      message: 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.',
+      devOtp: isTestEnv ? otp : undefined,
       emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });
@@ -335,17 +325,12 @@ export const forgotPassword = async (req, res, next) => {
     });
 
     const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
-    const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
-    const provideOtpOnScreen =
-      process.env.ALLOW_OTP_PREVIEW === 'true' ||
-      (isDev && !isLiveDelivered);
+    const isTestEnv = process.env.NODE_ENV === 'test';
 
     res.status(200).json({
       success: true,
-      message: isLiveDelivered || !provideOtpOnScreen
-        ? 'A 6-digit password reset verification code has been dispatched to your email.'
-        : `Password reset code: ${otp} (Dev fallback code).`,
-      devOtp: provideOtpOnScreen ? otp : undefined,
+      message: 'A 6-digit password reset verification code has been dispatched to your email.',
+      devOtp: isTestEnv ? otp : undefined,
       emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
     });

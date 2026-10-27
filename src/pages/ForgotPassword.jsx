@@ -33,7 +33,6 @@ export function ForgotPassword() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [previewUrl, setPreviewUrl] = useState('');
   const [countdown, setCountdown] = useState(0);
 
@@ -68,7 +67,6 @@ export function ForgotPassword() {
         setStep('verify');
         setCountdown(60);
         setSuccessMsg(res.message || 'Verification code sent to your email.');
-        if (res.devOtp) setDevOtp(res.devOtp);
         if (res.previewUrl) setPreviewUrl(res.previewUrl);
         setTimeout(() => {
           inputRefs.current[0]?.focus();
@@ -127,7 +125,6 @@ export function ForgotPassword() {
       if (res.success) {
         setCountdown(60);
         setSuccessMsg('A fresh verification code has been dispatched to your email.');
-        if (res.devOtp) setDevOtp(res.devOtp);
         if (res.previewUrl) setPreviewUrl(res.previewUrl);
         setOtp(['', '', '', '', '', '']);
         inputRefs.current[0]?.focus();
@@ -284,28 +281,6 @@ export function ForgotPassword() {
                   <span className="text-white font-semibold">{email}</span>.
                 </p>
               </div>
-
-              {/* Dev mode / Ethereal helper */}
-              {devOtp && (
-                <div className="mt-4 p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 text-xs flex items-center justify-between">
-                  <div>
-                    <span className="font-semibold">Local Dev Code:</span>{' '}
-                    <span className="font-mono tracking-widest text-white font-bold ml-1">
-                      {devOtp}
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      const digits = devOtp.split('');
-                      setOtp(digits);
-                    }}
-                    className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-[11px] transition"
-                  >
-                    Auto-Fill
-                  </button>
-                </div>
-              )}
 
               {previewUrl && (
                 <div className="mt-2 text-center">
