@@ -482,4 +482,105 @@ describe('StudyMate Complete API Test Suite', () => {
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.token).toBeDefined();
   }, 25000);
+
+  // 20. Notification Management System
+  test('Creates, fetches, marks read, and deletes notifications', async () => {
+    const userReg = await request(app).post('/api/v1/auth/register').send({
+      name: 'Notification Tester',
+      email: 'notif@example.com',
+      password: 'Password123!',
+      department: 'MCA',
+      semester: '2nd Semester',
+    });
+    const token = userReg.body.token;
+    const userId = userReg.body.user._id || userReg.body.user.id;
+
+    // Helper: direct insert
+    const { Notification } = await import('../src/models/Notification.js');
+    const createdNotif = await Notification.create({
+      recipient: userId,
+      type: 'system',
+      title: 'Welcome to StudyMate',
+      message: 'Explore your groups and study sessions.',
+      isRead: false,
+    });
+
+    // 1. Fetch notifications
+    const getRes = await request(app)
+      .get('/api/v1/notifications')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.success).toBe(true);
+    expect(getRes.body.unreadCount).toBeGreaterThanOrEqual(1);
+    expect(getRes.body.notifications.some((n) => n._id.toString() === createdNotif._id.toString())).toBe(true);
+
+    // 2. Mark single as read
+    const markReadRes = await request(app)
+      .patch(`/api/v1/notifications/${createdNotif._id}/read`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(markReadRes.status).toBe(200);
+    expect(markReadRes.body.notification.isRead).toBe(true);
+
+    // 3. Mark all as read
+    const markAllRes = await request(app)
+      .patch('/api/v1/notifications/read-all')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(markAllRes.status).toBe(200);
+    expect(markAllRes.body.unreadCount).toBe(0);
+
+    // 4. Delete notification
+    const delRes = await request(app)
+      .delete(`/api/v1/notifications/${createdNotif._id}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(delRes.status).toBe(200);
+    expect(delRes.body.success).toBe(true);
+  });
+
+  // 21. Token-Based Password Reset Route
+  test('Validates reset token and allows password reset via token endpoint', async () => {
+    await request(app).post('/api/v1/auth/register').send({
+      name: 'Token Reset Tester',
+      email: 'tokenuser@example.com',
+      password: 'OldPassword123!',
+      department: 'MCA',
+      semester: '2nd Semester',
+    });
+
+    const forgotRes = await request(app)
+      .post('/api/v1/auth/forgot-password')
+      .send({ email: 'tokenuser@example.com' });
+
+    const resetToken = forgotRes.body.devOtp;
+    expect(resetToken).toBeDefined();
+
+    // Validate token GET endpoint
+    const validateRes = await request(app)
+      .get(`/api/v1/auth/reset-password/${resetToken}`);
+
+    expect(validateRes.status).toBe(200);
+    expect(validateRes.body.valid).toBe(true);
+
+    // Reset password via POST with token param
+    const postResetRes = await request(app)
+      .post(`/api/v1/auth/reset-password/${resetToken}`)
+      .send({ newPassword: 'BrandNewPassword123!' });
+
+    expect(postResetRes.status).toBe(200);
+    expect(postResetRes.body.success).toBe(true);
+
+    // Login with the new password
+    const loginRes = await request(app)
+      .post('/api/v1/auth/login')
+      .send({
+        email: 'tokenuser@example.com',
+        password: 'BrandNewPassword123!',
+      });
+
+    expect(loginRes.status).toBe(200);
+    expect(loginRes.body.token).toBeDefined();
+  });
 });

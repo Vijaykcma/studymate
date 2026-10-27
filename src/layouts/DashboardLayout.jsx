@@ -17,14 +17,39 @@ import {
   Terminal,
   ShieldCheck,
   AlertTriangle,
+  Bell,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import notificationService from '../services/notificationService';
 
 export const DashboardLayout = ({ children }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    let isMounted = true;
+    const loadUnread = async () => {
+      try {
+        const res = await notificationService.getNotifications({ unreadOnly: 'true' });
+        if (isMounted && res.success) {
+          setUnreadCount(res.unreadCount || 0);
+        }
+      } catch {
+        // Silent fallback
+      }
+    };
+
+    if (user) {
+      loadUnread();
+    }
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, location.pathname]);
 
   const handleLogout = async () => {
     await logout();
@@ -38,6 +63,7 @@ export const DashboardLayout = ({ children }) => {
     { label: 'Study Sessions', path: '/sessions', icon: CalendarDays },
     { label: 'Study Materials', path: '/materials', icon: BookOpen },
     { label: 'Messages', path: '/messages', icon: MessageCircle },
+    { label: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { label: 'Real-Time Executor', path: '/executor', icon: Terminal },
   ];
 
@@ -110,14 +136,21 @@ export const DashboardLayout = ({ children }) => {
                       key={item.path}
                       to={item.path}
                       onClick={() => setSidebarOpen(false)}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
+                      className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                         isActive
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
                           : 'text-slate-400 hover:text-white hover:bg-white/5'
                       }`}
                     >
-                      <Icon size={18} />
-                      <span>{item.label}</span>
+                      <div className="flex items-center gap-3">
+                        <Icon size={18} />
+                        <span>{item.label}</span>
+                      </div>
+                      {Boolean(item.badge) && item.badge > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500 text-white shadow-sm">
+                          {item.badge}
+                        </span>
+                      )}
                     </Link>
                   );
                 })}
@@ -226,8 +259,21 @@ export const DashboardLayout = ({ children }) => {
             <span className="font-bold text-sm">StudyMate</span>
           </Link>
 
-          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs">
-            {getInitials(user?.name)}
+          <div className="flex items-center gap-3">
+            <Link
+              to="/notifications"
+              className="relative p-2 text-slate-300 hover:text-white"
+              aria-label="View notifications"
+            >
+              <Bell size={20} />
+              {unreadCount > 0 && (
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-950" />
+              )}
+            </Link>
+
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs">
+              {getInitials(user?.name)}
+            </div>
           </div>
         </header>
 

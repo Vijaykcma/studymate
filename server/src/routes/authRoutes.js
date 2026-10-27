@@ -8,6 +8,7 @@ import {
   resendVerificationOtp,
   forgotPassword,
   resetPassword,
+  validateResetToken,
 } from '../controllers/authController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { validate } from '../middleware/validateMiddleware.js';
@@ -27,6 +28,18 @@ router.post('/login', validate(loginSchema), login);
 router.post('/verify-email', validate(verifyEmailSchema), verifyEmail);
 router.post('/resend-otp', validate(resendOtpSchema), resendVerificationOtp);
 router.post('/forgot-password', validate(forgotPasswordSchema), forgotPassword);
+router.get('/reset-password/:token', validateResetToken);
+router.post(
+  '/reset-password/:token',
+  (req, res, next) => {
+    if (req.params.token && !req.body.token) {
+      req.body.token = req.params.token;
+    }
+    next();
+  },
+  validate(resetPasswordSchema),
+  resetPassword
+);
 router.post('/reset-password', validate(resetPasswordSchema), resetPassword);
 router.post('/logout', logout);
 router.get('/me', protect, getMe);

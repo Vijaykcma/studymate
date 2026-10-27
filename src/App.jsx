@@ -26,6 +26,9 @@ import Profile from './pages/Profile';
 import Settings from './pages/Settings';
 import VerifyEmail from './pages/VerifyEmail';
 import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import EditGroup from './pages/EditGroup';
+import Notifications from './pages/Notifications';
 import RealTimeExecutor from './pages/RealTimeExecutor';
 import NotFound from './pages/NotFound';
 
@@ -76,6 +79,14 @@ function App() {
                 </PublicOnlyRoute>
               }
             />
+            <Route
+              path="/reset-password/:token"
+              element={
+                <PublicOnlyRoute>
+                  <ResetPassword />
+                </PublicOnlyRoute>
+              }
+            />
             <Route path="/verify-email" element={<VerifyEmail />} />
 
             {/* Administrator Auth Route */}
@@ -116,6 +127,14 @@ function App() {
               }
             />
             <Route
+              path="/groups/:groupId/edit"
+              element={
+                <ProtectedRoute>
+                  <EditGroup />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/groups/:groupId"
               element={
                 <ProtectedRoute>
@@ -150,12 +169,20 @@ function App() {
               }
             />
 
-            {/* Messaging */}
+            {/* Messaging & Notifications */}
             <Route
               path="/messages"
               element={
                 <ProtectedRoute>
                   <Messages />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <Notifications />
                 </ProtectedRoute>
               }
             />

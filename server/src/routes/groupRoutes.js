@@ -21,11 +21,20 @@ router.get('/', getGroups);
 router.post('/', protect, validate(createGroupSchema), createGroup);
 router.get('/:groupId', getGroupById);
 router.patch('/:groupId', protect, validate(updateGroupSchema), updateGroup);
+router.put('/:groupId', protect, validate(updateGroupSchema), updateGroup);
 router.delete('/:groupId', protect, deleteGroup);
 router.post('/:groupId/join', protect, joinGroup);
 router.post('/:groupId/leave', protect, leaveGroup);
 router.get('/:groupId/members', getGroupMembers);
 router.get('/:groupId/requests', protect, getGroupJoinRequests);
 router.patch('/:groupId/requests/:userId', protect, handleJoinRequest);
+router.post('/:groupId/requests/:userId/approve', protect, (req, res, next) => {
+  req.body.action = 'approve';
+  handleJoinRequest(req, res, next);
+});
+router.post('/:groupId/requests/:userId/reject', protect, (req, res, next) => {
+  req.body.action = 'reject';
+  handleJoinRequest(req, res, next);
+});
 
 export default router;

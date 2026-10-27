@@ -354,19 +354,68 @@ export const forgotPassword = async (req, res, next) => {
   }
 };
 
+export const validateResetToken = async (req, res, next) => {
+  try {
+    const rawToken = req.params.token || req.query.token;
+    if (!rawToken) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Password reset token is required.',
+      });
+    }
+
+    const token = rawToken.trim();
+    const user = await User.findOne({
+      passwordResetOtp: token,
+      passwordResetExpires: { $gt: new Date() },
+    }).select('name email');
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Invalid or expired password reset link.',
+      });
+    }
+
+    // Mask user email for privacy
+    const [namePart, domainPart] = user.email.split('@');
+    const maskedEmail = `${namePart.slice(0, 2)}***@${domainPart}`;
+
+    res.status(200).json({
+      success: true,
+      valid: true,
+      email: maskedEmail,
+      name: user.name,
+      message: 'Reset token is valid.',
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const resetPassword = async (req, res, next) => {
   try {
-    const { email, otp, newPassword } = req.body;
-    const normalizedEmail = email.toLowerCase().trim();
+    const { email, otp, token, newPassword } = req.body;
+    const providedCode = (token || req.params.token || otp || '').trim();
 
-    const user = await User.findOne({ email: normalizedEmail }).select(
-      '+password +passwordResetOtp +passwordResetExpires +passwordResetAttempts'
-    );
+    let user;
+    if (email) {
+      const normalizedEmail = email.toLowerCase().trim();
+      user = await User.findOne({ email: normalizedEmail }).select(
+        '+password +passwordResetOtp +passwordResetExpires +passwordResetAttempts'
+      );
+    } else if (providedCode) {
+      user = await User.findOne({ passwordResetOtp: providedCode }).select(
+        '+password +passwordResetOtp +passwordResetExpires +passwordResetAttempts'
+      );
+    }
 
     if (!user) {
       return res.status(404).json({
         success: false,
-        message: 'No account registered with this email address.',
+        message: 'No account registered with this reset code.',
       });
     }
 
@@ -395,7 +444,7 @@ export const resetPassword = async (req, res, next) => {
       });
     }
 
-    if (user.passwordResetOtp !== otp.trim()) {
+    if (user.passwordResetOtp !== providedCode) {
       user.passwordResetAttempts = (user.passwordResetAttempts || 0) + 1;
       await user.save();
       const attemptsRemaining = 5 - user.passwordResetAttempts;

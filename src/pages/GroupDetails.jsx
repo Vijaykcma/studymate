@@ -24,6 +24,7 @@ import {
   Check,
   X,
   UserCheck,
+  Edit3,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, sessionsAPI, materialsAPI } from '../services/api';
@@ -288,6 +289,15 @@ function GroupDetails() {
                   >
                     <MessageCircle size={16} /> Open Discussions
                   </Link>
+
+                  {(isCreator || user?.role === 'admin') && (
+                    <Link
+                      to={`/groups/${group._id}/edit`}
+                      className="px-5 py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 font-semibold text-xs text-indigo-300 transition flex items-center justify-center gap-2"
+                    >
+                      <Edit3 size={16} /> Edit Group Details
+                    </Link>
+                  )}
 
                   {!isCreator && (
                     <button

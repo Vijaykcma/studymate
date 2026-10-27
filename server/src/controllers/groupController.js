@@ -1,4 +1,5 @@
 import { StudyGroup } from '../models/StudyGroup.js';
+import { createNotificationHelper } from './notificationController.js';
 
 export const getGroups = async (req, res, next) => {
   try {
@@ -271,6 +272,17 @@ export const joinGroup = async (req, res, next) => {
 
     await group.save();
 
+    // Trigger notification to group creator
+    createNotificationHelper({
+      recipient: group.creator,
+      sender: req.user._id,
+      type: 'membership_request',
+      title: 'New Study Group Join Request',
+      message: `${req.user.name || 'A student'} has requested to join your group "${group.name}".`,
+      relatedGroup: group._id,
+      actionUrl: `/groups/${group._id}`,
+    });
+
     const updatedGroup = await StudyGroup.findById(group._id)
       .populate('creator', 'name email department semester bio')
       .populate('members.user', 'name email department semester avatar')
@@ -438,6 +450,17 @@ export const handleJoinRequest = async (req, res, next) => {
 
       await group.save();
 
+      // Notify the requester of approval
+      createNotificationHelper({
+        recipient: userId,
+        sender: req.user._id,
+        type: 'membership_approved',
+        title: 'Group Join Request Approved!',
+        message: `Your request to join "${group.name}" was approved! Welcome to the group.`,
+        relatedGroup: group._id,
+        actionUrl: `/groups/${group._id}`,
+      });
+
       const updatedGroup = await StudyGroup.findById(groupId)
         .populate('creator', 'name email department semester bio')
         .populate('members.user', 'name email department semester avatar')
@@ -455,6 +478,17 @@ export const handleJoinRequest = async (req, res, next) => {
       request.status = 'rejected';
       request.reviewedAt = new Date();
       await group.save();
+
+      // Notify requester of rejection
+      createNotificationHelper({
+        recipient: userId,
+        sender: req.user._id,
+        type: 'membership_rejected',
+        title: 'Group Join Request Status',
+        message: `Your request to join "${group.name}" was declined by the group administrator.`,
+        relatedGroup: group._id,
+        actionUrl: `/groups`,
+      });
 
       const updatedGroup = await StudyGroup.findById(groupId)
         .populate('creator', 'name email department semester bio')
