@@ -246,6 +246,15 @@ export const resendVerificationOtp = async (req, res, next) => {
     const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
     const isTestEnv = process.env.NODE_ENV === 'test';
 
+    if (!emailResult?.success && !isTestEnv) {
+      return res.status(502).json({
+        success: false,
+        message: emailResult?.error
+          ? `Email delivery failed (${emailResult.error}). Render Free Tier blocks SMTP ports 465/587; please add BREVO_API_KEY to your Render Dashboard -> Environment.`
+          : 'Email delivery failed. Please ensure your email service (Brevo/Gmail) is configured in the Render Dashboard.',
+      });
+    }
+
     res.status(200).json({
       success: true,
       message: 'A fresh 6-digit verification code has been dispatched. Please check your Inbox and Spam/Junk folder.',
@@ -326,6 +335,15 @@ export const forgotPassword = async (req, res, next) => {
 
     const isLiveDelivered = Boolean(emailResult?.emailDelivered || (emailResult?.success && emailResult?.isLive));
     const isTestEnv = process.env.NODE_ENV === 'test';
+
+    if (!emailResult?.success && !isTestEnv) {
+      return res.status(502).json({
+        success: false,
+        message: emailResult?.error
+          ? `Email delivery failed (${emailResult.error}). Render Free Tier blocks SMTP ports 465/587; please add BREVO_API_KEY to your Render Dashboard -> Environment.`
+          : 'Email delivery failed. Please ensure your email service (Brevo/Gmail) is configured in the Render Dashboard.',
+      });
+    }
 
     res.status(200).json({
       success: true,
