@@ -148,72 +148,84 @@ const getTransporter = async () => {
 };
 
 /**
- * Cloud HTTP-based email provider (Resend / Brevo).
+ * Cloud HTTP-based email provider (Brevo / Resend).
  * Communicates over standard HTTPS (Port 443), completely bypassing Render's SMTP port blocks.
  */
 const sendViaHttpsProvider = async ({ to, name, subject, text, html }) => {
-  const resendKey = cleanEnv(process.env.RESEND_API_KEY);
-  if (resendKey) {
-    const rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.RESEND_FROM || 'StudyMate <onboarding@resend.dev>');
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: rawFrom,
-        to: [to],
-        subject,
-        html,
-        text,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || `Resend API Error: ${res.statusText}`);
-    }
-    console.log(`[Email Service (Resend HTTPS API)] Email delivered to ${to}. MessageId: ${data.id}`);
-    return {
-      success: true,
-      emailDelivered: true,
-      messageId: data.id,
-      isLive: true,
-      serviceName: 'Resend Cloud API (HTTPS)',
-    };
-  }
-
   const brevoKey = cleanEnv(process.env.BREVO_API_KEY);
   if (brevoKey) {
-    const senderEmail = cleanEnv(process.env.EMAIL_USER || process.env.BREVO_SENDER_EMAIL || 'aiinterviewbotvk@gmail.com');
-    const senderName = cleanEnv(process.env.BREVO_SENDER_NAME || 'StudyMate Platform');
-    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': brevoKey,
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      body: JSON.stringify({
-        sender: { name: senderName, email: senderEmail },
-        to: [{ email: to, name: name || 'Student' }],
-        subject,
-        htmlContent: html,
-        textContent: text,
-      }),
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.message || `Brevo API Error: ${res.statusText}`);
+    if (brevoKey.includes('your_') || brevoKey.includes('placeholder') || brevoKey === 'xkeysib-your_copied_api_key_here') {
+      console.warn(
+        '[Email Service Warning] BREVO_API_KEY contains placeholder text. You must generate a real API key from https://app.brevo.com (SMTP & API -> API Keys).'
+      );
+    } else {
+      const senderEmail = cleanEnv(process.env.EMAIL_USER || process.env.BREVO_SENDER_EMAIL || 'aiinterviewbotvk@gmail.com');
+      const senderName = cleanEnv(process.env.BREVO_SENDER_NAME || 'StudyMate Platform');
+      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+        method: 'POST',
+        headers: {
+          'api-key': brevoKey,
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          sender: { name: senderName, email: senderEmail },
+          to: [{ email: to, name: name || 'Student' }],
+          subject,
+          htmlContent: html,
+          textContent: text,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || `Brevo API Error: ${res.statusText}`);
+      }
+      console.log(`[Email Service (Brevo HTTPS API)] Email delivered to ${to}. MessageId: ${data.messageId}`);
+      return {
+        success: true,
+        emailDelivered: true,
+        messageId: data.messageId,
+        isLive: true,
+        serviceName: 'Brevo Cloud API (HTTPS)',
+      };
     }
-    console.log(`[Email Service (Brevo HTTPS API)] Email delivered to ${to}. MessageId: ${data.messageId}`);
-    return {
-      success: true,
-      emailDelivered: true,
-      messageId: data.messageId,
-      isLive: true,
-      serviceName: 'Brevo Cloud API (HTTPS)',
-    };
+  }
+
+  const resendKey = cleanEnv(process.env.RESEND_API_KEY);
+  if (resendKey) {
+    if (resendKey.includes('your_') || resendKey.includes('placeholder') || resendKey === 're_your_api_key_here') {
+      console.warn(
+        '[Email Service Warning] RESEND_API_KEY contains placeholder text. You must generate a real API key from https://resend.com.'
+      );
+    } else {
+      const rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.RESEND_FROM || 'StudyMate <onboarding@resend.dev>');
+      const res = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${resendKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: rawFrom,
+          to: [to],
+          subject,
+          html,
+          text,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.message || `Resend API Error: ${res.statusText}`);
+      }
+      console.log(`[Email Service (Resend HTTPS API)] Email delivered to ${to}. MessageId: ${data.id}`);
+      return {
+        success: true,
+        emailDelivered: true,
+        messageId: data.id,
+        isLive: true,
+        serviceName: 'Resend Cloud API (HTTPS)',
+      };
+    }
   }
 
   return null;
