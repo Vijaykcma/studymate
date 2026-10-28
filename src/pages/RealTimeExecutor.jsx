@@ -1722,12 +1722,14 @@ function RealTimeExecutor() {
             </div>
 
             {/* Tab Contents */}
-            <div className="flex-1 p-4 bg-slate-950 flex flex-col min-h-[460px] overflow-hidden">
+            <div className={`flex-1 p-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/60'} flex flex-col min-h-[460px] overflow-hidden transition-colors`}>
               {/* Output Terminal Tab */}
               {activeTab === 'output' && (
                 <div className="flex-1 flex flex-col font-mono text-xs overflow-y-auto">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-[11px] text-slate-500">
-                    <span className="flex items-center gap-1.5">
+                  <div className={`flex items-center justify-between pb-2 mb-2 border-b ${
+                    isDark ? 'border-white/5 text-slate-500' : 'border-slate-200 text-slate-500'
+                  } text-[11px]`}>
+                    <span className="flex items-center gap-1.5 font-sans font-semibold">
                       <span
                         className={`w-2 h-2 rounded-full ${
                           status === 'running'
@@ -1736,22 +1738,24 @@ function RealTimeExecutor() {
                             ? 'bg-emerald-400'
                             : status === 'error'
                             ? 'bg-rose-400'
-                            : 'bg-slate-600'
+                            : isDark ? 'bg-slate-600' : 'bg-slate-400'
                         }`}
                       />
-                      Status: {status.toUpperCase()}
+                      Status: <span className={isDark ? "text-slate-300" : "text-slate-700"}>{status.toUpperCase()}</span>
                     </span>
                     <button
                       onClick={() => setOutput('')}
-                      className="text-slate-500 hover:text-slate-300 transition"
+                      className={`${isDark ? 'text-slate-500 hover:text-slate-300' : 'text-slate-400 hover:text-slate-700'} font-sans font-medium transition cursor-pointer`}
                     >
                       Clear
                     </button>
                   </div>
 
-                  <pre className="flex-1 whitespace-pre-wrap break-all text-slate-300 leading-relaxed font-mono selection:bg-indigo-600/40">
+                  <pre className={`flex-1 whitespace-pre-wrap break-all ${
+                    isDark ? 'text-slate-300 selection:bg-indigo-600/40' : 'text-slate-800 selection:bg-indigo-100'
+                  } leading-relaxed font-mono`}>
                     {output || (
-                      <span className="text-slate-600 italic">
+                      <span className={`${isDark ? 'text-slate-600' : 'text-slate-400'} italic font-sans`}>
                         Click "Run Code" above or press Ctrl + Enter to execute. Standard output, metrics and return values will stream here in real-time.
                       </span>
                     )}
@@ -1764,11 +1768,13 @@ function RealTimeExecutor() {
                 <div className="flex-1 flex flex-col space-y-4 overflow-y-auto text-xs">
                   {/* Status Banner */}
                   {submissionStatus === 'all_passed' && (
-                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-3">
-                      <CheckCircle size={20} className="text-emerald-400 shrink-0" />
+                    <div className={`p-3.5 rounded-xl ${
+                      isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    } border flex items-center gap-3 shadow-sm`}>
+                      <CheckCircle size={20} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
                       <div>
                         <div className="font-bold text-sm">All Test Cases Passed! Accepted 🎉</div>
-                        <p className="text-[11px] text-emerald-400/80 mt-0.5">
+                        <p className={`text-[11px] ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'} mt-0.5`}>
                           Optimal solution verified. You have earned practical mastery on this MCA problem.
                         </p>
                       </div>
@@ -1776,11 +1782,13 @@ function RealTimeExecutor() {
                   )}
 
                   {submissionStatus === 'failed' && (
-                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-3">
-                      <XCircle size={20} className="text-rose-400 shrink-0" />
+                    <div className={`p-3.5 rounded-xl ${
+                      isDark ? 'bg-rose-500/10 border-rose-500/30 text-rose-300' : 'bg-rose-50 border-rose-200 text-rose-800'
+                    } border flex items-center gap-3 shadow-sm`}>
+                      <XCircle size={20} className={isDark ? "text-rose-400" : "text-rose-600"} />
                       <div>
                         <div className="font-bold text-sm">Wrong Answer / Test Failed</div>
-                        <p className="text-[11px] text-rose-400/80 mt-0.5">
+                        <p className={`text-[11px] ${isDark ? 'text-rose-400/80' : 'text-rose-700'} mt-0.5`}>
                           Inspect the failed test case comparison below and refine your algorithm.
                         </p>
                       </div>
@@ -1788,24 +1796,26 @@ function RealTimeExecutor() {
                   )}
 
                   {/* Test Cases Tabs */}
-                  <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                  <div className={`flex items-center gap-2 pb-2 border-b ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
                     {selectedProblem.testCases.map((tc, idx) => {
                       const res = testResults[tc.id];
                       return (
                         <button
                           key={tc.id}
                           onClick={() => setSelectedTestCaseIdx(idx)}
-                          className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 ${
+                          className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 cursor-pointer ${
                             selectedTestCaseIdx === idx
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-slate-900 text-slate-400 hover:text-white'
+                              ? 'bg-indigo-600 text-white shadow-sm'
+                              : isDark
+                              ? 'bg-slate-900 text-slate-400 hover:text-white'
+                              : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                           }`}
                         >
                           {res ? (
                             res.passed ? (
-                              <CheckCircle size={12} className="text-emerald-400" />
+                              <CheckCircle size={12} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
                             ) : (
-                              <XCircle size={12} className="text-rose-400" />
+                              <XCircle size={12} className={isDark ? "text-rose-400" : "text-rose-600"} />
                             )
                           ) : null}
                           <span>Case {idx + 1}</span>
@@ -1818,27 +1828,35 @@ function RealTimeExecutor() {
                   {selectedProblem.testCases[selectedTestCaseIdx] && (
                     <div className="space-y-3 font-mono">
                       <div>
-                        <span className="text-[11px] text-slate-400 font-sans block mb-1">Input:</span>
-                        <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-slate-200">
+                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600 font-semibold'} font-sans block mb-1`}>Input:</span>
+                        <div className={`p-3 rounded-xl ${
+                          isDark ? 'bg-slate-900 border-white/5 text-slate-200' : 'bg-white border-slate-200 text-slate-800 shadow-sm'
+                        } border`}>
                           {selectedProblem.testCases[selectedTestCaseIdx].input}
                         </div>
                       </div>
 
                       <div>
-                        <span className="text-[11px] text-slate-400 font-sans block mb-1">Expected Output:</span>
-                        <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-emerald-300">
+                        <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600 font-semibold'} font-sans block mb-1`}>Expected Output:</span>
+                        <div className={`p-3 rounded-xl ${
+                          isDark ? 'bg-slate-900 border-white/5 text-emerald-300' : 'bg-emerald-50/80 border-emerald-200 text-emerald-700 font-semibold shadow-sm'
+                        } border`}>
                           {selectedProblem.testCases[selectedTestCaseIdx].expected}
                         </div>
                       </div>
 
                       {testResults[selectedProblem.testCases[selectedTestCaseIdx].id] && (
                         <div>
-                          <span className="text-[11px] text-slate-400 font-sans block mb-1">Your Output:</span>
+                          <span className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600 font-semibold'} font-sans block mb-1`}>Your Output:</span>
                           <div
                             className={`p-3 rounded-xl border ${
                               testResults[selectedProblem.testCases[selectedTestCaseIdx].id].passed
-                                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
-                                : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+                                ? isDark
+                                  ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                                  : 'bg-emerald-50 border-emerald-300 text-emerald-800 font-semibold'
+                                : isDark
+                                ? 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+                                : 'bg-rose-50 border-rose-300 text-rose-800 font-semibold'
                             }`}
                           >
                             {testResults[selectedProblem.testCases[selectedTestCaseIdx].id].actual || '(Empty)'}
@@ -1853,13 +1871,15 @@ function RealTimeExecutor() {
               {/* Hints Tab */}
               {activeTab === 'hints' && appMode === 'problem-solving' && (
                 <div className="flex-1 flex flex-col space-y-3 overflow-y-auto text-xs">
-                  <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm mb-1">
+                  <div className={`flex items-center gap-2 ${isDark ? 'text-indigo-300' : 'text-indigo-700'} font-bold text-sm mb-1`}>
                     <Sparkles size={16} />
                     <span>Algorithmic Hints & Complexity Guide</span>
                   </div>
                   {selectedProblem.hints.map((hint, i) => (
-                    <div key={i} className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 text-slate-300 space-y-1">
-                      <div className="font-semibold text-indigo-400">Hint {i + 1}</div>
+                    <div key={i} className={`p-3.5 rounded-xl ${
+                      isDark ? 'bg-slate-900/80 border-white/5 text-slate-300' : 'bg-white border-slate-200 text-slate-700 shadow-sm'
+                    } border space-y-1`}>
+                      <div className={`font-semibold ${isDark ? 'text-indigo-400' : 'text-indigo-600 font-bold'}`}>Hint {i + 1}</div>
                       <p className="leading-relaxed">{hint}</p>
                     </div>
                   ))}
@@ -1869,21 +1889,25 @@ function RealTimeExecutor() {
               {/* Stdin Input Tab */}
               {activeTab === 'stdin' && (
                 <div className="flex-1 flex flex-col">
-                  <p className="text-xs text-slate-400 mb-2">
+                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-600 font-medium'} mb-2`}>
                     Enter standard input stream (stdin) passed to your program execution:
                   </p>
                   <textarea
                     value={inputStdin}
                     onChange={(e) => setInputStdin(e.target.value)}
                     placeholder="Enter numbers, lines of text, or test cases here..."
-                    className="flex-1 w-full rounded-xl border border-white/10 bg-slate-900 p-3.5 font-mono text-xs text-slate-200 outline-none focus:border-indigo-500 transition resize-none"
+                    className={`flex-1 w-full rounded-xl border ${
+                      isDark
+                        ? 'border-white/10 bg-slate-900 text-slate-200 placeholder-slate-500'
+                        : 'border-slate-200 bg-white text-slate-900 placeholder-slate-400 shadow-sm'
+                    } p-3.5 font-mono text-xs outline-none focus:border-indigo-500 transition resize-none`}
                   />
                 </div>
               )}
 
               {/* HTML / CSS Live Sandbox Canvas Tab */}
               {activeTab === 'preview' && (selectedLang === 'html' || selectedLang === 'css') && (
-                <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
+                <div className={`flex-1 flex flex-col ${isDark ? 'bg-white' : 'bg-white border border-slate-200 shadow-sm'} rounded-xl overflow-hidden`}>
                   <iframe
                     ref={iframeRef}
                     title="Live Preview"
@@ -1916,30 +1940,32 @@ function RealTimeExecutor() {
 
         {/* Share to Study Group Modal */}
         {shareModalOpen && typeof document !== 'undefined' && createPortal(
-          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
-              <div className="flex items-center justify-between pb-4 border-b border-white/10">
+          <div className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 ${isDark ? 'bg-black/80' : 'bg-slate-900/40'} backdrop-blur-md`}>
+            <div className={`w-full max-w-md rounded-2xl border ${
+              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900 shadow-2xl'
+            } p-6 shadow-2xl transition-colors`}>
+              <div className={`flex items-center justify-between pb-4 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
                 <div className="flex items-center gap-2.5">
-                  <Share2 size={18} className="text-indigo-400" />
+                  <Share2 size={18} className={isDark ? "text-indigo-400" : "text-indigo-600"} />
                   <h3 className="font-bold text-base">Share Code to Study Group</h3>
                 </div>
                 <button
                   onClick={() => setShareModalOpen(false)}
-                  className="text-slate-400 hover:text-white"
+                  className={`${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-400 hover:text-slate-700'} cursor-pointer`}
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {shareError && (
-                <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-xs flex items-center gap-2">
                   <AlertCircle size={15} />
                   <span>{shareError}</span>
                 </div>
               )}
 
               {shareSuccess && (
-                <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-xs flex items-center gap-2">
+                <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 text-xs flex items-center gap-2">
                   <CheckCircle2 size={15} />
                   <span>{shareSuccess}</span>
                 </div>
@@ -1947,7 +1973,7 @@ function RealTimeExecutor() {
 
               <form onSubmit={handleConfirmShare} className="mt-5 space-y-4">
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1.5">
+                  <label className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'} font-semibold block mb-1.5`}>
                     Snippet Title
                   </label>
                   <input
@@ -1955,23 +1981,31 @@ function RealTimeExecutor() {
                     value={shareTitle}
                     onChange={(e) => setShareTitle(e.target.value)}
                     placeholder="e.g. Two Sum Optimal Solution"
-                    className="w-full rounded-xl border border-white/10 bg-slate-950 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                    className={`w-full rounded-xl border ${
+                      isDark
+                        ? 'border-white/10 bg-slate-950 text-slate-200 focus:border-indigo-500'
+                        : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-indigo-600'
+                    } px-3.5 py-2.5 text-xs outline-none transition`}
                   />
                 </div>
 
                 <div>
-                  <label className="text-xs text-slate-300 font-medium block mb-1.5">
+                  <label className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-700'} font-semibold block mb-1.5`}>
                     Select Study Group
                   </label>
                   {userGroups.length === 0 ? (
-                    <p className="text-xs text-amber-400 bg-amber-500/10 p-3 rounded-xl border border-amber-500/20">
+                    <p className={`text-xs ${isDark ? 'text-amber-400 bg-amber-500/10 border-amber-500/20' : 'text-amber-700 bg-amber-50 border-amber-200'} p-3 rounded-xl border`}>
                       You are not a member of any study groups yet. Join or create a study group first to share code snippets.
                     </p>
                   ) : (
                     <select
                       value={selectedGroupId}
                       onChange={(e) => setSelectedGroupId(e.target.value)}
-                      className="w-full rounded-xl border border-white/10 bg-slate-950 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
+                      className={`w-full rounded-xl border ${
+                        isDark
+                          ? 'border-white/10 bg-slate-950 text-slate-200 focus:border-indigo-500'
+                          : 'border-slate-200 bg-slate-50 text-slate-900 focus:border-indigo-600'
+                      } px-3.5 py-2.5 text-xs outline-none transition cursor-pointer`}
                     >
                       {userGroups.map((group) => (
                         <option key={group._id} value={group._id}>
@@ -1986,7 +2020,9 @@ function RealTimeExecutor() {
                   <button
                     type="button"
                     onClick={() => setShareModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white transition"
+                    className={`px-4 py-2 rounded-xl text-xs ${
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900 border border-slate-200 hover:bg-slate-100'
+                    } transition cursor-pointer`}
                   >
                     Cancel
                   </button>
