@@ -117,6 +117,7 @@ app.use('/api/v1/groups', groupRoutes);
 app.use('/api/v1/sessions', sessionRoutes);
 app.use('/api/v1/materials', materialRoutes);
 app.use('/api/v1/groups', messageRoutes); // for /api/v1/groups/:groupId/messages
+app.use('/api/v1/messages', messageRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/executor', executorRoutes);
@@ -128,6 +129,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/sessions', sessionRoutes);
 app.use('/api/materials', materialRoutes);
 app.use('/api/groups', messageRoutes);
+app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
 

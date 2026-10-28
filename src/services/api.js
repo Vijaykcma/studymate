@@ -78,8 +78,12 @@ export const materialsAPI = {
 // Messages
 export const messagesAPI = {
   getByGroup: (groupId) => apiClient.get(`/groups/${groupId}/messages`).then((res) => res.data),
-  send: (groupId, content) =>
-    apiClient.post(`/groups/${groupId}/messages`, { content }).then((res) => res.data),
+  send: (groupId, content, extra = {}) =>
+    apiClient.post(`/groups/${groupId}/messages`, { content, ...extra }).then((res) => res.data),
+  getConversations: () => apiClient.get('/messages/conversations').then((res) => res.data),
+  getDirect: (userId) => apiClient.get(`/messages/direct/${userId}`).then((res) => res.data),
+  sendDirect: (userId, data) => apiClient.post(`/messages/direct/${userId}`, data).then((res) => res.data),
+  getPeers: (params) => apiClient.get('/messages/peers', { params }).then((res) => res.data),
 };
 
 // Users / Settings
