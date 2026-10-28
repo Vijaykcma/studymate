@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Play,
   RotateCcw,
@@ -1226,57 +1227,62 @@ function RealTimeExecutor() {
                 <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-200 transition" />
               </button>
 
-              {/* Language Search Dropdown / Popover Modal */}
-              {langSearchOpen && (
-                <>
+              {/* Full-View Searchable Language Modal Dialog (Rendered in Portal to prevent clipping) */}
+              {langSearchOpen && typeof document !== 'undefined' && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
                   <div
-                    className="fixed inset-0 z-40"
+                    className="fixed inset-0"
                     onClick={() => setLangSearchOpen(false)}
                   />
-                  <div className="absolute top-full left-0 mt-2 z-50 w-80 sm:w-96 rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl p-4 shadow-2xl space-y-3">
-                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
-                      <div className="flex items-center gap-2">
-                        <Code2 size={16} className="text-indigo-400" />
-                        <h4 className="text-xs font-bold text-white">Select Programming Language (20)</h4>
+                  <div className="relative z-10 w-full max-w-lg rounded-2xl border border-white/15 bg-slate-900 p-5 shadow-2xl shadow-black/80 space-y-4">
+                    <div className="flex items-center justify-between pb-3 border-b border-white/10">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
+                          <Code2 size={18} />
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-bold text-white">Select Programming Language (20)</h3>
+                          <p className="text-[11px] text-slate-400">Search or filter by curriculum and tech stack</p>
+                        </div>
                       </div>
                       <button
                         onClick={() => setLangSearchOpen(false)}
-                        className="text-slate-400 hover:text-white"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"
                       >
-                        <X size={15} />
+                        <X size={18} />
                       </button>
                     </div>
 
                     {/* Search Input Box */}
                     <div className="relative">
-                      <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+                      <Search size={16} className="absolute left-3.5 top-3 text-slate-400" />
                       <input
                         ref={searchInputRef}
                         type="text"
                         value={langSearchQuery}
                         onChange={(e) => setLangSearchQuery(e.target.value)}
-                        placeholder="Search language (e.g. Python, C#, Kotlin, SQL)..."
-                        className="w-full rounded-xl border border-white/10 bg-slate-950 pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition"
+                        placeholder="Search language (e.g. Python, C#, Kotlin, SQL, Dart)..."
+                        className="w-full rounded-xl border border-white/10 bg-slate-950 pl-10 pr-9 py-2.5 text-xs sm:text-sm text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition"
                       />
                       {langSearchQuery && (
                         <button
                           onClick={() => setLangSearchQuery('')}
-                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                          className="absolute right-3 top-3 text-slate-400 hover:text-white"
                         >
-                          <X size={14} />
+                          <X size={15} />
                         </button>
                       )}
                     </div>
 
                     {/* Quick Filter Category Chips */}
-                    <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                    <div className="flex flex-wrap items-center gap-1.5 text-xs">
                       {['All', 'Popular in India', 'Web & MERN', 'Mobile', 'Data Science'].map((cat) => (
                         <button
                           key={cat}
                           onClick={() => setLangCategoryFilter(cat)}
-                          className={`px-2 py-1 rounded-lg font-medium transition cursor-pointer ${
+                          className={`px-3 py-1.5 rounded-xl font-medium transition cursor-pointer text-xs ${
                             langCategoryFilter === cat
-                              ? 'bg-indigo-600 text-white font-bold'
+                              ? 'bg-indigo-600 text-white font-bold shadow-md shadow-indigo-600/30'
                               : 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
                           }`}
                         >
@@ -1285,51 +1291,54 @@ function RealTimeExecutor() {
                       ))}
                     </div>
 
-                    {/* Filtered Languages List */}
-                    <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 font-sans text-xs">
+                    {/* Filtered Languages 2-Column Grid */}
+                    <div className="max-h-72 overflow-y-auto pr-1 font-sans text-xs">
                       {filteredLanguages.length === 0 ? (
-                        <div className="p-4 text-center text-slate-500 text-xs italic">
+                        <div className="p-6 text-center text-slate-500 text-xs italic">
                           No matching languages found for "{langSearchQuery}".
                         </div>
                       ) : (
-                        filteredLanguages.map((lang) => (
-                          <button
-                            key={lang.id}
-                            onClick={() => handleLanguageChange(lang.id)}
-                            className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition cursor-pointer ${
-                              selectedLang === lang.id
-                                ? 'bg-indigo-600/30 border border-indigo-500/50 text-white'
-                                : 'hover:bg-white/5 text-slate-300 hover:text-white border border-transparent'
-                            }`}
-                          >
-                            <div className="flex items-center gap-2.5 min-w-0">
-                              <span className="w-8 h-8 rounded-lg bg-slate-950 border border-white/10 flex items-center justify-center font-mono text-[11px] font-bold text-indigo-300 shrink-0 uppercase">
-                                .{lang.extension}
-                              </span>
-                              <div className="truncate">
-                                <div className="font-semibold truncate flex items-center gap-1.5">
-                                  <span>{lang.name}</span>
-                                  {lang.popularInIndia && (
-                                    <span className="text-[10px] text-amber-400/90 font-mono" title="High demand in Indian Tech Industry">
-                                      🇮🇳
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-[10px] text-slate-500 block truncate">
-                                  {lang.category}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          {filteredLanguages.map((lang) => (
+                            <button
+                              key={lang.id}
+                              onClick={() => handleLanguageChange(lang.id)}
+                              className={`flex items-center justify-between p-2.5 rounded-xl text-left transition cursor-pointer border ${
+                                selectedLang === lang.id
+                                  ? 'bg-indigo-600/25 border-indigo-500 text-white shadow-sm'
+                                  : 'bg-slate-950/60 hover:bg-white/5 text-slate-300 hover:text-white border-white/5'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2.5 min-w-0">
+                                <span className="w-8 h-8 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center font-mono text-[11px] font-bold text-indigo-300 shrink-0 uppercase">
+                                  .{lang.extension}
                                 </span>
+                                <div className="truncate">
+                                  <div className="font-semibold truncate flex items-center gap-1 text-xs">
+                                    <span>{lang.name}</span>
+                                    {lang.popularInIndia && (
+                                      <span className="text-[10px] text-amber-400" title="High demand in Indian Tech Industry">
+                                        🇮🇳
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[10px] text-slate-500 block truncate">
+                                    {lang.category}
+                                  </span>
+                                </div>
                               </div>
-                            </div>
 
-                            {selectedLang === lang.id && (
-                              <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-                            )}
-                          </button>
-                        ))
+                              {selectedLang === lang.id && (
+                                <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       )}
                     </div>
                   </div>
-                </>
+                </div>,
+                document.body
               )}
             </div>
 
@@ -1812,8 +1821,8 @@ function RealTimeExecutor() {
         </div>
 
         {/* Share to Study Group Modal */}
-        {shareModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        {shareModalOpen && typeof document !== 'undefined' && createPortal(
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-slate-900 p-6 shadow-2xl">
               <div className="flex items-center justify-between pb-4 border-b border-white/10">
                 <div className="flex items-center gap-2.5">
@@ -1907,7 +1916,8 @@ function RealTimeExecutor() {
                 </div>
               </form>
             </div>
-          </div>
+          </div>,
+          document.body
         )}
       </div>
     </DashboardLayout>
