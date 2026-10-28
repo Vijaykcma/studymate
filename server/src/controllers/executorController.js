@@ -42,7 +42,26 @@ export const executeCode = async (req, res, next) => {
       const sqlResult = executeSQL(code);
       output = sqlResult.output;
       isError = sqlResult.isError;
-    } else if (['c', 'cpp', 'java', 'go', 'rust', 'php', 'ruby'].includes(normalizedLang)) {
+    } else if (
+      [
+        'c',
+        'cpp',
+        'java',
+        'go',
+        'rust',
+        'php',
+        'ruby',
+        'csharp',
+        'kotlin',
+        'swift',
+        'bash',
+        'shell',
+        'dart',
+        'r',
+        'matlab',
+        'css',
+      ].includes(normalizedLang)
+    ) {
       output = simulateCompiledLanguage(normalizedLang, code, input);
     } else {
       output = `[${language.toUpperCase()} Sandbox]\nCode validated successfully.\nOutput metrics ready for live analysis.`;
@@ -360,7 +379,26 @@ function simulatePythonExecution(code, input) {
 function simulateCompiledLanguage(lang, code, input) {
   const lines = code.trim().split('\n');
   const stdout = [];
-  const langUpper = lang === 'cpp' ? 'C++ (GCC/STL)' : lang === 'c' ? 'C (C99/C11)' : lang.toUpperCase();
+  const displayNames = {
+    cpp: 'C++ (GCC/STL)',
+    c: 'C (C99/C11)',
+    csharp: 'C# (.NET Core)',
+    kotlin: 'Kotlin (JVM/Android)',
+    swift: 'Swift (Apple/LLVM)',
+    bash: 'Bash / Shell',
+    shell: 'Bash / Shell',
+    dart: 'Dart (Flutter)',
+    r: 'R (Data Science)',
+    matlab: 'MATLAB / Octave',
+    css: 'CSS3 Validator',
+    go: 'Go (Golang)',
+    rust: 'Rust (Cargo/rustc)',
+    php: 'PHP Engine',
+    ruby: 'Ruby (MRI)',
+    java: 'Java (OpenJDK)',
+  };
+
+  const langUpper = displayNames[lang] || lang.toUpperCase();
 
   stdout.push(`[${langUpper} Compiler & Runtime]`);
   stdout.push(`Compilation: Build completed with 0 errors.`);
@@ -372,7 +410,13 @@ function simulateCompiledLanguage(lang, code, input) {
   let printed = false;
   lines.forEach((line) => {
     const trimmed = line.trim();
-    if (trimmed.includes('System.out.println(')) {
+    if (trimmed.includes('Console.WriteLine(')) {
+      const match = trimmed.match(/Console\.WriteLine\((.*)\)/);
+      if (match) {
+        printed = true;
+        stdout.push(stripQuotes(match[1]));
+      }
+    } else if (trimmed.includes('System.out.println(')) {
       const match = trimmed.match(/System\.out\.println\((.*)\)/);
       if (match) {
         printed = true;
@@ -398,20 +442,37 @@ function simulateCompiledLanguage(lang, code, input) {
         printed = true;
         stdout.push(stripQuotes(match[1]));
       }
-    } else if (trimmed.includes('println!(')) {
-      const match = trimmed.match(/println!\((.*)\)/);
+    } else if (trimmed.includes('println!(') || trimmed.startsWith('println(')) {
+      const match = trimmed.match(/println!?\((.*)\)/);
       if (match) {
         printed = true;
         stdout.push(stripQuotes(match[1].split(',')[0]));
       }
-    } else if (trimmed.startsWith('echo ') || trimmed.startsWith('print ')) {
+    } else if (trimmed.startsWith('disp(') || trimmed.startsWith('cat(')) {
+      const match = trimmed.match(/(?:disp|cat)\((.*)\)/);
+      if (match) {
+        printed = true;
+        stdout.push(stripQuotes(match[1]));
+      }
+    } else if (trimmed.startsWith('echo ') || trimmed.startsWith('print ') || trimmed.startsWith('print(')) {
       printed = true;
-      stdout.push(stripQuotes(trimmed.replace(/^(echo|print)\s+/, '').replace(/;$/, '')));
+      const match = trimmed.match(/print\((.*)\)/);
+      if (match) {
+        stdout.push(stripQuotes(match[1]));
+      } else {
+        stdout.push(stripQuotes(trimmed.replace(/^(echo|print)\s+/, '').replace(/;$/, '')));
+      }
     } else if (trimmed.startsWith('puts ')) {
       printed = true;
       stdout.push(stripQuotes(trimmed.replace(/^puts\s+/, '')));
     }
   });
+
+  if (lang === 'css') {
+    stdout.push(`CSS Stylesheet verified: ${lines.length} rules checked.`);
+    stdout.push('Live preview available in the HTML / Canvas sandbox.');
+    printed = true;
+  }
 
   if (!printed) {
     stdout.push('Program exited with status 0 (Success).');

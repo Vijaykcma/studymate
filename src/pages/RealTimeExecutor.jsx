@@ -19,21 +19,28 @@ import {
   HelpCircle,
   Award,
   Sparkles,
-  ChevronRight,
   Database,
   BookOpen,
   CheckCircle,
   XCircle,
+  Search,
+  ChevronDown,
+  Layers,
+  Flame,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { executorAPI, groupsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
-// Multi-Language Code Presets
+// Comprehensive 20 Programming Languages Catalog
 const CODE_PRESETS = {
   javascript: {
+    id: 'javascript',
     name: 'JavaScript (Node.js)',
     extension: 'js',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 1,
     defaultCode: `// StudyMate Real-Time JavaScript Executor
 function binarySearch(arr, target) {
   let left = 0;
@@ -61,8 +68,12 @@ console.log(\`Result: Target found at index \${index}\`);
 `,
   },
   python: {
+    id: 'python',
     name: 'Python 3',
     extension: 'py',
+    category: 'Data Science & AI',
+    popularInIndia: true,
+    rank: 2,
     defaultCode: `# StudyMate Real-Time Python 3 Executor
 # QuickSort Algorithm Implementation
 
@@ -83,21 +94,13 @@ print("Min Element:", sorted_data[0])
 print("Max Element:", sorted_data[-1])
 `,
   },
-  sql: {
-    name: 'SQL (Relational DB)',
-    extension: 'sql',
-    defaultCode: `-- StudyMate Interactive SQL Query Engine
--- Querying MCA Academic Database (students & marks)
-
-SELECT id, name, department, semester, cgpa 
-FROM students 
-WHERE cgpa > 8.0 
-ORDER BY cgpa DESC;
-`,
-  },
   java: {
+    id: 'java',
     name: 'Java (OpenJDK)',
     extension: 'java',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 3,
     defaultCode: `// StudyMate Real-Time Java Executor
 public class Main {
     public static void main(String[] args) {
@@ -113,49 +116,13 @@ public class Main {
 }
 `,
   },
-  cpp: {
-    name: 'C++ (STL / GCC)',
-    extension: 'cpp',
-    defaultCode: `// StudyMate Real-Time C++ Executor
-#include <iostream>
-#include <vector>
-#include <algorithm>
-using namespace std;
-
-int main() {
-    vector<int> scores = {88, 95, 72, 64, 100, 83};
-    cout << "Original Scores Count: " << scores.size() << endl;
-
-    sort(scores.begin(), scores.end(), greater<int>());
-    cout << "Top 3 Scores:" << endl;
-    for (int i = 0; i < 3 && i < (int)scores.size(); ++i) {
-        cout << "#" << (i + 1) << ": " << scores[i] << endl;
-    }
-    return 0;
-}
-`,
-  },
-  c: {
-    name: 'C (Standard C99)',
-    extension: 'c',
-    defaultCode: `// StudyMate Real-Time C Executor
-#include <stdio.h>
-
-int main() {
-    int matrix[2][2] = {{1, 2}, {3, 4}};
-    int det = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
-    
-    printf("Matrix 2x2 Determinant Calculation\\n");
-    printf("[ %d  %d ]\\n", matrix[0][0], matrix[0][1]);
-    printf("[ %d  %d ]\\n", matrix[1][0], matrix[1][1]);
-    printf("Determinant = %d\\n", det);
-    return 0;
-}
-`,
-  },
   typescript: {
+    id: 'typescript',
     name: 'TypeScript',
     extension: 'ts',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 4,
     defaultCode: `// StudyMate TypeScript Executor
 interface StudentRecord {
   id: number;
@@ -177,49 +144,77 @@ console.log("Academic Semester:", student.semester);
 console.log("Calculated GPA:", gpa.toFixed(2));
 `,
   },
-  go: {
-    name: 'Go (Golang)',
-    extension: 'go',
-    defaultCode: `package main
+  cpp: {
+    id: 'cpp',
+    name: 'C++ (STL / GCC)',
+    extension: 'cpp',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 5,
+    defaultCode: `// StudyMate Real-Time C++ Executor
+#include <iostream>
+#include <vector>
+#include <algorithm>
+using namespace std;
 
-import "fmt"
+int main() {
+    vector<int> scores = {88, 95, 72, 64, 100, 83};
+    cout << "Original Scores Count: " << scores.size() << endl;
 
-func main() {
-    fmt.Println("StudyMate Real-Time Go Environment")
-    items := []string{"Data Structures", "Computer Networks", "DBMS", "Operating Systems"}
-    for idx, subject := range items {
-        fmt.Printf("[%d] MCA Core Module: %s\\n", idx+1, subject)
+    sort(scores.begin(), scores.end(), greater<int>());
+    cout << "Top 3 Scores:" << endl;
+    for (int i = 0; i < 3 && i < (int)scores.size(); ++i) {
+        cout << "#" << (i + 1) << ": " << scores[i] << endl;
     }
+    return 0;
 }
 `,
   },
-  rust: {
-    name: 'Rust',
-    extension: 'rs',
-    defaultCode: `fn main() {
-    println!("StudyMate Real-Time Rust Sandbox");
-    let primes = vec![2, 3, 5, 7, 11, 13, 17, 19];
-    let sum: i32 = primes.iter().sum();
-    println!("First 8 Primes Count: {}", primes.len());
-    println!("Sum of Primes: {}", sum);
+  c: {
+    id: 'c',
+    name: 'C (Standard C99)',
+    extension: 'c',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 6,
+    defaultCode: `// StudyMate Real-Time C Executor
+#include <stdio.h>
+
+int main() {
+    int matrix[2][2] = {{1, 2}, {3, 4}};
+    int det = (matrix[0][0] * matrix[1][1]) - (matrix[0][1] * matrix[1][0]);
+    
+    printf("Matrix 2x2 Determinant Calculation\\n");
+    printf("[ %d  %d ]\\n", matrix[0][0], matrix[0][1]);
+    printf("[ %d  %d ]\\n", matrix[1][0], matrix[1][1]);
+    printf("Determinant = %d\\n", det);
+    return 0;
 }
 `,
   },
-  php: {
-    name: 'PHP',
-    extension: 'php',
-    defaultCode: `<?php
-// StudyMate PHP Script Runner
-$modules = ["Algorithms", "Web Architecture", "Database Systems"];
-echo "Academic Modules Loaded: " . count($modules) . "\\n";
-foreach ($modules as $index => $mod) {
-    echo ($index + 1) . ". " . $mod . "\\n";
-}
+  sql: {
+    id: 'sql',
+    name: 'SQL (Relational DB)',
+    extension: 'sql',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 7,
+    defaultCode: `-- StudyMate Interactive SQL Query Engine
+-- Querying MCA Academic Database (students & marks)
+
+SELECT id, name, department, semester, cgpa 
+FROM students 
+WHERE cgpa > 8.0 
+ORDER BY cgpa DESC;
 `,
   },
   html: {
-    name: 'HTML / CSS / JS Sandbox',
+    id: 'html',
+    name: 'HTML (Web Canvas)',
     extension: 'html',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 8,
     defaultCode: `<!DOCTYPE html>
 <html>
 <head>
@@ -248,6 +243,250 @@ foreach ($modules as $index => $mod) {
 </html>
 `,
   },
+  css: {
+    id: 'css',
+    name: 'CSS3 (Styles & FX)',
+    extension: 'css',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 9,
+    defaultCode: `/* StudyMate Modern CSS3 Stylesheet */
+:root {
+  --primary: #6366f1;
+  --secondary: #06b6d4;
+  --bg-card: rgba(30, 41, 59, 0.7);
+}
+
+.study-card {
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.study-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(99, 102, 241, 0.25);
+}
+`,
+  },
+  csharp: {
+    id: 'csharp',
+    name: 'C# (.NET Core)',
+    extension: 'cs',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 10,
+    defaultCode: `// StudyMate C# .NET Sandbox
+using System;
+using System.Collections.Generic;
+using System.Linq;
+
+class Program {
+    static void Main() {
+        Console.WriteLine("MCA Lab: C# .NET Core Console Simulation");
+        List<int> marks = new List<int> { 85, 92, 78, 95, 88 };
+        
+        double avg = marks.Average();
+        int highest = marks.Max();
+        
+        Console.WriteLine($"Total Subjects: {marks.Count}");
+        Console.WriteLine($"Average Score: {avg:F2}");
+        Console.WriteLine($"Highest Score: {highest}");
+    }
+}
+`,
+  },
+  php: {
+    id: 'php',
+    name: 'PHP',
+    extension: 'php',
+    category: 'Web & MERN',
+    popularInIndia: true,
+    rank: 11,
+    defaultCode: `<?php
+// StudyMate PHP Backend Runner
+$subjects = ["Data Structures", "Database Systems", "Operating Systems", "Cloud Computing"];
+
+echo "MCA Curriculum Modules: " . count($subjects) . "\\n";
+foreach ($subjects as $idx => $name) {
+    echo "[" . ($idx + 1) . "] " . $name . "\\n";
+}
+`,
+  },
+  go: {
+    id: 'go',
+    name: 'Go (Golang)',
+    extension: 'go',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 12,
+    defaultCode: `package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("StudyMate Real-Time Go Environment")
+    items := []string{"Distributed Systems", "Computer Networks", "DBMS", "Operating Systems"}
+    for idx, subject := range items {
+        fmt.Printf("[%d] MCA Core Module: %s\\n", idx+1, subject)
+    }
+}
+`,
+  },
+  kotlin: {
+    id: 'kotlin',
+    name: 'Kotlin (JVM/Android)',
+    extension: 'kt',
+    category: 'Popular in India',
+    popularInIndia: true,
+    rank: 13,
+    defaultCode: `// StudyMate Kotlin Android & JVM Workspace
+data class Student(val id: Int, val name: String, val cgpa: Double)
+
+fun main() {
+    println("Kotlin MCA Mobile & Cloud Lab")
+    val students = listOf(
+        Student(1, "Aarav Sharma", 8.9),
+        Student(2, "Priya Patel", 9.4),
+        Student(3, "Rohan Deshmukh", 7.8)
+    )
+
+    val topStudents = students.filter { it.cgpa >= 8.5 }
+    println("Total Honors Students: \${topStudents.size}")
+    topStudents.forEach { println("★ \${it.name} - CGPA: \${it.cgpa}") }
+}
+`,
+  },
+  swift: {
+    id: 'swift',
+    name: 'Swift (Apple/iOS)',
+    extension: 'swift',
+    category: 'Mobile & Apple',
+    popularInIndia: true,
+    rank: 14,
+    defaultCode: `// StudyMate Swift iOS Development
+import Foundation
+
+struct StudySession {
+    let topic: String
+    let durationMinutes: Int
+}
+
+let sessions = [
+    StudySession(topic: "Binary Trees", durationMinutes: 60),
+    StudySession(topic: "System Design", durationMinutes: 90),
+    StudySession(topic: "React & Node.js", durationMinutes: 120)
+]
+
+let totalHours = Double(sessions.reduce(0) { $0 + $1.durationMinutes }) / 60.0
+print("StudyMate iOS Session Tracker")
+print("Total Study Hours: \\(totalHours) hrs across \\(sessions.count) sessions.")
+`,
+  },
+  bash: {
+    id: 'bash',
+    name: 'Bash / Shell',
+    extension: 'sh',
+    category: 'Scripting & DevOps',
+    popularInIndia: true,
+    rank: 15,
+    defaultCode: `#!/bin/bash
+# StudyMate Linux & Bash Shell Environment
+echo "Initializing Academic Server Health Check..."
+SERVICES=("MongoDB" "Node-API" "Redis-Cache" "Nginx-Gateway")
+
+for service in "\${SERVICES[@]}"; do
+    echo "Checking service: \$service ... [ONLINE - 200 OK]"
+done
+
+echo "System Status: 100% Operational"
+`,
+  },
+  ruby: {
+    id: 'ruby',
+    name: 'Ruby',
+    extension: 'rb',
+    category: 'Web & Scripting',
+    popularInIndia: true,
+    rank: 16,
+    defaultCode: `# StudyMate Ruby Workspace
+puts "StudyMate Ruby Environment Active"
+grades = [88, 92, 79, 95, 84]
+
+average = grades.sum.to_f / grades.size
+puts "Enrolled Subjects: #{grades.size}"
+puts "Average Grade: #{average.round(2)}"
+`,
+  },
+  rust: {
+    id: 'rust',
+    name: 'Rust',
+    extension: 'rs',
+    category: 'System & High-Perf',
+    popularInIndia: false,
+    rank: 17,
+    defaultCode: `fn main() {
+    println!("StudyMate Real-Time Rust Sandbox");
+    let primes = vec![2, 3, 5, 7, 11, 13, 17, 19];
+    let sum: i32 = primes.iter().sum();
+    println!("First 8 Primes Count: {}", primes.len());
+    println!("Sum of Primes: {}", sum);
+}
+`,
+  },
+  dart: {
+    id: 'dart',
+    name: 'Dart (Flutter)',
+    extension: 'dart',
+    category: 'Mobile & Flutter',
+    popularInIndia: true,
+    rank: 18,
+    defaultCode: `// StudyMate Dart & Flutter Environment
+void main() {
+  print("StudyMate Flutter & Dart Lab");
+  final subjects = ['Mobile Application Dev', 'Cloud Computing', 'DSA'];
+  for (var i = 0; i < subjects.length; i++) {
+    print('\${i + 1}. \${subjects[i]}');
+  }
+}
+`,
+  },
+  r: {
+    id: 'r',
+    name: 'R (Data Science & Stats)',
+    extension: 'r',
+    category: 'Data Science & AI',
+    popularInIndia: false,
+    rank: 19,
+    defaultCode: `# StudyMate R Statistical Computing
+scores <- c(85, 92, 78, 90, 88, 95, 82)
+cat("Statistical Analysis for MCA Class\\n")
+cat("Sample Mean:", mean(scores), "\\n")
+cat("Sample Median:", median(scores), "\\n")
+cat("Standard Deviation:", sd(scores), "\\n")
+`,
+  },
+  matlab: {
+    id: 'matlab',
+    name: 'MATLAB / Octave',
+    extension: 'm',
+    category: 'Data Science & AI',
+    popularInIndia: false,
+    rank: 20,
+    defaultCode: `% StudyMate MATLAB / Matrix Computing
+disp('MCA Engineering Mathematics Lab');
+A = [1 2; 3 4];
+B = [5 6; 7 8];
+C = A * B;
+disp('Matrix Multiplication Result:');
+disp(C);
+`,
+  },
 };
 
 // Curated MCA / Computer Science Problem Solving Library
@@ -274,7 +513,6 @@ You may assume that each input would have exactly one solution, and you may not 
     constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', 'Exactly one valid answer exists.'],
     starterCode: {
       javascript: `function twoSum(nums, target) {
-  // Write your solution here
   const map = new Map();
   for (let i = 0; i < nums.length; i++) {
     const diff = target - nums[i];
@@ -286,7 +524,6 @@ You may assume that each input would have exactly one solution, and you may not 
   return [];
 }
 
-// Test call
 console.log(twoSum([2, 7, 11, 15], 9));
 `,
       python: `def two_sum(nums, target):
@@ -307,7 +544,7 @@ using namespace std;
 
 vector<int> twoSum(vector<int>& nums, int target) {
     unordered_map<int, int> seen;
-    for (int i = 0; i < nums.size(); i++) {
+    for (int i = 0; i < (int)nums.size(); i++) {
         int diff = target - nums[i];
         if (seen.count(diff)) return {seen[diff], i};
         seen[nums[i]] = i;
@@ -333,8 +570,7 @@ int main() {
       'Use a Hash Map to store previously visited elements and their indices for O(n) lookup.',
       'Target Time: O(n), Target Space: O(n).',
     ],
-    referenceSolution: `// Optimal Hash Map Solution (O(n) Time, O(n) Space)
-function twoSum(nums, target) {
+    referenceSolution: `function twoSum(nums, target) {
   const map = new Map();
   for (let i = 0; i < nums.length; i++) {
     const complement = target - nums[i];
@@ -368,7 +604,6 @@ Given a string \`s\`, return \`true\` if it is a palindrome, or \`false\` otherw
     constraints: ['1 <= s.length <= 2 * 10^5', 's consists only of printable ASCII characters.'],
     starterCode: {
       javascript: `function isPalindrome(s) {
-  // Write your solution here
   const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
   return cleaned === cleaned.split('').reverse().join('');
 }
@@ -633,15 +868,6 @@ FROM students
 ORDER BY cgpa DESC 
 LIMIT 1 OFFSET 1;
 `,
-      javascript: `// In JavaScript simulation:
-const students = [
-  { name: 'Aarav', cgpa: 8.9 },
-  { name: 'Priya', cgpa: 9.4 },
-  { name: 'Ananya', cgpa: 9.1 }
-];
-const sorted = [...students].sort((a,b) => b.cgpa - a.cgpa);
-console.log("Second Highest:", sorted[1]);
-`,
     },
     testCases: [
       { id: 1, input: 'Query: students table', expected: '9.1' },
@@ -673,13 +899,18 @@ function RealTimeExecutor() {
   const [activeTab, setActiveTab] = useState('output'); // output, stdin, preview, hints, tests
   const [copied, setCopied] = useState(false);
 
+  // Search Language Popover State
+  const [langSearchOpen, setLangSearchOpen] = useState(false);
+  const [langSearchQuery, setLangSearchQuery] = useState('');
+  const [langCategoryFilter, setLangCategoryFilter] = useState('All');
+
   // Problem Solving State
   const [selectedProblem, setSelectedProblem] = useState(PROBLEM_CATALOG[0]);
   const [selectedTestCaseIdx, setSelectedTestCaseIdx] = useState(0);
-  const [testResults, setTestResults] = useState({}); // { [testId]: { passed: boolean, actual: string } }
+  const [testResults, setTestResults] = useState({});
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [showReference, setShowReference] = useState(false);
-  const [submissionStatus, setSubmissionStatus] = useState(null); // 'all_passed' | 'failed' | null
+  const [submissionStatus, setSubmissionStatus] = useState(null);
 
   // Sharing Modal
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -692,10 +923,38 @@ function RealTimeExecutor() {
 
   const iframeRef = useRef(null);
   const textareaRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  // Focus search input when popover opens
+  useEffect(() => {
+    if (langSearchOpen && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [langSearchOpen]);
+
+  // Filter languages based on search query and category chip
+  const filteredLanguages = Object.values(CODE_PRESETS).filter((lang) => {
+    const matchesSearch =
+      lang.name.toLowerCase().includes(langSearchQuery.toLowerCase()) ||
+      lang.id.toLowerCase().includes(langSearchQuery.toLowerCase()) ||
+      lang.extension.toLowerCase().includes(langSearchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    if (langCategoryFilter === 'All') return true;
+    if (langCategoryFilter === 'Popular in India') return lang.popularInIndia;
+    if (langCategoryFilter === 'Web & MERN') return lang.category === 'Web & MERN';
+    if (langCategoryFilter === 'Mobile') return lang.category.includes('Mobile');
+    if (langCategoryFilter === 'Data Science') return lang.category.includes('Data Science');
+
+    return true;
+  });
 
   // Handle switching language
   const handleLanguageChange = (newLang) => {
     setSelectedLang(newLang);
+    setLangSearchOpen(false);
+    setLangSearchQuery('');
     if (appMode === 'problem-solving') {
       const starter = selectedProblem?.starterCode?.[newLang] || CODE_PRESETS[newLang]?.defaultCode || '';
       setCode(starter);
@@ -705,7 +964,7 @@ function RealTimeExecutor() {
     setOutput('');
     setExecutionTime(null);
     setStatus('ready');
-    if (newLang === 'html') {
+    if (newLang === 'html' || newLang === 'css') {
       setActiveTab('preview');
     } else {
       setActiveTab('output');
@@ -730,12 +989,12 @@ function RealTimeExecutor() {
     setStatus('running');
     setOutput('Compiling and executing code in real-time...');
 
-    // If HTML/CSS/JS Sandbox: update iframe preview directly
-    if (selectedLang === 'html') {
+    // If HTML or CSS: update iframe preview directly
+    if (selectedLang === 'html' || selectedLang === 'css') {
       setActiveTab('preview');
       setStatus('success');
       setExecutionTime(1.2);
-      setOutput('Live HTML/CSS Web Canvas rendered successfully.');
+      setOutput(`Live ${selectedLang.toUpperCase()} Web Canvas rendered successfully.`);
       return;
     }
 
@@ -760,7 +1019,7 @@ function RealTimeExecutor() {
     }
   };
 
-  // Submit Solution & Verify Test Cases (Problem Solving mode)
+  // Submit Solution & Verify Test Cases
   const handleSubmitSolution = async () => {
     setStatus('running');
     setActiveTab('tests');
@@ -770,7 +1029,6 @@ function RealTimeExecutor() {
       const results = {};
       let allPassed = true;
 
-      // Evaluate the code against each test case
       for (const tc of selectedProblem.testCases) {
         const res = await executorAPI.run({
           language: selectedLang,
@@ -808,7 +1066,6 @@ function RealTimeExecutor() {
     }
   };
 
-  // Handle Tab key in code textarea
   const handleKeyDown = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -905,7 +1162,7 @@ function RealTimeExecutor() {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight">Real-Time Code Executor & DSA Lab</h1>
                 <p className="text-xs sm:text-sm text-slate-400">
-                  Interactive multi-language compiler & algorithmic problem-solving workspace for MCA students
+                  Interactive multi-language compiler & algorithmic problem-solving workspace supporting 20+ coding languages
                 </p>
               </div>
             </div>
@@ -948,23 +1205,132 @@ function RealTimeExecutor() {
           </div>
         </div>
 
-        {/* Toolbar: Language selector, problem picker, and run actions */}
+        {/* Toolbar: Searchable Language Selector & Execution Actions */}
         <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur">
           <div className="flex flex-wrap items-center gap-3">
-            {/* Language Selector Dropdown */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-slate-400 font-medium">Language:</span>
-              <select
-                value={selectedLang}
-                onChange={(e) => handleLanguageChange(e.target.value)}
-                className="rounded-xl border border-indigo-500/40 bg-slate-950 px-3.5 py-2 text-xs font-semibold text-indigo-300 outline-none focus:border-indigo-400 transition cursor-pointer"
+            {/* Searchable Language Trigger Button */}
+            <div className="relative">
+              <button
+                onClick={() => setLangSearchOpen(!langSearchOpen)}
+                className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-indigo-500/30 hover:border-indigo-400 transition text-xs font-semibold cursor-pointer shadow-sm group"
+                title="Click to search and select from 20 programming languages"
               >
-                {Object.entries(CODE_PRESETS).map(([key, item]) => (
-                  <option key={key} value={key} className="bg-slate-950 text-white">
-                    {item.name}
-                  </option>
-                ))}
-              </select>
+                <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-indigo-400 transition">
+                  <Search size={14} />
+                  <span>Language:</span>
+                </div>
+                <span className="text-indigo-300 font-bold">{CODE_PRESETS[selectedLang]?.name}</span>
+                <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-mono uppercase">
+                  .{CODE_PRESETS[selectedLang]?.extension}
+                </span>
+                <ChevronDown size={14} className="text-slate-400 group-hover:text-slate-200 transition" />
+              </button>
+
+              {/* Language Search Dropdown / Popover Modal */}
+              {langSearchOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setLangSearchOpen(false)}
+                  />
+                  <div className="absolute top-full left-0 mt-2 z-50 w-80 sm:w-96 rounded-2xl border border-white/10 bg-slate-900/95 backdrop-blur-xl p-4 shadow-2xl space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                      <div className="flex items-center gap-2">
+                        <Code2 size={16} className="text-indigo-400" />
+                        <h4 className="text-xs font-bold text-white">Select Programming Language (20)</h4>
+                      </div>
+                      <button
+                        onClick={() => setLangSearchOpen(false)}
+                        className="text-slate-400 hover:text-white"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+
+                    {/* Search Input Box */}
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3 top-3 text-slate-400" />
+                      <input
+                        ref={searchInputRef}
+                        type="text"
+                        value={langSearchQuery}
+                        onChange={(e) => setLangSearchQuery(e.target.value)}
+                        placeholder="Search language (e.g. Python, C#, Kotlin, SQL)..."
+                        className="w-full rounded-xl border border-white/10 bg-slate-950 pl-9 pr-8 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition"
+                      />
+                      {langSearchQuery && (
+                        <button
+                          onClick={() => setLangSearchQuery('')}
+                          className="absolute right-2.5 top-2.5 text-slate-400 hover:text-white"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Quick Filter Category Chips */}
+                    <div className="flex flex-wrap items-center gap-1.5 text-[10px]">
+                      {['All', 'Popular in India', 'Web & MERN', 'Mobile', 'Data Science'].map((cat) => (
+                        <button
+                          key={cat}
+                          onClick={() => setLangCategoryFilter(cat)}
+                          className={`px-2 py-1 rounded-lg font-medium transition cursor-pointer ${
+                            langCategoryFilter === cat
+                              ? 'bg-indigo-600 text-white font-bold'
+                              : 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
+                          }`}
+                        >
+                          {cat === 'Popular in India' ? '🇮🇳 In India' : cat}
+                        </button>
+                      ))}
+                    </div>
+
+                    {/* Filtered Languages List */}
+                    <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 font-sans text-xs">
+                      {filteredLanguages.length === 0 ? (
+                        <div className="p-4 text-center text-slate-500 text-xs italic">
+                          No matching languages found for "{langSearchQuery}".
+                        </div>
+                      ) : (
+                        filteredLanguages.map((lang) => (
+                          <button
+                            key={lang.id}
+                            onClick={() => handleLanguageChange(lang.id)}
+                            className={`w-full flex items-center justify-between p-2.5 rounded-xl text-left transition cursor-pointer ${
+                              selectedLang === lang.id
+                                ? 'bg-indigo-600/30 border border-indigo-500/50 text-white'
+                                : 'hover:bg-white/5 text-slate-300 hover:text-white border border-transparent'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <span className="w-8 h-8 rounded-lg bg-slate-950 border border-white/10 flex items-center justify-center font-mono text-[11px] font-bold text-indigo-300 shrink-0 uppercase">
+                                .{lang.extension}
+                              </span>
+                              <div className="truncate">
+                                <div className="font-semibold truncate flex items-center gap-1.5">
+                                  <span>{lang.name}</span>
+                                  {lang.popularInIndia && (
+                                    <span className="text-[10px] text-amber-400/90 font-mono" title="High demand in Indian Tech Industry">
+                                      🇮🇳
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-slate-500 block truncate">
+                                  {lang.category}
+                                </span>
+                              </div>
+                            </div>
+
+                            {selectedLang === lang.id && (
+                              <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
+                            )}
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Problem selector if in problem-solving mode */}
@@ -1231,7 +1597,7 @@ function RealTimeExecutor() {
                   </button>
                 )}
 
-                {selectedLang === 'html' && (
+                {(selectedLang === 'html' || selectedLang === 'css') && (
                   <button
                     onClick={() => setActiveTab('preview')}
                     className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
@@ -1414,13 +1780,17 @@ function RealTimeExecutor() {
                 </div>
               )}
 
-              {/* HTML Sandbox Canvas Tab */}
-              {activeTab === 'preview' && selectedLang === 'html' && (
+              {/* HTML / CSS Live Sandbox Canvas Tab */}
+              {activeTab === 'preview' && (selectedLang === 'html' || selectedLang === 'css') && (
                 <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
                   <iframe
                     ref={iframeRef}
                     title="Live Preview"
-                    srcDoc={code}
+                    srcDoc={
+                      selectedLang === 'css'
+                        ? `<!DOCTYPE html><html><head><style>${code}</style></head><body style="font-family:sans-serif;background:#0f172a;color:white;padding:30px;display:flex;justify-content:center;align-items:center;min-height:80vh;"><div class="study-card"><h2>Live CSS Canvas</h2><p>Your custom CSS rules are actively styled on this test card element.</p><button style="margin-top:12px;background:#6366f1;color:white;border:none;padding:10px 16px;border-radius:8px;font-weight:bold;">Active Component</button></div></body></html>`
+                        : code
+                    }
                     sandbox="allow-scripts allow-modals"
                     className="w-full h-full border-none"
                   />
