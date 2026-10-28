@@ -546,10 +546,10 @@ export function Messages() {
 
   return (
     <DashboardLayout>
-      <div className="flex flex-col h-[calc(100vh-6rem)] max-w-7xl mx-auto">
-        {/* WhatsApp Container Card */}
-        <div className={`flex-1 flex rounded-2xl overflow-hidden border ${
-          isDark ? 'border-white/10 bg-[#111b21]' : 'border-slate-200 bg-white shadow-lg'
+      <div className="flex-1 flex flex-col h-full min-h-screen lg:h-screen w-full overflow-hidden">
+        {/* Full-Bleed Edge-to-Edge WhatsApp Container */}
+        <div className={`flex-1 flex overflow-hidden w-full h-full ${
+          isDark ? 'bg-[#111b21]' : 'bg-white'
         } transition-colors relative`}>
 
           {/* LEFT SIDEBAR: WhatsApp Chats & Contacts */}
