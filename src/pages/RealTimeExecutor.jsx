@@ -28,10 +28,13 @@ import {
   ChevronDown,
   Layers,
   Flame,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { executorAPI, groupsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 
 // Comprehensive 20 Programming Languages Catalog
 const CODE_PRESETS = {
@@ -886,6 +889,7 @@ WHERE cgpa < (SELECT MAX(cgpa) FROM students);`,
 
 function RealTimeExecutor() {
   const { user } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   // Mode switcher: 'sandbox' | 'problem-solving'
   const [appMode, setAppMode] = useState('sandbox');
@@ -1168,17 +1172,17 @@ function RealTimeExecutor() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-slate-950 text-white p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
+      <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} p-4 sm:p-6 lg:p-8 flex flex-col space-y-6 transition-colors duration-200`}>
         {/* Top Header Bar */}
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-white/10">
+        <div className={`flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
           <div>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Terminal size={22} className="text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Real-Time Code Executor & DSA Lab</h1>
-                <p className="text-xs sm:text-sm text-slate-400">
+                <h1 className={`text-2xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>Real-Time Code Executor & DSA Lab</h1>
+                <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Interactive multi-language compiler & algorithmic problem-solving workspace supporting 20+ coding languages
                 </p>
               </div>
@@ -1186,16 +1190,18 @@ function RealTimeExecutor() {
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-white/10">
+          <div className={`flex items-center gap-2 p-1.5 rounded-2xl ${isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200 shadow-sm'} border`}>
             <button
               onClick={() => {
                 setAppMode('sandbox');
                 setCode(CODE_PRESETS[selectedLang]?.defaultCode || '');
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                 appMode === 'sandbox'
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
-                  : 'text-slate-400 hover:text-white'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Code2 size={15} />
@@ -1207,10 +1213,12 @@ function RealTimeExecutor() {
                 setAppMode('problem-solving');
                 handleSelectProblem(selectedProblem);
               }}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 cursor-pointer ${
                 appMode === 'problem-solving'
                   ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
-                  : 'text-slate-400 hover:text-white'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-600 hover:text-slate-900'
               }`}
             >
               <Award size={15} className="text-emerald-300" />
@@ -1223,44 +1231,58 @@ function RealTimeExecutor() {
         </div>
 
         {/* Toolbar: Searchable Language Selector & Execution Actions */}
-        <div className="relative z-30 flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur">
+        <div className={`relative z-30 flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl ${
+          isDark ? 'bg-slate-900/80 border-white/10' : 'bg-white border-slate-200 shadow-sm'
+        } border backdrop-blur transition-colors`}>
           <div className="flex flex-wrap items-center gap-3">
             {/* Searchable Language Trigger Button & In-Place Dropdown */}
             <div className="relative" ref={langDropdownRef}>
               <button
                 onClick={() => setLangSearchOpen(!langSearchOpen)}
-                className="flex items-center gap-2.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-indigo-500/30 hover:border-indigo-400 transition text-xs font-semibold cursor-pointer shadow-sm group"
+                className={`flex items-center gap-2.5 px-3.5 py-2 rounded-xl transition text-xs font-semibold cursor-pointer shadow-sm group border ${
+                  isDark
+                    ? 'bg-slate-950 border-indigo-500/30 hover:border-indigo-400 text-white'
+                    : 'bg-slate-50 border-slate-200 hover:border-indigo-400 text-slate-800'
+                }`}
                 title="Click to search and select from 20 programming languages"
               >
-                <div className="flex items-center gap-1.5 text-slate-400 group-hover:text-indigo-400 transition">
+                <div className={`flex items-center gap-1.5 ${isDark ? 'text-slate-400 group-hover:text-indigo-400' : 'text-slate-500 group-hover:text-indigo-600'} transition`}>
                   <Search size={14} />
                   <span>Language:</span>
                 </div>
-                <span className="text-indigo-300 font-bold">{CODE_PRESETS[selectedLang]?.name}</span>
-                <span className="px-1.5 py-0.5 rounded-md bg-indigo-500/20 text-indigo-300 text-[10px] font-mono uppercase">
+                <span className={`${isDark ? 'text-indigo-300' : 'text-indigo-600'} font-bold`}>{CODE_PRESETS[selectedLang]?.name}</span>
+                <span className={`px-1.5 py-0.5 rounded-md ${isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700 font-bold'} text-[10px] font-mono uppercase`}>
                   .{CODE_PRESETS[selectedLang]?.extension}
                 </span>
-                <ChevronDown size={14} className={`text-slate-400 group-hover:text-slate-200 transition transform ${langSearchOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown size={14} className={`${isDark ? 'text-slate-400 group-hover:text-slate-200' : 'text-slate-500 group-hover:text-slate-800'} transition transform ${langSearchOpen ? 'rotate-180' : ''}`} />
               </button>
 
               {/* In-Place Dropdown (Right There, Above Code Editor Card) */}
               {langSearchOpen && (
-                <div className="absolute top-full left-0 mt-2 w-80 sm:w-96 rounded-2xl border border-white/15 bg-slate-900 p-3 shadow-2xl shadow-black/90 z-50 space-y-2.5">
+                <div className={`absolute top-full left-0 mt-2 w-80 sm:w-96 rounded-2xl border ${
+                  isDark
+                    ? 'border-white/15 bg-slate-900 shadow-black/90 text-white'
+                    : 'border-slate-200 bg-white shadow-slate-300/60 text-slate-900'
+                } p-3 shadow-2xl z-50 space-y-2.5`}>
                   {/* Search Input Box */}
                   <div className="relative">
-                    <Search size={14} className="absolute left-3 top-2.5 text-slate-400" />
+                    <Search size={14} className={`absolute left-3 top-2.5 ${isDark ? 'text-slate-400' : 'text-slate-500'}`} />
                     <input
                       ref={searchInputRef}
                       type="text"
                       value={langSearchQuery}
                       onChange={(e) => setLangSearchQuery(e.target.value)}
                       placeholder="Search 20 languages (Python, Java, C#, SQL)..."
-                      className="w-full rounded-xl border border-white/10 bg-slate-950 pl-8.5 pr-8 py-2 text-xs text-white placeholder-slate-500 outline-none focus:border-indigo-500 transition"
+                      className={`w-full rounded-xl border ${
+                        isDark
+                          ? 'border-white/10 bg-slate-950 text-white placeholder-slate-500'
+                          : 'border-slate-200 bg-slate-50 text-slate-900 placeholder-slate-400'
+                      } pl-8.5 pr-8 py-2 text-xs outline-none focus:border-indigo-500 transition`}
                     />
                     {langSearchQuery && (
                       <button
                         onClick={() => setLangSearchQuery('')}
-                        className="absolute right-2.5 top-2 text-slate-400 hover:text-white"
+                        className={`absolute right-2.5 top-2 ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
                       >
                         <X size={14} />
                       </button>
@@ -1276,7 +1298,9 @@ function RealTimeExecutor() {
                         className={`px-2 py-0.5 rounded-lg font-medium transition cursor-pointer ${
                           langCategoryFilter === cat
                             ? 'bg-indigo-600 text-white font-bold'
-                            : 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
+                            : isDark
+                            ? 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
+                            : 'bg-slate-100 text-slate-600 hover:text-slate-900 border border-slate-200'
                         }`}
                       >
                         {cat === 'Popular in India' ? '🇮🇳 In India' : cat}
@@ -1287,7 +1311,7 @@ function RealTimeExecutor() {
                   {/* Filtered Languages List */}
                   <div className="max-h-60 overflow-y-auto space-y-1 pr-1 font-sans text-xs">
                     {filteredLanguages.length === 0 ? (
-                      <div className="p-3 text-center text-slate-500 text-xs italic">
+                      <div className={`p-3 text-center ${isDark ? 'text-slate-500' : 'text-slate-400'} text-xs italic`}>
                         No languages found for "{langSearchQuery}".
                       </div>
                     ) : (
@@ -1300,12 +1324,18 @@ function RealTimeExecutor() {
                           }}
                           className={`w-full flex items-center justify-between p-2 rounded-xl text-left transition cursor-pointer border ${
                             selectedLang === lang.id
-                              ? 'bg-indigo-600/25 border-indigo-500 text-white shadow-sm'
-                              : 'bg-slate-950/60 hover:bg-white/5 text-slate-300 hover:text-white border-white/5'
+                              ? isDark
+                                ? 'bg-indigo-600/25 border-indigo-500 text-white shadow-sm'
+                                : 'bg-indigo-50 border-indigo-400 text-indigo-900 font-semibold shadow-sm'
+                              : isDark
+                              ? 'bg-slate-950/60 hover:bg-white/5 text-slate-300 hover:text-white border-white/5'
+                              : 'bg-white hover:bg-slate-100 text-slate-700 hover:text-slate-950 border-slate-100'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <span className="w-7 h-7 rounded-lg bg-slate-900 border border-white/10 flex items-center justify-center font-mono text-[10px] font-bold text-indigo-300 shrink-0 uppercase">
+                            <span className={`w-7 h-7 rounded-lg ${
+                              isDark ? 'bg-slate-900 border-white/10 text-indigo-300' : 'bg-slate-100 border-slate-200 text-indigo-700 font-bold'
+                            } border flex items-center justify-center font-mono text-[10px] shrink-0 uppercase`}>
                               .{lang.extension}
                             </span>
                             <div className="truncate">
@@ -1317,7 +1347,7 @@ function RealTimeExecutor() {
                                   </span>
                                 )}
                               </div>
-                              <span className="text-[10px] text-slate-500 block truncate">
+                              <span className={`text-[10px] ${isDark ? 'text-slate-500' : 'text-slate-400'} block truncate`}>
                                 {lang.category}
                               </span>
                             </div>
@@ -1337,17 +1367,21 @@ function RealTimeExecutor() {
             {/* Problem selector if in problem-solving mode */}
             {appMode === 'problem-solving' && (
               <div className="flex items-center gap-2">
-                <span className="text-xs text-slate-400 font-medium">Challenge:</span>
+                <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>Challenge:</span>
                 <select
                   value={selectedProblem.id}
                   onChange={(e) => {
                     const prob = PROBLEM_CATALOG.find((p) => p.id === e.target.value);
                     if (prob) handleSelectProblem(prob);
                   }}
-                  className="rounded-xl border border-emerald-500/40 bg-slate-950 px-3.5 py-2 text-xs font-semibold text-emerald-300 outline-none focus:border-emerald-400 transition cursor-pointer"
+                  className={`rounded-xl border ${
+                    isDark
+                      ? 'border-emerald-500/40 bg-slate-950 text-emerald-300'
+                      : 'border-emerald-400 bg-white text-emerald-700 font-bold shadow-sm'
+                  } px-3.5 py-2 text-xs font-semibold outline-none focus:border-emerald-400 transition cursor-pointer`}
                 >
                   {PROBLEM_CATALOG.map((p) => (
-                    <option key={p.id} value={p.id} className="bg-slate-950 text-white">
+                    <option key={p.id} value={p.id} className={isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}>
                       {solvedProblems.has(p.id) ? '✓ ' : ''}{p.title} ({p.difficulty})
                     </option>
                   ))}
@@ -1358,10 +1392,37 @@ function RealTimeExecutor() {
 
           {/* Action Execution Buttons */}
           <div className="flex items-center gap-2.5">
+            {/* Theme Toggle Button */}
+            <button
+              onClick={toggleTheme}
+              className={`inline-flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold transition cursor-pointer border ${
+                isDark
+                  ? 'bg-slate-950 hover:bg-slate-800 text-slate-300 hover:text-white border-white/10'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border-slate-200 shadow-sm'
+              }`}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+            >
+              {isDark ? (
+                <>
+                  <Sun size={15} className="text-amber-400" />
+                  <span className="hidden sm:inline">Light Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon size={15} className="text-indigo-600" />
+                  <span className="hidden sm:inline">Dark Mode</span>
+                </>
+              )}
+            </button>
+
             <button
               onClick={handleRunCode}
               disabled={status === 'running'}
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold text-xs transition border border-white/10 disabled:opacity-50 cursor-pointer"
+              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl ${
+                isDark
+                  ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white border-white/10'
+                  : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/20 border-transparent'
+              } font-semibold text-xs transition border disabled:opacity-50 cursor-pointer`}
               title="Shortcut: Ctrl + Enter"
             >
               {status === 'running' ? (
@@ -1371,7 +1432,7 @@ function RealTimeExecutor() {
                 </>
               ) : (
                 <>
-                  <Play size={14} className="fill-slate-300 text-slate-300" />
+                  <Play size={14} className={isDark ? "fill-slate-300 text-slate-300" : "fill-white text-white"} />
                   Run Code
                 </>
               )}
@@ -1396,13 +1457,15 @@ function RealTimeExecutor() {
           <div className="lg:col-span-7 flex flex-col space-y-4">
             {/* If in Problem Solving Mode: Problem Statement Card */}
             {appMode === 'problem-solving' && (
-              <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur shadow-xl space-y-4">
+              <div className={`p-5 rounded-2xl border ${
+                isDark ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white shadow-sm'
+              } backdrop-blur shadow-xl space-y-4 transition-colors`}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                    <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       <span>{selectedProblem.title}</span>
                       {solvedProblems.has(selectedProblem.id) && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-bold border border-emerald-500/30">
                           SOLVED ✓
                         </span>
                       )}
@@ -1432,27 +1495,27 @@ function RealTimeExecutor() {
                   </button>
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-line leading-relaxed">
+                <p className={`text-xs sm:text-sm ${isDark ? 'text-slate-300' : 'text-slate-700'} whitespace-pre-line leading-relaxed`}>
                   {selectedProblem.description}
                 </p>
 
                 {/* Example Walkthrough */}
                 <div className="space-y-2">
-                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Examples:</span>
+                  <span className={`text-xs font-semibold ${isDark ? 'text-slate-400' : 'text-slate-500'} uppercase tracking-wider`}>Examples:</span>
                   {selectedProblem.examples.map((ex, i) => (
-                    <div key={i} className="p-3 rounded-xl bg-slate-950/70 border border-white/5 font-mono text-xs space-y-1">
-                      <div><strong className="text-indigo-300">Input:</strong> <span className="text-slate-300">{ex.input}</span></div>
-                      <div><strong className="text-emerald-300">Output:</strong> <span className="text-slate-300">{ex.output}</span></div>
-                      {ex.explanation && <div className="text-[11px] text-slate-400 font-sans mt-0.5">{ex.explanation}</div>}
+                    <div key={i} className={`p-3 rounded-xl ${isDark ? 'bg-slate-950/70 border-white/5' : 'bg-slate-50 border-slate-200 text-slate-800'} border font-mono text-xs space-y-1`}>
+                      <div><strong className={isDark ? 'text-indigo-300' : 'text-indigo-600'}>Input:</strong> <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>{ex.input}</span></div>
+                      <div><strong className={isDark ? 'text-emerald-300' : 'text-emerald-600'}>Output:</strong> <span className={isDark ? 'text-slate-300' : 'text-slate-700'}>{ex.output}</span></div>
+                      {ex.explanation && <div className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'} font-sans mt-0.5`}>{ex.explanation}</div>}
                     </div>
                   ))}
                 </div>
 
                 {/* Reference Solution Drawer */}
                 {showReference && (
-                  <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 font-mono text-xs text-indigo-200">
-                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-500/20">
-                      <span className="font-bold flex items-center gap-1.5 text-indigo-300">
+                  <div className={`p-4 rounded-xl ${isDark ? 'bg-indigo-950/30 border-indigo-500/30 text-indigo-200' : 'bg-indigo-50/70 border-indigo-200 text-indigo-900'} border font-mono text-xs`}>
+                    <div className={`flex items-center justify-between pb-2 mb-2 border-b ${isDark ? 'border-indigo-500/20' : 'border-indigo-200'}`}>
+                      <span className={`font-bold flex items-center gap-1.5 ${isDark ? 'text-indigo-300' : 'text-indigo-700'}`}>
                         <Sparkles size={14} /> Official MCA Model Solution
                       </span>
                       <button
@@ -1460,7 +1523,7 @@ function RealTimeExecutor() {
                           setCode(selectedProblem.referenceSolution);
                           setShowReference(false);
                         }}
-                        className="text-[11px] text-indigo-400 hover:underline"
+                        className={`text-[11px] ${isDark ? 'text-indigo-400' : 'text-indigo-600 font-bold'} hover:underline`}
                       >
                         Copy to Editor
                       </button>
@@ -1472,41 +1535,64 @@ function RealTimeExecutor() {
             )}
 
             {/* Code Editor Panel */}
-            <div className="flex-1 flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur overflow-hidden shadow-xl">
+            <div className={`flex-1 flex flex-col rounded-2xl border ${
+              isDark ? 'border-white/10 bg-slate-900/60 shadow-xl' : 'border-slate-200 bg-white shadow-md'
+            } backdrop-blur overflow-hidden transition-colors`}>
               {/* Editor Top Bar */}
-              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-white/10 text-xs">
-                <div className="flex items-center gap-2 text-slate-300 font-mono">
-                  <Code2 size={16} className="text-indigo-400" />
+              <div className={`flex items-center justify-between px-4 py-3 ${
+                isDark ? 'bg-slate-900 border-white/10 text-slate-300' : 'bg-slate-50 border-slate-200 text-slate-800'
+              } border-b text-xs`}>
+                <div className={`flex items-center gap-2 ${isDark ? 'text-slate-300' : 'text-slate-800'} font-mono`}>
+                  <Code2 size={16} className={isDark ? "text-indigo-400" : "text-indigo-600"} />
                   <span>
                     solution.{CODE_PRESETS[selectedLang]?.extension || 'js'} ({CODE_PRESETS[selectedLang]?.name})
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 text-slate-400">
+                <div className={`flex items-center gap-2 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  {/* Editor Theme Switcher Icon */}
+                  <button
+                    onClick={toggleTheme}
+                    className={`p-1.5 rounded-lg transition cursor-pointer ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-200'
+                    }`}
+                    title={`Switch Editor Theme (${isDark ? 'Dark' : 'Light'} Mode)`}
+                  >
+                    {isDark ? <Sun size={15} className="text-amber-400" /> : <Moon size={15} className="text-indigo-600" />}
+                  </button>
+
                   <button
                     onClick={handleCopyCode}
-                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    className={`p-1.5 rounded-lg transition ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-200'
+                    }`}
                     title="Copy Code"
                   >
                     {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
                   </button>
                   <button
                     onClick={handleDownload}
-                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    className={`p-1.5 rounded-lg transition ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-200'
+                    }`}
                     title="Download File"
                   >
                     <Download size={15} />
                   </button>
                   <button
                     onClick={() => handleLanguageChange(selectedLang)}
-                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    className={`p-1.5 rounded-lg transition ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-200'
+                    }`}
                     title="Reset Starter Code"
                   >
                     <RotateCcw size={15} />
                   </button>
                   <button
                     onClick={handleOpenShare}
-                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-medium transition ml-1"
+                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-lg ${
+                      isDark ? 'bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white' : 'bg-indigo-100 hover:bg-indigo-600 text-indigo-700 hover:text-white font-semibold'
+                    } transition ml-1`}
                   >
                     <Share2 size={13} />
                     <span>Share</span>
@@ -1515,8 +1601,12 @@ function RealTimeExecutor() {
               </div>
 
               {/* Code Textarea with Line Numbers */}
-              <div className="relative flex-1 flex overflow-hidden min-h-[420px] bg-slate-950 font-mono text-sm leading-6">
-                <div className="w-12 py-4 bg-slate-900/40 text-right pr-3 text-slate-600 select-none text-xs border-r border-white/5">
+              <div className={`relative flex-1 flex overflow-hidden min-h-[420px] ${
+                isDark ? 'bg-slate-950' : 'bg-white'
+              } font-mono text-sm leading-6 transition-colors`}>
+                <div className={`w-12 py-4 ${
+                  isDark ? 'bg-slate-900/40 text-slate-600 border-white/5' : 'bg-slate-50 text-slate-400 border-slate-200'
+                } text-right pr-3 select-none text-xs border-r`}>
                   {code.split('\n').map((_, i) => (
                     <div key={i}>{i + 1}</div>
                   ))}
@@ -1529,29 +1619,39 @@ function RealTimeExecutor() {
                   onKeyDown={handleKeyDown}
                   spellCheck={false}
                   placeholder="Write or paste your code solution here..."
-                  className="flex-1 p-4 bg-transparent text-slate-200 outline-none resize-none font-mono text-xs sm:text-sm leading-6 selection:bg-indigo-600/40 overflow-y-auto"
+                  className={`flex-1 p-4 bg-transparent outline-none resize-none font-mono text-xs sm:text-sm leading-6 ${
+                    isDark
+                      ? 'text-slate-200 selection:bg-indigo-600/40'
+                      : 'text-slate-900 selection:bg-indigo-100'
+                  } overflow-y-auto`}
                 />
               </div>
 
               {/* Editor Footer */}
-              <div className="px-4 py-2 bg-slate-950/80 border-t border-white/5 text-[11px] text-slate-500 flex items-center justify-between">
-                <span>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-slate-300">Ctrl + Enter</kbd> to execute</span>
+              <div className={`px-4 py-2 ${
+                isDark ? 'bg-slate-950/80 border-white/5 text-slate-500' : 'bg-slate-50 border-slate-200 text-slate-600'
+              } border-t text-[11px] flex items-center justify-between`}>
+                <span>Press <kbd className={`px-1.5 py-0.5 rounded font-mono ${isDark ? 'bg-white/10 text-slate-300' : 'bg-slate-200 text-slate-700'}`}>Ctrl + Enter</kbd> to execute</span>
                 <span>Lines: {code.split('\n').length} • Characters: {code.length}</span>
               </div>
             </div>
           </div>
 
           {/* Right Column: Execution Output, Test Cases, and Interactive Sandbox */}
-          <div className="lg:col-span-5 flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur overflow-hidden shadow-xl">
+          <div className={`lg:col-span-5 flex flex-col rounded-2xl border ${
+            isDark ? 'border-white/10 bg-slate-900/60 shadow-xl' : 'border-slate-200 bg-white shadow-md'
+          } backdrop-blur overflow-hidden transition-colors`}>
             {/* Tabs Header */}
-            <div className="flex items-center justify-between px-3 bg-slate-900 border-b border-white/10 text-xs">
+            <div className={`flex items-center justify-between px-3 ${
+              isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-50 border-slate-200'
+            } border-b text-xs`}>
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => setActiveTab('output')}
                   className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
                     activeTab === 'output'
-                      ? 'border-indigo-500 text-white'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                      ? 'border-indigo-500 ' + (isDark ? 'text-white' : 'text-indigo-600 font-bold')
+                      : 'border-transparent ' + (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                   }`}
                 >
                   <Terminal size={14} />
@@ -1563,11 +1663,11 @@ function RealTimeExecutor() {
                     onClick={() => setActiveTab('tests')}
                     className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === 'tests'
-                        ? 'border-emerald-500 text-white'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                        ? 'border-emerald-500 ' + (isDark ? 'text-white' : 'text-emerald-700 font-bold')
+                        : 'border-transparent ' + (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                     }`}
                   >
-                    <CheckCircle2 size={14} className="text-emerald-400" />
+                    <CheckCircle2 size={14} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
                     <span>Test Cases</span>
                   </button>
                 )}
@@ -1576,8 +1676,8 @@ function RealTimeExecutor() {
                   onClick={() => setActiveTab('stdin')}
                   className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
                     activeTab === 'stdin'
-                      ? 'border-indigo-500 text-white'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                      ? 'border-indigo-500 ' + (isDark ? 'text-white' : 'text-indigo-600 font-bold')
+                      : 'border-transparent ' + (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                   }`}
                 >
                   <Cpu size={14} />
@@ -1589,8 +1689,8 @@ function RealTimeExecutor() {
                     onClick={() => setActiveTab('hints')}
                     className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === 'hints'
-                        ? 'border-indigo-500 text-white'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                        ? 'border-indigo-500 ' + (isDark ? 'text-white' : 'text-indigo-600 font-bold')
+                        : 'border-transparent ' + (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                     }`}
                   >
                     <HelpCircle size={14} />
@@ -1603,8 +1703,8 @@ function RealTimeExecutor() {
                     onClick={() => setActiveTab('preview')}
                     className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
                       activeTab === 'preview'
-                        ? 'border-indigo-500 text-white'
-                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                        ? 'border-indigo-500 ' + (isDark ? 'text-white' : 'text-indigo-600 font-bold')
+                        : 'border-transparent ' + (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-800')
                     }`}
                   >
                     <Eye size={14} />
@@ -1614,8 +1714,8 @@ function RealTimeExecutor() {
               </div>
 
               {executionTime !== null && (
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400">
-                  <Clock size={12} className="text-cyan-400" />
+                <div className={`flex items-center gap-1.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                  <Clock size={12} className={isDark ? "text-cyan-400" : "text-indigo-600"} />
                   <span>{executionTime}ms</span>
                 </div>
               )}
@@ -1800,11 +1900,13 @@ function RealTimeExecutor() {
             </div>
 
             {/* Bottom Status bar */}
-            <div className="px-4 py-2.5 bg-slate-900 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+            <div className={`px-4 py-2.5 ${
+              isDark ? 'bg-slate-900 border-white/10 text-slate-400' : 'bg-slate-50 border-slate-200 text-slate-600'
+            } border-t flex items-center justify-between text-xs transition-colors`}>
               <span className="truncate">
-                Logged in as: <strong className="text-slate-200">{user?.name}</strong> ({user?.department || 'MCA'})
+                Logged in as: <strong className={isDark ? "text-slate-200" : "text-slate-900"}>{user?.name}</strong> ({user?.department || 'MCA'})
               </span>
-              <span className="inline-flex items-center gap-1 text-emerald-400 shrink-0">
+              <span className="inline-flex items-center gap-1 text-emerald-500 font-semibold shrink-0">
                 <CheckCircle2 size={13} />
                 <span>Compiler Ready</span>
               </span>

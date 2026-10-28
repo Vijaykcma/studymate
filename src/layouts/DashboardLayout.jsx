@@ -18,8 +18,11 @@ import {
   ShieldCheck,
   AlertTriangle,
   Bell,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import notificationService from '../services/notificationService';
 
 export const DashboardLayout = ({ children }) => {
@@ -28,6 +31,7 @@ export const DashboardLayout = ({ children }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggleTheme, isDark } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
@@ -83,7 +87,7 @@ export const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex">
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} flex transition-colors duration-200`}>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -94,20 +98,22 @@ export const DashboardLayout = ({ children }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed lg:sticky top-0 z-50 h-screen w-64 border-r border-white/10 bg-slate-950 transition-transform duration-300 ${
+        className={`fixed lg:sticky top-0 z-50 h-screen w-64 border-r ${
+          isDark ? 'border-white/10 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-800'
+        } transition-transform duration-300 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } lg:translate-x-0 shrink-0`}
       >
         <div className="h-full flex flex-col justify-between">
           <div>
             {/* Logo */}
-            <div className="h-20 flex items-center justify-between px-6 border-b border-white/10">
+            <div className={`h-20 flex items-center justify-between px-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
               <Link to="/dashboard" className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                  <GraduationCap size={22} />
+                  <GraduationCap size={22} className="text-white" />
                 </div>
                 <div>
-                  <h1 className="font-bold text-base leading-tight">StudyMate</h1>
+                  <h1 className={`font-bold text-base leading-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>StudyMate</h1>
                   <p className="text-[11px] text-slate-500">Student Portal</p>
                 </div>
               </Link>
@@ -139,7 +145,9 @@ export const DashboardLayout = ({ children }) => {
                       className={`flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                         isActive
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : isDark
+                          ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -156,7 +164,7 @@ export const DashboardLayout = ({ children }) => {
                 })}
               </div>
 
-              <p className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2 mt-6">
+              <p className={`px-3 text-[11px] font-semibold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-400'} mb-2 mt-6`}>
                 Account
               </p>
 
@@ -172,7 +180,9 @@ export const DashboardLayout = ({ children }) => {
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition ${
                         isActive
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/20'
-                          : 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : isDark
+                          ? 'text-slate-400 hover:text-white hover:bg-white/5'
+                          : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                       }`}
                     >
                       <Icon size={18} />
@@ -200,15 +210,43 @@ export const DashboardLayout = ({ children }) => {
             </nav>
           </div>
 
+          <div>
+            {/* Theme switch toggle in sidebar */}
+          <div className={`px-4 py-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <button
+              onClick={toggleTheme}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold transition cursor-pointer ${
+                isDark
+                  ? 'bg-white/5 hover:bg-white/10 text-slate-300 hover:text-white border border-white/5'
+                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700 hover:text-slate-900 border border-slate-200'
+              }`}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+            >
+              <div className="flex items-center gap-2.5">
+                {isDark ? (
+                  <Sun size={15} className="text-amber-400" />
+                ) : (
+                  <Moon size={15} className="text-indigo-600" />
+                )}
+                <span>{isDark ? 'Light Theme' : 'Dark Theme'}</span>
+              </div>
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono uppercase ${
+                isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-100 text-indigo-700 font-bold'
+              }`}>
+                {theme}
+              </span>
+            </button>
+          </div>
+
           {/* User profile & logout footer */}
-          <div className="p-4 border-t border-white/10">
-            <div className="flex items-center gap-3 p-2.5 rounded-xl bg-white/[0.04]">
+          <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
+            <div className={`flex items-center gap-3 p-2.5 rounded-xl ${isDark ? 'bg-white/[0.04]' : 'bg-slate-100'}`}>
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shrink-0">
                 {getInitials(user?.name)}
               </div>
 
               <div className="flex-1 min-w-0">
-                <p className="font-medium text-sm truncate text-white">
+                <p className={`font-medium text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                   {user?.name || 'Student'}
                 </p>
                 <p className="text-xs text-slate-400 truncate">
@@ -227,15 +265,18 @@ export const DashboardLayout = ({ children }) => {
             </div>
           </div>
         </div>
-      </aside>
+      </div>
+    </aside>
 
       {/* Main Content Area */}
       <div className="flex-1 min-w-0 flex flex-col min-h-screen">
         {/* Mobile top bar */}
-        <header className="lg:hidden sticky top-0 z-30 h-16 border-b border-white/10 bg-slate-950/95 backdrop-blur px-4 flex items-center justify-between">
+        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b ${
+          isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
+        } backdrop-blur px-4 flex items-center justify-between`}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 text-slate-300 hover:text-white"
+            className={`p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
             aria-label="Open Sidebar"
           >
             <Menu size={22} />
@@ -245,13 +286,20 @@ export const DashboardLayout = ({ children }) => {
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
               <GraduationCap size={18} />
             </div>
-            <span className="font-bold text-sm">StudyMate</span>
+            <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>StudyMate</span>
           </Link>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={toggleTheme}
+              className={`p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
+            >
+              {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-indigo-600" />}
+            </button>
             <Link
               to="/notifications"
-              className="relative p-2 text-slate-300 hover:text-white"
+              className={`relative p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
               aria-label="View notifications"
             >
               <Bell size={20} />
@@ -260,7 +308,7 @@ export const DashboardLayout = ({ children }) => {
               )}
             </Link>
 
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white">
               {getInitials(user?.name)}
             </div>
           </div>

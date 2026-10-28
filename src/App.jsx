@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import {
   ProtectedRoute,
@@ -49,7 +50,8 @@ function App() {
   return (
     <ErrorBoundary>
       <AuthProvider>
-        <BrowserRouter>
+        <ThemeProvider>
+          <BrowserRouter>
           <Routes>
             {/* Public Landing */}
             <Route path="/" element={<Home />} />
@@ -301,6 +303,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </ThemeProvider>
       </AuthProvider>
     </ErrorBoundary>
   );
