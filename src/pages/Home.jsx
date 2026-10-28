@@ -10,7 +10,6 @@ import {
   GraduationCap,
   MessageCircle,
   Search,
-  Shield,
   ShieldCheck,
   Sparkles,
   Users,
@@ -130,33 +129,15 @@ function Home() {
 
           <div className="flex items-center gap-3">
             {user ? (
-              <>
-                {user.role === 'admin' && (
-                  <Link
-                    to="/admin/dashboard"
-                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-sm font-semibold transition shadow-lg shadow-rose-600/25 flex items-center gap-2 border border-rose-400/30"
-                  >
-                    <Shield size={16} className="text-rose-200" />
-                    <span>Admin Console</span>
-                  </Link>
-                )}
-                <Link
-                  to="/dashboard"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition shadow-lg shadow-indigo-600/20 flex items-center gap-2"
-                >
-                  Dashboard
-                  <ArrowRight size={16} />
-                </Link>
-              </>
+              <Link
+                to="/dashboard"
+                className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+              >
+                Dashboard
+                <ArrowRight size={16} />
+              </Link>
             ) : (
               <>
-                <Link
-                  to="/admin/login"
-                  className="px-3.5 py-2 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-300 hover:bg-rose-500/20 hover:text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm shadow-rose-500/10"
-                >
-                  <Shield size={14} className="text-rose-400" />
-                  <span>Admin Portal</span>
-                </Link>
                 <Link
                   to="/login"
                   className="hidden sm:block px-4 py-2 text-sm text-slate-300 hover:text-white transition"
@@ -213,14 +194,6 @@ function Home() {
                   className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 font-semibold transition"
                 >
                   Create a Group
-                </Link>
-
-                <Link
-                  to="/admin/login"
-                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-rose-500/20 bg-rose-500/5 hover:bg-rose-500/15 text-rose-300 hover:text-white font-semibold transition text-sm"
-                >
-                  <Shield size={16} className="text-rose-400" />
-                  <span>Admin Access</span>
                 </Link>
               </div>
 
@@ -472,14 +445,6 @@ function Home() {
             Digital Study Group Finder • MERN Stack Platform
           </p>
           <div className="flex items-center gap-4 text-xs">
-            <Link
-              to="/admin/login"
-              className="text-slate-500 hover:text-rose-400 font-medium transition flex items-center gap-1.5"
-            >
-              <Shield size={13} className="text-rose-500" />
-              <span>Admin Portal</span>
-            </Link>
-            <span className="text-slate-700">•</span>
             <span className="text-slate-500">© 2026 StudyMate</span>
           </div>
         </div>

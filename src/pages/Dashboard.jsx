@@ -87,7 +87,7 @@ function Dashboard() {
     <DashboardLayout>
       <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
         {/* Administrator Quick Switch Banner */}
-        {user?.role === 'admin' ? (
+        {user?.role === 'admin' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/70 via-indigo-950/50 to-slate-900 border border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl shadow-rose-950/25">
             <div className="flex items-center gap-3.5">
               <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-rose-500 to-indigo-600 text-white flex items-center justify-center shadow-md shadow-rose-500/20 shrink-0">
@@ -112,19 +112,6 @@ function Dashboard() {
               <Shield size={15} />
               <span>Open Admin Console</span>
               <ArrowRight size={14} />
-            </Link>
-          </div>
-        ) : (
-          <div className="p-3.5 rounded-xl bg-slate-900/60 border border-white/5 flex items-center justify-between text-xs text-slate-400">
-            <div className="flex items-center gap-2">
-              <Shield size={14} className="text-slate-500" />
-              <span>Are you a university or platform administrator?</span>
-            </div>
-            <Link
-              to="/admin/login"
-              className="text-rose-400 hover:text-rose-300 font-semibold flex items-center gap-1 transition"
-            >
-              Admin Portal <ArrowRight size={12} />
             </Link>
           </div>
         )}

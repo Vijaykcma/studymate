@@ -182,7 +182,7 @@ export const DashboardLayout = ({ children }) => {
                 })}
               </div>
 
-              {user?.role === 'admin' ? (
+              {user?.role === 'admin' && (
                 <div className="pt-4 px-1">
                   <Link
                     to="/admin/dashboard"
@@ -194,17 +194,6 @@ export const DashboardLayout = ({ children }) => {
                       <span>Admin Console</span>
                     </div>
                     <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                  </Link>
-                </div>
-              ) : (
-                <div className="pt-4 px-1">
-                  <Link
-                    to="/admin/login"
-                    onClick={() => setSidebarOpen(false)}
-                    className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs text-slate-500 hover:text-slate-300 hover:bg-white/5 transition"
-                  >
-                    <Shield size={14} className="text-slate-600" />
-                    <span>Admin Portal</span>
                   </Link>
                 </div>
               )}

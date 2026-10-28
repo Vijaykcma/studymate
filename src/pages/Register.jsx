@@ -8,7 +8,6 @@ import {
   User,
   Eye,
   EyeOff,
-  Shield,
   AlertCircle,
   Loader2,
 } from 'lucide-react';
@@ -263,16 +262,6 @@ function Register() {
               Sign in
             </Link>
           </p>
-
-          <div className="mt-6 pt-5 border-t border-white/10 text-center">
-            <Link
-              to="/admin/login"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 text-rose-300 hover:text-white text-xs font-semibold transition"
-            >
-              <Shield size={14} className="text-rose-400" />
-              <span>Administrator Portal Access</span>
-            </Link>
-          </div>
         </div>
 
         <p className="text-center text-xs text-slate-500 mt-6">
