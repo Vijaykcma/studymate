@@ -74,7 +74,9 @@ export const register = async (req, res, next) => {
     const isTestEnv = process.env.NODE_ENV === 'test';
 
     sendTokenCookie(user, 201, res, {
-      message: 'Registration successful! A 6-digit verification code has been sent to your email.',
+      message: isLiveDelivered || isTestEnv
+        ? 'Registration successful! A 6-digit verification code has been sent to your email.'
+        : `Registration successful! Email delivery issue (${emailResult?.error || 'Check Gmail API config'}). You can resend code on the verification page.`,
       devOtp: isTestEnv ? otp : undefined,
       emailSent: isLiveDelivered,
       previewUrl: emailResult?.previewUrl,
@@ -250,8 +252,8 @@ export const resendVerificationOtp = async (req, res, next) => {
       return res.status(502).json({
         success: false,
         message: emailResult?.error
-          ? `Email delivery failed (${emailResult.error}). Render Free Tier blocks SMTP ports 465/587; please add BREVO_API_KEY to your Render Dashboard -> Environment.`
-          : 'Email delivery failed. Please ensure your email service (Brevo/Gmail) is configured in the Render Dashboard.',
+          ? `Email delivery failed (${emailResult.error}). Please verify your Gmail API credentials in your Render Environment.`
+          : 'Email delivery failed. Please ensure your Gmail API credentials are configured in the Render Dashboard.',
       });
     }
 
@@ -340,8 +342,8 @@ export const forgotPassword = async (req, res, next) => {
       return res.status(502).json({
         success: false,
         message: emailResult?.error
-          ? `Email delivery failed (${emailResult.error}). Render Free Tier blocks SMTP ports 465/587; please add BREVO_API_KEY to your Render Dashboard -> Environment.`
-          : 'Email delivery failed. Please ensure your email service (Brevo/Gmail) is configured in the Render Dashboard.',
+          ? `Email delivery failed (${emailResult.error}). Please verify your Gmail API credentials in your Render Environment.`
+          : 'Email delivery failed. Please ensure your Gmail API credentials are configured in the Render Dashboard.',
       });
     }
 

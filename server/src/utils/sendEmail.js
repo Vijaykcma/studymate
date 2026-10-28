@@ -1,15 +1,19 @@
 import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
-import nodemailer from 'nodemailer';
+import { google } from 'googleapis';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
 // Ensure environment variables are loaded regardless of launch directory
 dotenv.config({ path: path.resolve(__dirname, '../../../server/.env') });
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 dotenv.config();
 
+/**
+ * Strips wrapping quotes and whitespace from environment variable strings.
+ */
 const cleanEnv = (val) => {
   if (!val) return '';
   let str = String(val).trim();
@@ -20,238 +24,198 @@ const cleanEnv = (val) => {
 };
 
 /**
- * Creates and configures the nodemailer transporter.
- * Supports Gmail (via direct IPv4 SMTP on port 465 / 587), custom SMTP, or test fallback.
+ * Creates and configures the Google OAuth2 client for the Gmail API.
  */
-const getTransporter = async () => {
-  const user = cleanEnv(process.env.EMAIL_USER || process.env.SMTP_USER);
-  const rawPass = cleanEnv(process.env.EMAIL_PASS || process.env.SMTP_PASS);
-  const pass = rawPass ? rawPass.replace(/\s+/g, '') : '';
-  const host = cleanEnv(process.env.SMTP_HOST);
-  const port = Number(cleanEnv(process.env.SMTP_PORT)) || 587;
-  const service = cleanEnv(process.env.EMAIL_SERVICE || process.env.SMTP_SERVICE);
-  const isGmail =
-    service.toLowerCase() === 'gmail' ||
-    (host && host.toLowerCase().includes('gmail')) ||
-    (user && user.toLowerCase().endsWith('@gmail.com'));
+export const getOAuth2Client = () => {
+  const clientId = cleanEnv(process.env.GMAIL_CLIENT_ID || process.env.GOOGLE_CLIENT_ID);
+  const clientSecret = cleanEnv(process.env.GMAIL_CLIENT_SECRET || process.env.GOOGLE_CLIENT_SECRET);
+  const redirectUri = cleanEnv(
+    process.env.GMAIL_REDIRECT_URI ||
+    process.env.GOOGLE_REDIRECT_URI ||
+    'https://developers.google.com/oauthplayground'
+  );
+  const refreshToken = cleanEnv(process.env.GMAIL_REFRESH_TOKEN || process.env.GOOGLE_REFRESH_TOKEN);
 
-  let rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.FROM_EMAIL);
-  if ((rawFrom.startsWith('"') && rawFrom.endsWith('"')) || (rawFrom.startsWith("'") && rawFrom.endsWith("'"))) {
-    const inner = rawFrom.slice(1, -1).trim();
-    if (inner.includes('<') && inner.includes('>')) {
-      rawFrom = inner;
-    }
+  if (!clientId || !clientSecret || !refreshToken) {
+    return null;
   }
 
-  const fromAddress =
-    rawFrom ||
-    (user ? `"StudyMate Platform" <${user}>` : '"StudyMate Platform" <no-reply@studymate.internal>');
+  // Detect placeholder values
+  if (
+    clientId.includes('your_') ||
+    clientSecret.includes('your_') ||
+    refreshToken.includes('your_') ||
+    refreshToken === 'your_refresh_token_here'
+  ) {
+    console.warn('[Gmail API Service] OAuth environment variables contain placeholder text. Please provide real credentials.');
+    return null;
+  }
 
-  // 0. Automated Test Mock (keeps Jest test suite fast and avoids hitting Gmail rate limits during CI/testing)
+  const oauth2Client = new google.auth.OAuth2(clientId, clientSecret, redirectUri);
+  oauth2Client.setCredentials({ refresh_token: refreshToken });
+  return oauth2Client;
+};
+
+/**
+ * Base64URL encoder conforming to RFC 4648 specification required by the Gmail API.
+ */
+const toBase64Url = (str) => {
+  return Buffer.from(str, 'utf-8')
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+};
+
+/**
+ * Sends an email directly through the official Google Gmail REST API (users.messages.send)
+ * over standard HTTPS port 443, completely bypassing cloud SMTP port blocks.
+ */
+export const sendViaGmailApi = async ({ to, name, subject, text, html }) => {
+  // Automated Test Mock (Fast CI & avoids real quota usage during Jest tests)
   if (process.env.NODE_ENV === 'test' && process.env.TEST_REAL_EMAIL !== 'true') {
     return {
-      transporter: {
-        sendMail: async () => ({
-          messageId: `<test-${Date.now()}@studymate.internal>`,
-          response: '250 Test OK',
-        }),
-      },
-      from: fromAddress,
-      isLive: false,
-      serviceName: 'Test Environment',
-    };
-  }
-
-  // 1. Live Gmail App Password transport with IPv4 enforcement & rapid fallback
-  if (user && pass && isGmail) {
-    const primaryTransporter = nodemailer.createTransport({
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true,
-      auth: { user, pass },
-      family: 4, // Force IPv4 to prevent hanging on cloud containers without IPv6 routing
-      connectionTimeout: 8000,
-      greetingTimeout: 8000,
-      socketTimeout: 10000,
-      tls: {
-        rejectUnauthorized: false,
-      },
-    });
-
-    return {
-      transporter: primaryTransporter,
-      fallbackPort: 587,
-      user,
-      pass,
-      from: fromAddress,
+      success: true,
+      emailDelivered: true,
+      messageId: `test-gmail-${Date.now()}`,
       isLive: true,
-      serviceName: 'Gmail SMTP (Port 465, IPv4)',
+      serviceName: 'Gmail API (Jest Test Mode)',
     };
   }
 
-  // 2. Custom SMTP Server transport
-  if (user && pass && host) {
+  const oauth2Client = getOAuth2Client();
+  if (!oauth2Client) {
+    const errorMsg =
+      'Gmail API credentials are not configured. Please set GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, and GMAIL_REFRESH_TOKEN in your environment.';
+    console.warn(`[Gmail API Service Warning] ${errorMsg}`);
     return {
-      transporter: nodemailer.createTransport({
-        host,
-        port,
-        secure: port === 465 || process.env.SMTP_SECURE === 'true',
-        auth: { user, pass },
-        family: 4,
-        connectionTimeout: 8000,
-        greetingTimeout: 8000,
-        socketTimeout: 10000,
-        tls: { rejectUnauthorized: false },
-      }),
-      from: process.env.FROM_EMAIL || `"StudyMate Platform" <${user}>`,
-      isLive: true,
-      serviceName: `SMTP (${host}:${port})`,
+      success: false,
+      emailDelivered: false,
+      error: errorMsg,
+      category: 'CONFIG_MISSING',
     };
   }
 
-  // Log clear diagnostic warning if credentials are not configured
-  console.warn(
-    '[Email Service Warning] EMAIL_USER / EMAIL_PASS environment variables are not set in the hosting environment. ' +
-      'If running in production (e.g. Render/Railway), please add EMAIL_USER and EMAIL_PASS to your dashboard Environment Variables.'
+  const senderEmail = cleanEnv(
+    process.env.GMAIL_SENDER_EMAIL ||
+    process.env.EMAIL_USER ||
+    'aiinterviewbotvk@gmail.com'
   );
+  const senderName = cleanEnv(process.env.GMAIL_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'StudyMate Platform');
+  const recipientName = name ? `"${name.replace(/"/g, '')}"` : 'Student';
 
-  // 3. Fallback: Ethereal test account or offline simulation
+  // Construct standard RFC 2822 / MIME multipart alternative message
+  const boundary = `__studymate_boundary_${Date.now().toString(16)}__`;
+  const utf8Subject = `=?utf-8?B?${Buffer.from(subject, 'utf-8').toString('base64')}?=`;
+
+  const mimeLines = [
+    `From: "${senderName}" <${senderEmail}>`,
+    `To: ${recipientName} <${to}>`,
+    `Subject: ${utf8Subject}`,
+    'MIME-Version: 1.0',
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/plain; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    text,
+    '',
+    `--${boundary}`,
+    'Content-Type: text/html; charset=UTF-8',
+    'Content-Transfer-Encoding: 7bit',
+    '',
+    html,
+    '',
+    `--${boundary}--`,
+  ];
+
+  const rawMessage = mimeLines.join('\r\n');
+  const encodedRaw = toBase64Url(rawMessage);
+
   try {
-    const testAccount = await nodemailer.createTestAccount();
-    const testTransporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
+    const gmail = google.gmail({ version: 'v1', auth: oauth2Client });
+    const response = await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedRaw,
       },
-      family: 4,
-      connectionTimeout: 5000,
     });
 
+    const messageId = response.data.id;
+    console.log(`[Gmail API Service] Email delivered to ${to}. Message ID: ${messageId}`);
+
     return {
-      transporter: testTransporter,
-      from: '"StudyMate Notifications" <verify@studymate.internal>',
-      isLive: false,
-      isTestAccount: true,
-      serviceName: 'Ethereal Test Inbox',
+      success: true,
+      emailDelivered: true,
+      messageId,
+      threadId: response.data.threadId,
+      isLive: true,
+      serviceName: 'Google Gmail API (OAuth 2.0 / HTTPS)',
     };
-  } catch {
+  } catch (error) {
+    let errorCategory = 'UNKNOWN';
+    let userFriendlyMsg = error.message;
+
+    const errMsgLower = (error.message || '').toLowerCase();
+    const errDataLower = JSON.stringify(error.response?.data || {}).toLowerCase();
+
+    if (errMsgLower.includes('invalid_grant') || errDataLower.includes('invalid_grant')) {
+      errorCategory = 'TOKEN_EXPIRED_OR_REVOKED';
+      userFriendlyMsg = 'Google OAuth refresh token is invalid, revoked, or expired. Please re-authorize in Google OAuth Playground.';
+    } else if (errMsgLower.includes('invalid_client') || errDataLower.includes('invalid_client')) {
+      errorCategory = 'INVALID_CLIENT';
+      userFriendlyMsg = 'Google OAuth Client ID or Client Secret is incorrect.';
+    } else if (errDataLower.includes('insufficientpermissions') || errDataLower.includes('insufficient scope')) {
+      errorCategory = 'INSUFFICIENT_PERMISSIONS';
+      userFriendlyMsg = 'Gmail OAuth scope https://www.googleapis.com/auth/gmail.send was not authorized.';
+    } else if (error.code === 403 || errDataLower.includes('quotaexceeded')) {
+      errorCategory = 'QUOTA_EXCEEDED';
+      userFriendlyMsg = 'Daily Gmail API sending quota exceeded (standard limit: 500 emails/day).';
+    }
+
+    console.error(`[Gmail API Service Error - ${errorCategory}] Failed dispatching to ${to}:`, userFriendlyMsg);
+
     return {
-      transporter: null,
-      from: '"StudyMate" <no-reply@studymate.internal>',
-      isLive: false,
-      serviceName: 'Console Simulation',
+      success: false,
+      emailDelivered: false,
+      error: userFriendlyMsg,
+      category: errorCategory,
+      rawError: error.message,
     };
   }
 };
 
 /**
- * Cloud HTTP-based email provider (Brevo / Resend).
- * Communicates over standard HTTPS (Port 443), completely bypassing Render's SMTP port blocks.
- */
-const sendViaHttpsProvider = async ({ to, name, subject, text, html }) => {
-  const brevoKey = cleanEnv(process.env.BREVO_API_KEY);
-  if (brevoKey) {
-    if (brevoKey.includes('your_') || brevoKey.includes('placeholder') || brevoKey === 'xkeysib-your_copied_api_key_here') {
-      console.warn(
-        '[Email Service Warning] BREVO_API_KEY contains placeholder text. You must generate a real API key from https://app.brevo.com (SMTP & API -> API Keys).'
-      );
-    } else {
-      const senderEmail = cleanEnv(process.env.EMAIL_USER || process.env.BREVO_SENDER_EMAIL || 'aiinterviewbotvk@gmail.com');
-      const senderName = cleanEnv(process.env.BREVO_SENDER_NAME || 'StudyMate Platform');
-      const res = await fetch('https://api.brevo.com/v3/smtp/email', {
-        method: 'POST',
-        headers: {
-          'api-key': brevoKey,
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          sender: { name: senderName, email: senderEmail },
-          to: [{ email: to, name: name || 'Student' }],
-          subject,
-          htmlContent: html,
-          textContent: text,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || `Brevo API Error: ${res.statusText}`);
-      }
-      console.log(`[Email Service (Brevo HTTPS API)] Email delivered to ${to}. MessageId: ${data.messageId}`);
-      return {
-        success: true,
-        emailDelivered: true,
-        messageId: data.messageId,
-        isLive: true,
-        serviceName: 'Brevo Cloud API (HTTPS)',
-      };
-    }
-  }
-
-  const resendKey = cleanEnv(process.env.RESEND_API_KEY);
-  if (resendKey) {
-    if (resendKey.includes('your_') || resendKey.includes('placeholder') || resendKey === 're_your_api_key_here') {
-      console.warn(
-        '[Email Service Warning] RESEND_API_KEY contains placeholder text. You must generate a real API key from https://resend.com.'
-      );
-    } else {
-      const rawFrom = cleanEnv(process.env.EMAIL_FROM || process.env.RESEND_FROM || 'StudyMate <onboarding@resend.dev>');
-      const res = await fetch('https://api.resend.com/emails', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          from: rawFrom,
-          to: [to],
-          subject,
-          html,
-          text,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || `Resend API Error: ${res.statusText}`);
-      }
-      console.log(`[Email Service (Resend HTTPS API)] Email delivered to ${to}. MessageId: ${data.id}`);
-      return {
-        success: true,
-        emailDelivered: true,
-        messageId: data.id,
-        isLive: true,
-        serviceName: 'Resend Cloud API (HTTPS)',
-      };
-    }
-  }
-
-  return null;
-};
-
-/**
- * Sends a real 6-digit OTP verification email for account registration.
+ * Sends a 6-digit OTP verification email for account registration.
  */
 export const sendVerificationEmail = async ({ to, name, otp }) => {
   const subject = `${otp} is your StudyMate verification code`;
+  const frontendUrl = cleanEnv(
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    'https://studymate-h7r1.onrender.com'
+  );
+  const verifyLink = `${frontendUrl}/verify-email?email=${encodeURIComponent(to)}&code=${otp}`;
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding: 24px; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b1120; color: #f8fafc; margin: 0; padding: 24px; }
           .container { max-width: 540px; margin: 0 auto; background: #0f172a; border-radius: 16px; border: 1px solid #1e293b; padding: 36px 28px; }
           .header { text-align: center; margin-bottom: 24px; }
-          .logo { display: inline-block; width: 48px; height: 48px; line-height: 48px; background: linear-gradient(135deg, #6366f1, #06b6d4); border-radius: 12px; font-size: 24px; font-weight: bold; color: white; text-align: center; }
+          .logo { display: inline-block; width: 48px; height: 48px; line-height: 48px; background: linear-gradient(135deg, #6366f1, #3b82f6); border-radius: 12px; font-size: 24px; font-weight: bold; color: white; text-align: center; }
           .title { font-size: 22px; font-weight: 700; color: #ffffff; margin-top: 16px; margin-bottom: 6px; }
           .subtitle { font-size: 14px; color: #94a3b8; margin: 0; }
           .code-box { background: #1e1b4b; border: 1px dashed #6366f1; border-radius: 12px; padding: 20px; text-align: center; margin: 28px 0; }
           .code-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #a5b4fc; margin-bottom: 8px; font-weight: 600; }
           .otp-code { font-size: 38px; font-weight: 800; letter-spacing: 0.25em; color: #ffffff; font-family: monospace; }
-          .info { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+          .btn-container { text-align: center; margin: 24px 0; }
+          .verify-btn { display: inline-block; background: #4f46e5; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+          .info { font-size: 13px; color: #94a3b8; line-height: 1.6; text-align: center; }
           .security-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b; font-size: 12px; color: #64748b; text-align: center; }
         </style>
       </head>
@@ -260,132 +224,59 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
           <div class="header">
             <div class="logo">S</div>
             <h1 class="title">Verify Your StudyMate Account</h1>
-            <p class="subtitle">Hi ${name || 'Student'}, verify your email to become an authorized member.</p>
+            <p class="subtitle">Hi ${name || 'Student'}, verify your email to access study groups and resources.</p>
           </div>
           <div class="code-box">
             <div class="code-label">6-Digit One-Time Passcode (OTP)</div>
             <div class="otp-code">${otp}</div>
           </div>
+          <div class="btn-container">
+            <a href="${verifyLink}" class="verify-btn" target="_blank">Verify Email Instantly</a>
+          </div>
           <p class="info">
-            Enter this 6-digit verification code in the StudyMate verification portal to confirm that this is your real, authorized email address.
+            Enter this 6-digit code in the StudyMate portal, or click the button above.
             This code will expire in <strong>15 minutes</strong>.
           </p>
           <div class="security-note">
-            If you did not create an account on StudyMate, you can safely ignore this email. Never share this code with anyone.
+            If you did not sign up for StudyMate, please ignore this email. Never share this code with anyone.
           </div>
         </div>
       </body>
     </html>
   `;
 
-  const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate verification code is: ${otp}\n\nThis 6-digit code is valid for 15 minutes. Enter it to verify that you are an authorized real user.\n\nBest regards,\nThe StudyMate Team`;
+  const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate verification code is: ${otp}\n\nVerify online: ${verifyLink}\n\nThis 6-digit code expires in 15 minutes.\n\nBest regards,\nThe StudyMate Team`;
 
-  const mailOptions = {
+  const result = await sendViaGmailApi({
     to,
+    name,
     subject,
     text: textContent,
     html: htmlContent,
-  };
+  });
 
-  // 1. HTTPS Cloud API (Bypasses Render/cloud SMTP port blocks on port 465/587)
-  try {
-    const httpsResult = await sendViaHttpsProvider({
-      to,
-      name,
-      subject,
-      text: textContent,
-      html: htmlContent,
-    });
-    if (httpsResult) {
-      return { ...httpsResult, otp };
-    }
-  } catch (httpsErr) {
-    console.warn(`[Email Service] HTTPS provider error (${httpsErr.message}). Attempting SMTP fallback...`);
-  }
-
-  try {
-    const config = await getTransporter();
-
-    if (config.transporter) {
-      mailOptions.from = config.from;
-
-      let info;
-      try {
-        info = await config.transporter.sendMail(mailOptions);
-      } catch (primaryErr) {
-        // If primary port 465 timed out or failed, try port 587 with STARTTLS
-        if (config.fallbackPort && config.user && config.pass) {
-          console.warn(`[Email Service] Port 465 delivery attempt failed (${primaryErr.message}). Attempting port 587 STARTTLS...`);
-          const fallbackTransporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: { user: config.user, pass: config.pass },
-            family: 4,
-            connectionTimeout: 8000,
-            greetingTimeout: 8000,
-            socketTimeout: 10000,
-            tls: { rejectUnauthorized: false },
-          });
-          info = await fallbackTransporter.sendMail(mailOptions);
-        } else {
-          throw primaryErr;
-        }
-      }
-
-      let previewUrl = null;
-      if (config.isTestAccount) {
-        previewUrl = nodemailer.getTestMessageUrl(info);
-      }
-
-      console.log(`[Email Service (${config.serviceName})] Verification email delivered to ${to}. MessageId: ${info.messageId}`);
-      if (previewUrl) {
-        console.log(`[Email Service Preview URL]: ${previewUrl}`);
-      }
-
-      return {
-        success: true,
-        emailDelivered: Boolean(config.isLive),
-        messageId: info.messageId,
-        isLive: Boolean(config.isLive),
-        previewUrl,
-        otp,
-      };
-    }
-  } catch (err) {
-    console.error(`[Email Service Error] Failed sending to ${to}:`, err.message);
-    return {
-      success: false,
-      emailDelivered: false,
-      error: err.message,
-      simulated: true,
-      otp,
-    };
-  }
-
-  // Terminal dev fallback log
-  console.log('\n' + '='.repeat(68));
-  console.log('📧 [StudyMate Email Service] Verification Code Dispatched:');
-  console.log(`   Recipient : ${to} (${name || 'Student'})`);
-  console.log(`   Subject   : ${subject}`);
-  console.log(`   🔑 OTP CODE: [ ${otp} ] (Valid for 15 minutes)`);
-  console.log('='.repeat(68) + '\n');
-
-  return { success: false, emailDelivered: false, simulated: true, otp };
+  return { ...result, otp };
 };
 
 /**
- * Sends a real 6-digit OTP email for password reset.
+ * Sends a 6-digit OTP email for password reset.
  */
 export const sendPasswordResetEmail = async ({ to, name, otp }) => {
   const subject = `${otp} is your StudyMate password reset code`;
+  const frontendUrl = cleanEnv(
+    process.env.FRONTEND_URL ||
+    process.env.CLIENT_URL ||
+    'https://studymate-h7r1.onrender.com'
+  );
+  const resetLink = `${frontendUrl}/forgot-password?email=${encodeURIComponent(to)}&token=${otp}`;
+
   const htmlContent = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
         <style>
-          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #020617; color: #f8fafc; margin: 0; padding: 24px; }
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #0b1120; color: #f8fafc; margin: 0; padding: 24px; }
           .container { max-width: 540px; margin: 0 auto; background: #0f172a; border-radius: 16px; border: 1px solid #1e293b; padding: 36px 28px; }
           .header { text-align: center; margin-bottom: 24px; }
           .logo { display: inline-block; width: 48px; height: 48px; line-height: 48px; background: linear-gradient(135deg, #f59e0b, #ef4444); border-radius: 12px; font-size: 24px; font-weight: bold; color: white; text-align: center; }
@@ -394,7 +285,9 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
           .code-box { background: #451a03; border: 1px dashed #f59e0b; border-radius: 12px; padding: 20px; text-align: center; margin: 28px 0; }
           .code-label { font-size: 12px; text-transform: uppercase; letter-spacing: 0.1em; color: #fcd34d; margin-bottom: 8px; font-weight: 600; }
           .otp-code { font-size: 38px; font-weight: 800; letter-spacing: 0.25em; color: #ffffff; font-family: monospace; }
-          .info { font-size: 13px; color: #94a3b8; line-height: 1.6; }
+          .btn-container { text-align: center; margin: 24px 0; }
+          .reset-btn { display: inline-block; background: #dc2626; color: #ffffff !important; text-decoration: none; padding: 12px 28px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+          .info { font-size: 13px; color: #94a3b8; line-height: 1.6; text-align: center; }
           .security-note { margin-top: 24px; padding-top: 16px; border-top: 1px solid #1e293b; font-size: 12px; color: #ef4444; text-align: center; font-weight: 500; }
         </style>
       </head>
@@ -409,9 +302,12 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
             <div class="code-label">6-Digit Password Reset Code</div>
             <div class="otp-code">${otp}</div>
           </div>
+          <div class="btn-container">
+            <a href="${resetLink}" class="reset-btn" target="_blank">Reset Password Now</a>
+          </div>
           <p class="info">
-            Enter this 6-digit code along with your new password to complete the password reset process.
-            This code will expire in <strong>15 minutes</strong> for security reasons.
+            Enter this 6-digit code or click the button above to reset your password.
+            This code will expire in <strong>15 minutes</strong>.
           </p>
           <div class="security-note">
             ⚠️ If you did not request a password reset, please ignore this email. Your account remains completely secure.
@@ -421,97 +317,15 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
     </html>
   `;
 
-  const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate password reset code is: ${otp}\n\nThis 6-digit code is valid for 15 minutes. Enter it to reset your password.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nThe StudyMate Team`;
+  const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate password reset code is: ${otp}\n\nReset online: ${resetLink}\n\nThis 6-digit code expires in 15 minutes.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nThe StudyMate Team`;
 
-  const mailOptions = {
+  const result = await sendViaGmailApi({
     to,
+    name,
     subject,
     text: textContent,
     html: htmlContent,
-  };
+  });
 
-  // 1. HTTPS Cloud API (Bypasses Render/cloud SMTP port blocks on port 465/587)
-  try {
-    const httpsResult = await sendViaHttpsProvider({
-      to,
-      name,
-      subject,
-      text: textContent,
-      html: htmlContent,
-    });
-    if (httpsResult) {
-      return { ...httpsResult, otp };
-    }
-  } catch (httpsErr) {
-    console.warn(`[Email Service] HTTPS provider error (${httpsErr.message}). Attempting SMTP fallback...`);
-  }
-
-  try {
-    const config = await getTransporter();
-
-    if (config.transporter) {
-      mailOptions.from = config.from;
-
-      let info;
-      try {
-        info = await config.transporter.sendMail(mailOptions);
-      } catch (primaryErr) {
-        if (config.fallbackPort && config.user && config.pass) {
-          console.warn(`[Email Service] Port 465 delivery attempt failed (${primaryErr.message}). Attempting port 587 STARTTLS...`);
-          const fallbackTransporter = nodemailer.createTransport({
-            host: 'smtp.gmail.com',
-            port: 587,
-            secure: false,
-            auth: { user: config.user, pass: config.pass },
-            family: 4,
-            connectionTimeout: 8000,
-            greetingTimeout: 8000,
-            socketTimeout: 10000,
-            tls: { rejectUnauthorized: false },
-          });
-          info = await fallbackTransporter.sendMail(mailOptions);
-        } else {
-          throw primaryErr;
-        }
-      }
-
-      let previewUrl = null;
-      if (config.isTestAccount) {
-        previewUrl = nodemailer.getTestMessageUrl(info);
-      }
-
-      console.log(`[Email Service (${config.serviceName})] Password reset email sent to ${to}. MessageId: ${info.messageId}`);
-      if (previewUrl) {
-        console.log(`[Email Service Preview URL]: ${previewUrl}`);
-      }
-
-      return {
-        success: true,
-        emailDelivered: Boolean(config.isLive),
-        messageId: info.messageId,
-        isLive: Boolean(config.isLive),
-        previewUrl,
-        otp,
-      };
-    }
-  } catch (err) {
-    console.error(`[Email Service Error] Failed sending password reset to ${to}:`, err.message);
-    return {
-      success: false,
-      emailDelivered: false,
-      error: err.message,
-      simulated: true,
-      otp,
-    };
-  }
-
-  // Terminal dev fallback
-  console.log('\n' + '='.repeat(68));
-  console.log('🔑 [StudyMate Email Service] Password Reset Code Dispatched:');
-  console.log(`   Recipient : ${to} (${name || 'Student'})`);
-  console.log(`   Subject   : ${subject}`);
-  console.log(`   🔑 OTP CODE: [ ${otp} ] (Valid for 15 minutes)`);
-  console.log('='.repeat(68) + '\n');
-
-  return { success: false, emailDelivered: false, simulated: true, otp };
+  return { ...result, otp };
 };
