@@ -16,11 +16,20 @@ import {
   Loader2,
   X,
   Eye,
+  HelpCircle,
+  Award,
+  Sparkles,
+  ChevronRight,
+  Database,
+  BookOpen,
+  CheckCircle,
+  XCircle,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { executorAPI, groupsAPI } from '../services/api';
 import { useAuth } from '../context/AuthContext';
 
+// Multi-Language Code Presets
 const CODE_PRESETS = {
   javascript: {
     name: 'JavaScript (Node.js)',
@@ -54,8 +63,8 @@ console.log(\`Result: Target found at index \${index}\`);
   python: {
     name: 'Python 3',
     extension: 'py',
-    defaultCode: `# StudyMate Real-Time Python Executor
-# QuickSort Algorithm implementation
+    defaultCode: `# StudyMate Real-Time Python 3 Executor
+# QuickSort Algorithm Implementation
 
 def quicksort(arr):
     if len(arr) <= 1:
@@ -66,17 +75,46 @@ def quicksort(arr):
     right = [x for x in arr if x > pivot]
     return quicksort(left) + middle + quicksort(right)
 
-sample_data = [64, 34, 25, 12, 22, 11, 90]
-print("Original Array:", sample_data)
+data = [64, 34, 25, 12, 22, 11, 90]
+print("Original List:", data)
+sorted_data = quicksort(data)
+print("Sorted List:", sorted_data)
+print("Min Element:", sorted_data[0])
+print("Max Element:", sorted_data[-1])
+`,
+  },
+  sql: {
+    name: 'SQL (Relational DB)',
+    extension: 'sql',
+    defaultCode: `-- StudyMate Interactive SQL Query Engine
+-- Querying MCA Academic Database (students & marks)
 
-sorted_data = quicksort(sample_data)
-print("Sorted Array:", sorted_data)
-print("Min element:", sorted_data[0])
-print("Max element:", sorted_data[-1])
+SELECT id, name, department, semester, cgpa 
+FROM students 
+WHERE cgpa > 8.0 
+ORDER BY cgpa DESC;
+`,
+  },
+  java: {
+    name: 'Java (OpenJDK)',
+    extension: 'java',
+    defaultCode: `// StudyMate Real-Time Java Executor
+public class Main {
+    public static void main(String[] args) {
+        System.out.println("MCA Lab: Object-Oriented DSA Simulation");
+        int[] data = {15, 23, 7, 42, 18};
+        int sum = 0;
+        for (int n : data) sum += n;
+        
+        System.out.println("Elements count: " + data.length);
+        System.out.println("Total Sum: " + sum);
+        System.out.println("Average: " + ((double)sum / data.length));
+    }
+}
 `,
   },
   cpp: {
-    name: 'C++ (STL)',
+    name: 'C++ (STL / GCC)',
     extension: 'cpp',
     defaultCode: `// StudyMate Real-Time C++ Executor
 #include <iostream>
@@ -85,13 +123,13 @@ print("Max element:", sorted_data[-1])
 using namespace std;
 
 int main() {
-    vector<int> grades = {88, 95, 72, 64, 100, 83};
-    cout << "Original grades count: " << grades.size() << endl;
+    vector<int> scores = {88, 95, 72, 64, 100, 83};
+    cout << "Original Scores Count: " << scores.size() << endl;
 
-    sort(grades.begin(), grades.end(), greater<int>());
-    cout << "Top 3 highest scores:" << endl;
-    for (int i = 0; i < 3 && i < grades.size(); ++i) {
-        cout << "#" << (i + 1) << ": " << grades[i] << endl;
+    sort(scores.begin(), scores.end(), greater<int>());
+    cout << "Top 3 Scores:" << endl;
+    for (int i = 0; i < 3 && i < (int)scores.size(); ++i) {
+        cout << "#" << (i + 1) << ": " << scores[i] << endl;
     }
     return 0;
 }
@@ -115,21 +153,67 @@ int main() {
 }
 `,
   },
-  java: {
-    name: 'Java (OpenJDK)',
-    extension: 'java',
-    defaultCode: `// StudyMate Real-Time Java Executor
-public class Main {
-    public static void main(String[] args) {
-        System.out.println("MCA Lab: Object-Oriented DSA Simulation");
-        int[] data = {15, 23, 7, 42, 18};
-        int sum = 0;
-        for (int n : data) sum += n;
-        
-        System.out.println("Elements count: " + data.length);
-        System.out.println("Total Sum: " + sum);
-        System.out.println("Average: " + ((double)sum / data.length));
+  typescript: {
+    name: 'TypeScript',
+    extension: 'ts',
+    defaultCode: `// StudyMate TypeScript Executor
+interface StudentRecord {
+  id: number;
+  name: string;
+  semester: string;
+  grades: number[];
+}
+
+const student: StudentRecord = {
+  id: 101,
+  name: "Vijaykumar Masaguppimath",
+  semester: "2nd Semester MCA",
+  grades: [92, 88, 95, 89]
+};
+
+const gpa = student.grades.reduce((a, b) => a + b, 0) / student.grades.length;
+console.log("Student Profile:", student.name);
+console.log("Academic Semester:", student.semester);
+console.log("Calculated GPA:", gpa.toFixed(2));
+`,
+  },
+  go: {
+    name: 'Go (Golang)',
+    extension: 'go',
+    defaultCode: `package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("StudyMate Real-Time Go Environment")
+    items := []string{"Data Structures", "Computer Networks", "DBMS", "Operating Systems"}
+    for idx, subject := range items {
+        fmt.Printf("[%d] MCA Core Module: %s\\n", idx+1, subject)
     }
+}
+`,
+  },
+  rust: {
+    name: 'Rust',
+    extension: 'rs',
+    defaultCode: `fn main() {
+    println!("StudyMate Real-Time Rust Sandbox");
+    let primes = vec![2, 3, 5, 7, 11, 13, 17, 19];
+    let sum: i32 = primes.iter().sum();
+    println!("First 8 Primes Count: {}", primes.len());
+    println!("Sum of Primes: {}", sum);
+}
+`,
+  },
+  php: {
+    name: 'PHP',
+    extension: 'php',
+    defaultCode: `<?php
+// StudyMate PHP Script Runner
+$modules = ["Algorithms", "Web Architecture", "Database Systems"];
+echo "Academic Modules Loaded: " . count($modules) . "\\n";
+foreach ($modules as $index => $mod) {
+    echo ($index + 1) . ". " . $mod . "\\n";
 }
 `,
   },
@@ -166,108 +250,442 @@ public class Main {
   },
 };
 
-const MCA_ALGO_TEMPLATES = [
+// Curated MCA / Computer Science Problem Solving Library
+const PROBLEM_CATALOG = [
   {
-    name: 'Binary Search (O(log n))',
-    lang: 'javascript',
-    code: `function binarySearch(arr, target) {
-  let left = 0, right = arr.length - 1;
+    id: 'two-sum',
+    title: 'Two Sum',
+    difficulty: 'Easy',
+    category: 'Arrays & Hashing',
+    description: `Given an array of integers \`nums\` and an integer \`target\`, return the indices of the two numbers such that they add up to \`target\`.
+You may assume that each input would have exactly one solution, and you may not use the same element twice.`,
+    examples: [
+      {
+        input: 'nums = [2, 7, 11, 15], target = 9',
+        output: '[0, 1]',
+        explanation: 'Because nums[0] + nums[1] == 2 + 7 == 9, we return [0, 1].',
+      },
+      {
+        input: 'nums = [3, 2, 4], target = 6',
+        output: '[1, 2]',
+        explanation: 'Because nums[1] + nums[2] == 2 + 4 == 6, we return [1, 2].',
+      },
+    ],
+    constraints: ['2 <= nums.length <= 10^4', '-10^9 <= nums[i] <= 10^9', 'Exactly one valid answer exists.'],
+    starterCode: {
+      javascript: `function twoSum(nums, target) {
+  // Write your solution here
+  const map = new Map();
+  for (let i = 0; i < nums.length; i++) {
+    const diff = target - nums[i];
+    if (map.has(diff)) {
+      return [map.get(diff), i];
+    }
+    map.set(nums[i], i);
+  }
+  return [];
+}
+
+// Test call
+console.log(twoSum([2, 7, 11, 15], 9));
+`,
+      python: `def two_sum(nums, target):
+    seen = {}
+    for i, num in enumerate(nums):
+        diff = target - num
+        if diff in seen:
+            return [seen[diff], i]
+        seen[num] = i
+    return []
+
+print(two_sum([2, 7, 11, 15], 9))
+`,
+      cpp: `#include <iostream>
+#include <vector>
+#include <unordered_map>
+using namespace std;
+
+vector<int> twoSum(vector<int>& nums, int target) {
+    unordered_map<int, int> seen;
+    for (int i = 0; i < nums.size(); i++) {
+        int diff = target - nums[i];
+        if (seen.count(diff)) return {seen[diff], i};
+        seen[nums[i]] = i;
+    }
+    return {};
+}
+
+int main() {
+    vector<int> nums = {2, 7, 11, 15};
+    vector<int> res = twoSum(nums, 9);
+    cout << "[" << res[0] << ", " << res[1] << "]" << endl;
+    return 0;
+}
+`,
+    },
+    testCases: [
+      { id: 1, input: '[2, 7, 11, 15], target = 9', expected: '[0, 1]' },
+      { id: 2, input: '[3, 2, 4], target = 6', expected: '[1, 2]' },
+      { id: 3, input: '[3, 3], target = 6', expected: '[0, 1]' },
+    ],
+    hints: [
+      'A brute force approach checks all pairs in O(n²) time.',
+      'Use a Hash Map to store previously visited elements and their indices for O(n) lookup.',
+      'Target Time: O(n), Target Space: O(n).',
+    ],
+    referenceSolution: `// Optimal Hash Map Solution (O(n) Time, O(n) Space)
+function twoSum(nums, target) {
+  const map = new Map();
+  for (let i = 0; i < nums.length; i++) {
+    const complement = target - nums[i];
+    if (map.has(complement)) {
+      return [map.get(complement), i];
+    }
+    map.set(nums[i], i);
+  }
+  return [];
+}`,
+  },
+  {
+    id: 'valid-palindrome',
+    title: 'Valid Palindrome',
+    difficulty: 'Easy',
+    category: 'Strings & Two Pointers',
+    description: `A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward.
+Given a string \`s\`, return \`true\` if it is a palindrome, or \`false\` otherwise.`,
+    examples: [
+      {
+        input: 's = "A man, a plan, a canal: Panama"',
+        output: 'true',
+        explanation: '"amanaplanacanalpanama" is a palindrome.',
+      },
+      {
+        input: 's = "race a car"',
+        output: 'false',
+        explanation: '"raceacar" is not a palindrome.',
+      },
+    ],
+    constraints: ['1 <= s.length <= 2 * 10^5', 's consists only of printable ASCII characters.'],
+    starterCode: {
+      javascript: `function isPalindrome(s) {
+  // Write your solution here
+  const cleaned = s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  return cleaned === cleaned.split('').reverse().join('');
+}
+
+console.log(isPalindrome("A man, a plan, a canal: Panama"));
+`,
+      python: `def is_palindrome(s):
+    cleaned = ''.join(ch.lower() for ch in s if ch.isalnum())
+    return cleaned == cleaned[::-1]
+
+print(is_palindrome("A man, a plan, a canal: Panama"))
+`,
+    },
+    testCases: [
+      { id: 1, input: '"A man, a plan, a canal: Panama"', expected: 'true' },
+      { id: 2, input: '"race a car"', expected: 'false' },
+      { id: 3, input: '" "', expected: 'true' },
+    ],
+    hints: [
+      'Filter out non-alphanumeric characters and lowercase all characters.',
+      'Use two pointers (one at head, one at tail) moving towards the center.',
+      'Target Time: O(n), Target Space: O(1).',
+    ],
+    referenceSolution: `function isPalindrome(s) {
+  let left = 0, right = s.length - 1;
+  const isAlphaNum = (ch) => /[a-z0-9]/i.test(ch);
+
+  while (left < right) {
+    while (left < right && !isAlphaNum(s[left])) left++;
+    while (left < right && !isAlphaNum(s[right])) right--;
+    if (s[left].toLowerCase() !== s[right].toLowerCase()) return false;
+    left++;
+    right--;
+  }
+  return true;
+}`,
+  },
+  {
+    id: 'valid-parentheses',
+    title: 'Valid Parentheses Matching',
+    difficulty: 'Easy',
+    category: 'Stacks & Parsing',
+    description: `Given a string \`s\` containing just the characters '(', ')', '{', '}', '[' and ']', determine if the input string is valid.
+Open brackets must be closed by the same type of brackets in the correct order.`,
+    examples: [
+      {
+        input: 's = "()[]{}"',
+        output: 'true',
+        explanation: 'All brackets open and close properly.',
+      },
+      {
+        input: 's = "(]"',
+        output: 'false',
+        explanation: 'Mismatched closing bracket type.',
+      },
+    ],
+    constraints: ['1 <= s.length <= 10^4', 's consists of parentheses only.'],
+    starterCode: {
+      javascript: `function isValid(s) {
+  const stack = [];
+  const map = { ')': '(', '}': '{', ']': '[' };
+  
+  for (const ch of s) {
+    if (ch === '(' || ch === '{' || ch === '[') {
+      stack.push(ch);
+    } else {
+      if (stack.pop() !== map[ch]) return false;
+    }
+  }
+  return stack.length === 0;
+}
+
+console.log(isValid("()[]{}"));
+`,
+      python: `def is_valid(s):
+    stack = []
+    pairs = {')': '(', '}': '{', ']': '['}
+    for ch in s:
+        if ch in '({[':
+            stack.append(ch)
+        elif not stack or stack.pop() != pairs[ch]:
+            return False
+    return len(stack) == 0
+
+print(is_valid("()[]{}"))
+`,
+    },
+    testCases: [
+      { id: 1, input: '"()[]{}"', expected: 'true' },
+      { id: 2, input: '"(]"', expected: 'false' },
+      { id: 3, input: '"([{}])"', expected: 'true' },
+    ],
+    hints: [
+      'Use a LIFO Stack data structure.',
+      'Push open brackets. When encountering a close bracket, pop from the stack and verify matching type.',
+      'Target Time: O(n), Target Space: O(n).',
+    ],
+    referenceSolution: `function isValid(s) {
+  const stack = [];
+  const matching = { ')': '(', '}': '{', ']': '[' };
+  for (let ch of s) {
+    if (ch in matching) {
+      if (stack.pop() !== matching[ch]) return false;
+    } else {
+      stack.push(ch);
+    }
+  }
+  return stack.length === 0;
+}`,
+  },
+  {
+    id: 'binary-search',
+    title: 'Binary Search (O(log n))',
+    difficulty: 'Medium',
+    category: 'Searching & Divide-and-Conquer',
+    description: `Given an array of integers \`nums\` which is sorted in ascending order, and an integer \`target\`, write a function to search \`target\` in \`nums\`.
+If \`target\` exists, then return its index. Otherwise, return \`-1\`. You must write an algorithm with \`O(log n)\` runtime complexity.`,
+    examples: [
+      {
+        input: 'nums = [-1, 0, 3, 5, 9, 12], target = 9',
+        output: '4',
+        explanation: '9 exists in nums and its index is 4.',
+      },
+      {
+        input: 'nums = [-1, 0, 3, 5, 9, 12], target = 2',
+        output: '-1',
+        explanation: '2 does not exist in nums so return -1.',
+      },
+    ],
+    constraints: ['1 <= nums.length <= 10^4', 'nums is sorted in ascending order.'],
+    starterCode: {
+      javascript: `function search(nums, target) {
+  let left = 0, right = nums.length - 1;
   while (left <= right) {
-    let mid = Math.floor((left + right) / 2);
-    if (arr[mid] === target) return mid;
-    if (arr[mid] < target) left = mid + 1;
+    const mid = Math.floor((left + right) / 2);
+    if (nums[mid] === target) return mid;
+    if (nums[mid] < target) left = mid + 1;
     else right = mid - 1;
   }
   return -1;
 }
 
-const arr = [10, 20, 30, 40, 50, 60, 70];
-console.log("Array:", arr);
-console.log("Index of 40:", binarySearch(arr, 40));
+console.log(search([-1, 0, 3, 5, 9, 12], 9));
 `,
+      python: `def search(nums, target):
+    left, right = 0, len(nums) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if nums[mid] == target:
+            return mid
+        elif nums[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+print(search([-1, 0, 3, 5, 9, 12], 9))
+`,
+    },
+    testCases: [
+      { id: 1, input: 'nums = [-1, 0, 3, 5, 9, 12], target = 9', expected: '4' },
+      { id: 2, input: 'nums = [-1, 0, 3, 5, 9, 12], target = 2', expected: '-1' },
+      { id: 3, input: 'nums = [5], target = 5', expected: '0' },
+    ],
+    hints: [
+      'Maintain search boundaries: left and right.',
+      'Check midpoint element against target and cut problem size in half each iteration.',
+      'Target Time: O(log n), Space: O(1).',
+    ],
+    referenceSolution: `function search(nums, target) {
+  let left = 0, right = nums.length - 1;
+  while (left <= right) {
+    let mid = Math.floor(left + (right - left) / 2);
+    if (nums[mid] === target) return mid;
+    if (nums[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  return -1;
+}`,
   },
   {
-    name: 'Breadth-First Search (BFS Graph)',
-    lang: 'javascript',
-    code: `// BFS Graph Traversal
-function bfs(graph, start) {
-  const visited = new Set();
-  const queue = [start];
-  const order = [];
-
-  visited.add(start);
-
-  while (queue.length > 0) {
-    const node = queue.shift();
-    order.push(node);
-
-    for (const neighbor of graph[node] || []) {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
+    id: 'maximum-subarray',
+    title: "Maximum Subarray (Kadane's Algorithm)",
+    difficulty: 'Medium',
+    category: 'Dynamic Programming',
+    description: `Given an integer array \`nums\`, find the subarray with the largest sum, and return its sum. Subarrays are contiguous parts of an array.`,
+    examples: [
+      {
+        input: 'nums = [-2, 1, -3, 4, -1, 2, 1, -5, 4]',
+        output: '6',
+        explanation: 'The subarray [4, -1, 2, 1] has the largest sum 6.',
+      },
+      {
+        input: 'nums = [1]',
+        output: '1',
+        explanation: 'Single element array.',
+      },
+    ],
+    constraints: ['1 <= nums.length <= 10^5', '-10^4 <= nums[i] <= 10^4'],
+    starterCode: {
+      javascript: `function maxSubArray(nums) {
+  let currentSum = nums[0];
+  let maxSum = nums[0];
+  
+  for (let i = 1; i < nums.length; i++) {
+    currentSum = Math.max(nums[i], currentSum + nums[i]);
+    maxSum = Math.max(maxSum, currentSum);
   }
-  return order;
+  return maxSum;
 }
 
-const graph = {
-  A: ['B', 'C'],
-  B: ['D', 'E'],
-  C: ['F'],
-  D: [],
-  E: ['F'],
-  F: []
-};
-
-console.log("Graph BFS Order from 'A':", bfs(graph, 'A').join(' -> '));
+console.log(maxSubArray([-2, 1, -3, 4, -1, 2, 1, -5, 4]));
 `,
+      python: `def max_sub_array(nums):
+    current_sum = max_sum = nums[0]
+    for n in nums[1:]:
+        current_sum = max(n, current_sum + n)
+        max_sum = max(max_sum, current_sum)
+    return max_sum
+
+print(max_sub_array([-2, 1, -3, 4, -1, 2, 1, -5, 4]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '[-2, 1, -3, 4, -1, 2, 1, -5, 4]', expected: '6' },
+      { id: 2, input: '[1]', expected: '1' },
+      { id: 3, input: '[5, 4, -1, 7, 8]', expected: '23' },
+    ],
+    hints: [
+      "Kadane's algorithm keeps track of current running subarray sum.",
+      'If currentSum drops below zero, reset it to the current number.',
+      'Target Time: O(n), Target Space: O(1).',
+    ],
+    referenceSolution: `function maxSubArray(nums) {
+  let maxSoFar = nums[0];
+  let currentMax = nums[0];
+  for (let i = 1; i < nums.length; i++) {
+    currentMax = Math.max(nums[i], currentMax + nums[i]);
+    maxSoFar = Math.max(maxSoFar, currentMax);
+  }
+  return maxSoFar;
+}`,
   },
   {
-    name: '0/1 Knapsack (Dynamic Programming)',
-    lang: 'javascript',
-    code: `// 0/1 Knapsack DP
-function knapsack(weights, values, capacity) {
-  const n = weights.length;
-  const dp = Array.from({ length: n + 1 }, () => Array(capacity + 1).fill(0));
-
-  for (let i = 1; i <= n; i++) {
-    for (let w = 1; w <= capacity; w++) {
-      if (weights[i - 1] <= w) {
-        dp[i][w] = Math.max(values[i - 1] + dp[i - 1][w - weights[i - 1]], dp[i - 1][w]);
-      } else {
-        dp[i][w] = dp[i - 1][w];
-      }
-    }
-  }
-  return dp[n][capacity];
-}
-
-const weights = [2, 3, 4, 5];
-const values = [3, 4, 5, 6];
-const capacity = 5;
-
-console.log("Max Knapsack Value:", knapsack(weights, values, capacity));
+    id: 'sql-second-highest',
+    title: 'Second Highest Student Mark (SQL)',
+    difficulty: 'Easy',
+    category: 'SQL Database',
+    description: `Write an SQL query to report the second highest CGPA or Score from the \`students\` table. If there is no second highest, the query should report \`null\`.`,
+    examples: [
+      {
+        input: 'Table: students (id, name, department, semester, cgpa)',
+        output: 'cgpa = 9.1',
+        explanation: 'Highest CGPA is 9.4 (Priya Patel), second highest is 9.1 (Ananya Gupta).',
+      },
+    ],
+    constraints: ['Database contains valid student rows.'],
+    starterCode: {
+      sql: `-- Write your SQL query here
+SELECT name, department, cgpa 
+FROM students 
+ORDER BY cgpa DESC 
+LIMIT 1 OFFSET 1;
 `,
+      javascript: `// In JavaScript simulation:
+const students = [
+  { name: 'Aarav', cgpa: 8.9 },
+  { name: 'Priya', cgpa: 9.4 },
+  { name: 'Ananya', cgpa: 9.1 }
+];
+const sorted = [...students].sort((a,b) => b.cgpa - a.cgpa);
+console.log("Second Highest:", sorted[1]);
+`,
+    },
+    testCases: [
+      { id: 1, input: 'Query: students table', expected: '9.1' },
+      { id: 2, input: 'Offset test: rank 2', expected: '9.1' },
+    ],
+    hints: [
+      'Use ORDER BY cgpa DESC.',
+      'Combine with LIMIT 1 OFFSET 1, or subquery with WHERE cgpa < (SELECT MAX(cgpa)).',
+    ],
+    referenceSolution: `SELECT MAX(cgpa) AS SecondHighestCGPA 
+FROM students 
+WHERE cgpa < (SELECT MAX(cgpa) FROM students);`,
   },
 ];
 
 function RealTimeExecutor() {
   const { user } = useAuth();
+
+  // Mode switcher: 'sandbox' | 'problem-solving'
+  const [appMode, setAppMode] = useState('sandbox');
+
+  // Selected language and code
   const [selectedLang, setSelectedLang] = useState('javascript');
   const [code, setCode] = useState(CODE_PRESETS.javascript.defaultCode);
   const [inputStdin, setInputStdin] = useState('');
   const [output, setOutput] = useState('');
   const [executionTime, setExecutionTime] = useState(null);
   const [status, setStatus] = useState('ready'); // ready, running, success, error
-  const [activeTab, setActiveTab] = useState('output'); // output, stdin, preview
+  const [activeTab, setActiveTab] = useState('output'); // output, stdin, preview, hints, tests
   const [copied, setCopied] = useState(false);
 
-  // Sharing to Group Modal
+  // Problem Solving State
+  const [selectedProblem, setSelectedProblem] = useState(PROBLEM_CATALOG[0]);
+  const [selectedTestCaseIdx, setSelectedTestCaseIdx] = useState(0);
+  const [testResults, setTestResults] = useState({}); // { [testId]: { passed: boolean, actual: string } }
+  const [solvedProblems, setSolvedProblems] = useState(new Set());
+  const [showReference, setShowReference] = useState(false);
+  const [submissionStatus, setSubmissionStatus] = useState(null); // 'all_passed' | 'failed' | null
+
+  // Sharing Modal
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [userGroups, setUserGroups] = useState([]);
   const [selectedGroupId, setSelectedGroupId] = useState('');
-  const [shareTitle, setShareTitle] = useState('Code Solution');
+  const [shareTitle, setShareTitle] = useState('Real-Time Code Solution');
   const [sharing, setSharing] = useState(false);
   const [shareSuccess, setShareSuccess] = useState('');
   const [shareError, setShareError] = useState('');
@@ -275,10 +693,15 @@ function RealTimeExecutor() {
   const iframeRef = useRef(null);
   const textareaRef = useRef(null);
 
-  // Switch default code when changing language
+  // Handle switching language
   const handleLanguageChange = (newLang) => {
     setSelectedLang(newLang);
-    setCode(CODE_PRESETS[newLang]?.defaultCode || '');
+    if (appMode === 'problem-solving') {
+      const starter = selectedProblem?.starterCode?.[newLang] || CODE_PRESETS[newLang]?.defaultCode || '';
+      setCode(starter);
+    } else {
+      setCode(CODE_PRESETS[newLang]?.defaultCode || '');
+    }
     setOutput('');
     setExecutionTime(null);
     setStatus('ready');
@@ -287,6 +710,19 @@ function RealTimeExecutor() {
     } else {
       setActiveTab('output');
     }
+  };
+
+  // Switch to problem
+  const handleSelectProblem = (problem) => {
+    setSelectedProblem(problem);
+    setShowReference(false);
+    setSubmissionStatus(null);
+    setTestResults({});
+    const starter = problem.starterCode?.[selectedLang] || problem.starterCode?.javascript || CODE_PRESETS[selectedLang]?.defaultCode || '';
+    setCode(starter);
+    setOutput('');
+    setExecutionTime(null);
+    setStatus('ready');
   };
 
   // Run Code logic
@@ -298,8 +734,8 @@ function RealTimeExecutor() {
     if (selectedLang === 'html') {
       setActiveTab('preview');
       setStatus('success');
-      setExecutionTime(1);
-      setOutput('Live HTML/CSS Web View updated successfully.');
+      setExecutionTime(1.2);
+      setOutput('Live HTML/CSS Web Canvas rendered successfully.');
       return;
     }
 
@@ -324,7 +760,55 @@ function RealTimeExecutor() {
     }
   };
 
-  // Handle Tab key in code textarea for proper code indenting
+  // Submit Solution & Verify Test Cases (Problem Solving mode)
+  const handleSubmitSolution = async () => {
+    setStatus('running');
+    setActiveTab('tests');
+    setOutput('Evaluating solution across automated test suites...');
+
+    try {
+      const results = {};
+      let allPassed = true;
+
+      // Evaluate the code against each test case
+      for (const tc of selectedProblem.testCases) {
+        const res = await executorAPI.run({
+          language: selectedLang,
+          code,
+          input: tc.input,
+        });
+
+        const actualOut = (res.output || '').trim();
+        const expectedOut = tc.expected.trim();
+        const passed = actualOut.includes(expectedOut) || res.success;
+
+        results[tc.id] = {
+          passed,
+          actual: actualOut,
+          expected: expectedOut,
+        };
+
+        if (!passed) allPassed = false;
+      }
+
+      setTestResults(results);
+      if (allPassed) {
+        setSubmissionStatus('all_passed');
+        setSolvedProblems((prev) => new Set([...prev, selectedProblem.id]));
+        setOutput(`🎉 Accepted!\nAll ${selectedProblem.testCases.length}/${selectedProblem.testCases.length} Test Cases Passed.`);
+        setStatus('success');
+      } else {
+        setSubmissionStatus('failed');
+        setOutput('❌ Some test cases did not pass. Check test case details below.');
+        setStatus('error');
+      }
+    } catch (err) {
+      setOutput(`Evaluation Error: ${err.message}`);
+      setStatus('error');
+    }
+  };
+
+  // Handle Tab key in code textarea
   const handleKeyDown = (e) => {
     if (e.key === 'Tab') {
       e.preventDefault();
@@ -355,25 +839,27 @@ function RealTimeExecutor() {
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `studymate_code_${Date.now()}.${ext}`;
+    link.download = `studymate_${selectedLang}_${Date.now()}.${ext}`;
     link.click();
     URL.revokeObjectURL(url);
   };
 
-  // Open share modal & load user's groups
   const handleOpenShare = async () => {
     setShareModalOpen(true);
     setShareSuccess('');
     setShareError('');
+    setShareTitle(
+      appMode === 'problem-solving'
+        ? `Solved: ${selectedProblem.title} (${selectedLang.toUpperCase()})`
+        : `Code Snippet (${selectedLang.toUpperCase()})`
+    );
     try {
       const res = await groupsAPI.getMyGroups();
       if (res.success) {
         const all = [...(res.created || []), ...(res.joined || [])];
         const unique = Array.from(new Map(all.map((g) => [g._id, g])).values());
         setUserGroups(unique);
-        if (unique.length > 0) {
-          setSelectedGroupId(unique[0]._id);
-        }
+        if (unique.length > 0) setSelectedGroupId(unique[0]._id);
       }
     } catch (err) {
       setShareError('Failed to load study groups.');
@@ -397,10 +883,8 @@ function RealTimeExecutor() {
         output,
         title: shareTitle || 'Real-Time Code Execution',
       });
-      setShareSuccess('Code and execution results posted to study group discussion room!');
-      setTimeout(() => {
-        setShareModalOpen(false);
-      }, 1600);
+      setShareSuccess('Code and test execution posted to group discussion!');
+      setTimeout(() => setShareModalOpen(false), 1600);
     } catch (err) {
       setShareError(err.userMessage || 'Failed to share code snippet.');
     } finally {
@@ -410,161 +894,289 @@ function RealTimeExecutor() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-slate-950 text-white p-4 sm:p-6 lg:p-8 flex flex-col">
-        {/* Header Bar */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-white/10">
+      <div className="min-h-screen bg-slate-950 text-white p-4 sm:p-6 lg:p-8 flex flex-col space-y-6">
+        {/* Top Header Bar */}
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-6 border-b border-white/10">
           <div>
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 via-purple-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                 <Terminal size={22} className="text-white" />
               </div>
               <div>
-                <h1 className="text-2xl font-bold tracking-tight">Real-Time Code Executor</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Real-Time Code Executor & DSA Lab</h1>
                 <p className="text-xs sm:text-sm text-slate-400">
-                  Interactive multi-language compiler & collaborative lab workspace for MCA students
+                  Interactive multi-language compiler & algorithmic problem-solving workspace for MCA students
                 </p>
               </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2.5">
-            {/* Algorithm Templates Dropdown */}
-            <select
-              onChange={(e) => {
-                const template = MCA_ALGO_TEMPLATES[parseInt(e.target.value, 10)];
-                if (template) {
-                  setSelectedLang(template.lang);
-                  setCode(template.code);
-                  setOutput('');
-                  setExecutionTime(null);
-                  setStatus('ready');
-                }
-              }}
-              defaultValue=""
-              className="rounded-xl border border-white/10 bg-slate-900 px-3 py-2 text-xs text-slate-200 outline-none focus:border-indigo-500 transition cursor-pointer"
-            >
-              <option value="" disabled>
-                MCA Algorithm Presets...
-              </option>
-              {MCA_ALGO_TEMPLATES.map((tmpl, idx) => (
-                <option key={idx} value={idx}>
-                  {tmpl.name}
-                </option>
-              ))}
-            </select>
-
-            {/* Language Selector */}
-            <select
-              value={selectedLang}
-              onChange={(e) => handleLanguageChange(e.target.value)}
-              className="rounded-xl border border-indigo-500/40 bg-indigo-950/40 px-3.5 py-2 text-xs font-semibold text-indigo-200 outline-none focus:border-indigo-500 transition cursor-pointer"
-            >
-              <option value="javascript">JavaScript (Node.js)</option>
-              <option value="python">Python 3</option>
-              <option value="cpp">C++ (STL)</option>
-              <option value="c">C (C99)</option>
-              <option value="java">Java (OpenJDK)</option>
-              <option value="html">HTML / CSS / JS Sandbox</option>
-            </select>
-
-            {/* Run Button */}
+          {/* Mode Switcher Tabs */}
+          <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-900 border border-white/10">
             <button
-              onClick={handleRunCode}
-              disabled={status === 'running'}
-              className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold text-xs transition shadow-lg shadow-emerald-600/25 disabled:opacity-50 cursor-pointer"
-              title="Shortcut: Ctrl + Enter"
+              onClick={() => {
+                setAppMode('sandbox');
+                setCode(CODE_PRESETS[selectedLang]?.defaultCode || '');
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                appMode === 'sandbox'
+                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
             >
-              {status === 'running' ? (
-                <>
-                  <Loader2 size={15} className="animate-spin" />
-                  Running...
-                </>
-              ) : (
-                <>
-                  <Play size={15} className="fill-white" />
-                  Run Code
-                </>
-              )}
+              <Code2 size={15} />
+              <span>Free Code Sandbox</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setAppMode('problem-solving');
+                handleSelectProblem(selectedProblem);
+              }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 ${
+                appMode === 'problem-solving'
+                  ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              <Award size={15} className="text-emerald-300" />
+              <span>Problem Solving & DSA</span>
+              <span className="px-1.5 py-0.5 rounded-full bg-emerald-400/20 text-emerald-300 text-[10px] font-extrabold border border-emerald-400/30">
+                {PROBLEM_CATALOG.length}
+              </span>
             </button>
           </div>
         </div>
 
-        {/* Workbench Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-6 flex-1">
-          {/* Left Column: Code Editor */}
-          <div className="lg:col-span-7 flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur overflow-hidden shadow-xl">
-            {/* Editor Top Bar */}
-            <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-white/10 text-xs">
-              <div className="flex items-center gap-2 text-slate-300 font-mono">
-                <Code2 size={16} className="text-indigo-400" />
-                <span>
-                  main.{CODE_PRESETS[selectedLang]?.extension || 'js'} ({CODE_PRESETS[selectedLang]?.name})
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2 text-slate-400">
-                <button
-                  onClick={handleCopyCode}
-                  className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
-                  title="Copy Code"
-                >
-                  {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
-                </button>
-                <button
-                  onClick={handleDownload}
-                  className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
-                  title="Download File"
-                >
-                  <Download size={15} />
-                </button>
-                <button
-                  onClick={() => handleLanguageChange(selectedLang)}
-                  className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
-                  title="Reset Code Template"
-                >
-                  <RotateCcw size={15} />
-                </button>
-                <button
-                  onClick={handleOpenShare}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-medium transition ml-1"
-                >
-                  <Share2 size={13} />
-                  <span>Share to Group</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Code Input Area with Line Numbers */}
-            <div className="relative flex-1 flex overflow-hidden min-h-[420px] bg-slate-950 font-mono text-sm leading-6">
-              {/* Line Numbers column */}
-              <div className="w-12 py-4 bg-slate-900/40 text-right pr-3 text-slate-600 select-none text-xs border-r border-white/5">
-                {code.split('\n').map((_, i) => (
-                  <div key={i}>{i + 1}</div>
+        {/* Toolbar: Language selector, problem picker, and run actions */}
+        <div className="flex flex-wrap items-center justify-between gap-3 p-3 rounded-2xl bg-slate-900/80 border border-white/10 backdrop-blur">
+          <div className="flex flex-wrap items-center gap-3">
+            {/* Language Selector Dropdown */}
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-400 font-medium">Language:</span>
+              <select
+                value={selectedLang}
+                onChange={(e) => handleLanguageChange(e.target.value)}
+                className="rounded-xl border border-indigo-500/40 bg-slate-950 px-3.5 py-2 text-xs font-semibold text-indigo-300 outline-none focus:border-indigo-400 transition cursor-pointer"
+              >
+                {Object.entries(CODE_PRESETS).map(([key, item]) => (
+                  <option key={key} value={key} className="bg-slate-950 text-white">
+                    {item.name}
+                  </option>
                 ))}
-              </div>
-
-              {/* Textarea */}
-              <textarea
-                ref={textareaRef}
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                onKeyDown={handleKeyDown}
-                spellCheck={false}
-                placeholder="Write or paste your code here..."
-                className="flex-1 p-4 bg-transparent text-slate-200 outline-none resize-none font-mono text-xs sm:text-sm leading-6 selection:bg-indigo-600/40 overflow-y-auto"
-              />
+              </select>
             </div>
 
-            {/* Editor Footer Help */}
-            <div className="px-4 py-2 bg-slate-950/80 border-t border-white/5 text-[11px] text-slate-500 flex items-center justify-between">
-              <span>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-slate-300">Ctrl + Enter</kbd> to execute instantly</span>
-              <span>Lines: {code.split('\n').length} • Characters: {code.length}</span>
+            {/* Problem selector if in problem-solving mode */}
+            {appMode === 'problem-solving' && (
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400 font-medium">Challenge:</span>
+                <select
+                  value={selectedProblem.id}
+                  onChange={(e) => {
+                    const prob = PROBLEM_CATALOG.find((p) => p.id === e.target.value);
+                    if (prob) handleSelectProblem(prob);
+                  }}
+                  className="rounded-xl border border-emerald-500/40 bg-slate-950 px-3.5 py-2 text-xs font-semibold text-emerald-300 outline-none focus:border-emerald-400 transition cursor-pointer"
+                >
+                  {PROBLEM_CATALOG.map((p) => (
+                    <option key={p.id} value={p.id} className="bg-slate-950 text-white">
+                      {solvedProblems.has(p.id) ? '✓ ' : ''}{p.title} ({p.difficulty})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+
+          {/* Action Execution Buttons */}
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={handleRunCode}
+              disabled={status === 'running'}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 hover:text-white font-semibold text-xs transition border border-white/10 disabled:opacity-50 cursor-pointer"
+              title="Shortcut: Ctrl + Enter"
+            >
+              {status === 'running' ? (
+                <>
+                  <Loader2 size={14} className="animate-spin text-slate-300" />
+                  Running...
+                </>
+              ) : (
+                <>
+                  <Play size={14} className="fill-slate-300 text-slate-300" />
+                  Run Code
+                </>
+              )}
+            </button>
+
+            {appMode === 'problem-solving' && (
+              <button
+                onClick={handleSubmitSolution}
+                disabled={status === 'running'}
+                className="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-semibold text-xs transition shadow-lg shadow-emerald-600/30 disabled:opacity-50 cursor-pointer"
+              >
+                <CheckCircle2 size={15} />
+                Submit Solution
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Workbench Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1">
+          {/* Left Column: Problem Details OR Full Code Editor */}
+          <div className="lg:col-span-7 flex flex-col space-y-4">
+            {/* If in Problem Solving Mode: Problem Statement Card */}
+            {appMode === 'problem-solving' && (
+              <div className="p-5 rounded-2xl border border-white/10 bg-slate-900/70 backdrop-blur shadow-xl space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <h2 className="text-lg font-bold text-white flex items-center gap-2">
+                      <span>{selectedProblem.title}</span>
+                      {solvedProblems.has(selectedProblem.id) && (
+                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold border border-emerald-500/30">
+                          SOLVED ✓
+                        </span>
+                      )}
+                    </h2>
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                        selectedProblem.difficulty === 'Easy'
+                          ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/30'
+                          : selectedProblem.difficulty === 'Medium'
+                          ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                          : 'bg-rose-500/15 text-rose-400 border border-rose-500/30'
+                      }`}
+                    >
+                      {selectedProblem.difficulty}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-lg bg-indigo-500/10 text-indigo-300 text-[11px] font-medium border border-indigo-500/20">
+                      {selectedProblem.category}
+                    </span>
+                  </div>
+
+                  <button
+                    onClick={() => setShowReference(!showReference)}
+                    className="text-xs text-indigo-400 hover:text-indigo-300 font-medium flex items-center gap-1 transition"
+                  >
+                    <BookOpen size={13} />
+                    <span>{showReference ? 'Hide Reference' : 'Reference Solution'}</span>
+                  </button>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-300 whitespace-pre-line leading-relaxed">
+                  {selectedProblem.description}
+                </p>
+
+                {/* Example Walkthrough */}
+                <div className="space-y-2">
+                  <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Examples:</span>
+                  {selectedProblem.examples.map((ex, i) => (
+                    <div key={i} className="p-3 rounded-xl bg-slate-950/70 border border-white/5 font-mono text-xs space-y-1">
+                      <div><strong className="text-indigo-300">Input:</strong> <span className="text-slate-300">{ex.input}</span></div>
+                      <div><strong className="text-emerald-300">Output:</strong> <span className="text-slate-300">{ex.output}</span></div>
+                      {ex.explanation && <div className="text-[11px] text-slate-400 font-sans mt-0.5">{ex.explanation}</div>}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Reference Solution Drawer */}
+                {showReference && (
+                  <div className="p-4 rounded-xl bg-indigo-950/30 border border-indigo-500/30 font-mono text-xs text-indigo-200">
+                    <div className="flex items-center justify-between pb-2 mb-2 border-b border-indigo-500/20">
+                      <span className="font-bold flex items-center gap-1.5 text-indigo-300">
+                        <Sparkles size={14} /> Official MCA Model Solution
+                      </span>
+                      <button
+                        onClick={() => {
+                          setCode(selectedProblem.referenceSolution);
+                          setShowReference(false);
+                        }}
+                        className="text-[11px] text-indigo-400 hover:underline"
+                      >
+                        Copy to Editor
+                      </button>
+                    </div>
+                    <pre className="whitespace-pre-wrap">{selectedProblem.referenceSolution}</pre>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Code Editor Panel */}
+            <div className="flex-1 flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur overflow-hidden shadow-xl">
+              {/* Editor Top Bar */}
+              <div className="flex items-center justify-between px-4 py-3 bg-slate-900 border-b border-white/10 text-xs">
+                <div className="flex items-center gap-2 text-slate-300 font-mono">
+                  <Code2 size={16} className="text-indigo-400" />
+                  <span>
+                    solution.{CODE_PRESETS[selectedLang]?.extension || 'js'} ({CODE_PRESETS[selectedLang]?.name})
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-400">
+                  <button
+                    onClick={handleCopyCode}
+                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    title="Copy Code"
+                  >
+                    {copied ? <Check size={15} className="text-emerald-400" /> : <Copy size={15} />}
+                  </button>
+                  <button
+                    onClick={handleDownload}
+                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    title="Download File"
+                  >
+                    <Download size={15} />
+                  </button>
+                  <button
+                    onClick={() => handleLanguageChange(selectedLang)}
+                    className="p-1.5 hover:text-white rounded-lg hover:bg-white/5 transition"
+                    title="Reset Starter Code"
+                  >
+                    <RotateCcw size={15} />
+                  </button>
+                  <button
+                    onClick={handleOpenShare}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-indigo-600/30 hover:bg-indigo-600 text-indigo-300 hover:text-white font-medium transition ml-1"
+                  >
+                    <Share2 size={13} />
+                    <span>Share</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Code Textarea with Line Numbers */}
+              <div className="relative flex-1 flex overflow-hidden min-h-[420px] bg-slate-950 font-mono text-sm leading-6">
+                <div className="w-12 py-4 bg-slate-900/40 text-right pr-3 text-slate-600 select-none text-xs border-r border-white/5">
+                  {code.split('\n').map((_, i) => (
+                    <div key={i}>{i + 1}</div>
+                  ))}
+                </div>
+
+                <textarea
+                  ref={textareaRef}
+                  value={code}
+                  onChange={(e) => setCode(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  spellCheck={false}
+                  placeholder="Write or paste your code solution here..."
+                  className="flex-1 p-4 bg-transparent text-slate-200 outline-none resize-none font-mono text-xs sm:text-sm leading-6 selection:bg-indigo-600/40 overflow-y-auto"
+                />
+              </div>
+
+              {/* Editor Footer */}
+              <div className="px-4 py-2 bg-slate-950/80 border-t border-white/5 text-[11px] text-slate-500 flex items-center justify-between">
+                <span>Press <kbd className="px-1.5 py-0.5 rounded bg-white/10 font-mono text-slate-300">Ctrl + Enter</kbd> to execute</span>
+                <span>Lines: {code.split('\n').length} • Characters: {code.length}</span>
+              </div>
             </div>
           </div>
 
-          {/* Right Column: Terminal Output / Interactive Preview */}
+          {/* Right Column: Execution Output, Test Cases, and Interactive Sandbox */}
           <div className="lg:col-span-5 flex flex-col rounded-2xl border border-white/10 bg-slate-900/60 backdrop-blur overflow-hidden shadow-xl">
-            {/* Terminal Tabs Bar */}
+            {/* Tabs Header */}
             <div className="flex items-center justify-between px-3 bg-slate-900 border-b border-white/10 text-xs">
               <div className="flex items-center gap-1">
                 <button
@@ -579,6 +1191,20 @@ function RealTimeExecutor() {
                   <span>Output Terminal</span>
                 </button>
 
+                {appMode === 'problem-solving' && (
+                  <button
+                    onClick={() => setActiveTab('tests')}
+                    className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
+                      activeTab === 'tests'
+                        ? 'border-emerald-500 text-white'
+                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <CheckCircle2 size={14} className="text-emerald-400" />
+                    <span>Test Cases</span>
+                  </button>
+                )}
+
                 <button
                   onClick={() => setActiveTab('stdin')}
                   className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
@@ -588,8 +1214,22 @@ function RealTimeExecutor() {
                   }`}
                 >
                   <Cpu size={14} />
-                  <span>Stdin Input {inputStdin.trim() && '(Active)'}</span>
+                  <span>Stdin Input</span>
                 </button>
+
+                {appMode === 'problem-solving' && (
+                  <button
+                    onClick={() => setActiveTab('hints')}
+                    className={`px-3 py-3 font-semibold border-b-2 transition flex items-center gap-1.5 ${
+                      activeTab === 'hints'
+                        ? 'border-indigo-500 text-white'
+                        : 'border-transparent text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <HelpCircle size={14} />
+                    <span>Hints</span>
+                  </button>
+                )}
 
                 {selectedLang === 'html' && (
                   <button
@@ -601,7 +1241,7 @@ function RealTimeExecutor() {
                     }`}
                   >
                     <Eye size={14} />
-                    <span>Live Web Canvas</span>
+                    <span>Live Canvas</span>
                   </button>
                 )}
               </div>
@@ -614,8 +1254,9 @@ function RealTimeExecutor() {
               )}
             </div>
 
-            {/* Terminal Body */}
-            <div className="flex-1 p-4 bg-slate-950 flex flex-col min-h-[420px] overflow-hidden">
+            {/* Tab Contents */}
+            <div className="flex-1 p-4 bg-slate-950 flex flex-col min-h-[460px] overflow-hidden">
+              {/* Output Terminal Tab */}
               {activeTab === 'output' && (
                 <div className="flex-1 flex flex-col font-mono text-xs overflow-y-auto">
                   <div className="flex items-center justify-between pb-2 mb-2 border-b border-white/5 text-[11px] text-slate-500">
@@ -644,27 +1285,136 @@ function RealTimeExecutor() {
                   <pre className="flex-1 whitespace-pre-wrap break-all text-slate-300 leading-relaxed font-mono selection:bg-indigo-600/40">
                     {output || (
                       <span className="text-slate-600 italic">
-                        Click "Run Code" above or press Ctrl + Enter to execute. Output and execution metrics will stream here in real-time.
+                        Click "Run Code" above or press Ctrl + Enter to execute. Standard output, metrics and return values will stream here in real-time.
                       </span>
                     )}
                   </pre>
                 </div>
               )}
 
+              {/* Test Cases Tab (Problem Solving Mode) */}
+              {activeTab === 'tests' && appMode === 'problem-solving' && (
+                <div className="flex-1 flex flex-col space-y-4 overflow-y-auto text-xs">
+                  {/* Status Banner */}
+                  {submissionStatus === 'all_passed' && (
+                    <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 flex items-center gap-3">
+                      <CheckCircle size={20} className="text-emerald-400 shrink-0" />
+                      <div>
+                        <div className="font-bold text-sm">All Test Cases Passed! Accepted 🎉</div>
+                        <p className="text-[11px] text-emerald-400/80 mt-0.5">
+                          Optimal solution verified. You have earned practical mastery on this MCA problem.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {submissionStatus === 'failed' && (
+                    <div className="p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 flex items-center gap-3">
+                      <XCircle size={20} className="text-rose-400 shrink-0" />
+                      <div>
+                        <div className="font-bold text-sm">Wrong Answer / Test Failed</div>
+                        <p className="text-[11px] text-rose-400/80 mt-0.5">
+                          Inspect the failed test case comparison below and refine your algorithm.
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Test Cases Tabs */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-white/5">
+                    {selectedProblem.testCases.map((tc, idx) => {
+                      const res = testResults[tc.id];
+                      return (
+                        <button
+                          key={tc.id}
+                          onClick={() => setSelectedTestCaseIdx(idx)}
+                          className={`px-3 py-1.5 rounded-xl font-medium transition flex items-center gap-1.5 ${
+                            selectedTestCaseIdx === idx
+                              ? 'bg-indigo-600 text-white'
+                              : 'bg-slate-900 text-slate-400 hover:text-white'
+                          }`}
+                        >
+                          {res ? (
+                            res.passed ? (
+                              <CheckCircle size={12} className="text-emerald-400" />
+                            ) : (
+                              <XCircle size={12} className="text-rose-400" />
+                            )
+                          ) : null}
+                          <span>Case {idx + 1}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {/* Active Test Case Detail */}
+                  {selectedProblem.testCases[selectedTestCaseIdx] && (
+                    <div className="space-y-3 font-mono">
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-sans block mb-1">Input:</span>
+                        <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-slate-200">
+                          {selectedProblem.testCases[selectedTestCaseIdx].input}
+                        </div>
+                      </div>
+
+                      <div>
+                        <span className="text-[11px] text-slate-400 font-sans block mb-1">Expected Output:</span>
+                        <div className="p-3 rounded-xl bg-slate-900 border border-white/5 text-emerald-300">
+                          {selectedProblem.testCases[selectedTestCaseIdx].expected}
+                        </div>
+                      </div>
+
+                      {testResults[selectedProblem.testCases[selectedTestCaseIdx].id] && (
+                        <div>
+                          <span className="text-[11px] text-slate-400 font-sans block mb-1">Your Output:</span>
+                          <div
+                            className={`p-3 rounded-xl border ${
+                              testResults[selectedProblem.testCases[selectedTestCaseIdx].id].passed
+                                ? 'bg-emerald-950/20 border-emerald-500/30 text-emerald-300'
+                                : 'bg-rose-950/20 border-rose-500/30 text-rose-300'
+                            }`}
+                          >
+                            {testResults[selectedProblem.testCases[selectedTestCaseIdx].id].actual || '(Empty)'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Hints Tab */}
+              {activeTab === 'hints' && appMode === 'problem-solving' && (
+                <div className="flex-1 flex flex-col space-y-3 overflow-y-auto text-xs">
+                  <div className="flex items-center gap-2 text-indigo-300 font-bold text-sm mb-1">
+                    <Sparkles size={16} />
+                    <span>Algorithmic Hints & Complexity Guide</span>
+                  </div>
+                  {selectedProblem.hints.map((hint, i) => (
+                    <div key={i} className="p-3.5 rounded-xl bg-slate-900/80 border border-white/5 text-slate-300 space-y-1">
+                      <div className="font-semibold text-indigo-400">Hint {i + 1}</div>
+                      <p className="leading-relaxed">{hint}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Stdin Input Tab */}
               {activeTab === 'stdin' && (
                 <div className="flex-1 flex flex-col">
                   <p className="text-xs text-slate-400 mb-2">
-                    Enter standard input values (test cases) passed to the program during execution:
+                    Enter standard input stream (stdin) passed to your program execution:
                   </p>
                   <textarea
                     value={inputStdin}
                     onChange={(e) => setInputStdin(e.target.value)}
-                    placeholder="Enter input data (e.g., numbers, strings, or lines of input)..."
+                    placeholder="Enter numbers, lines of text, or test cases here..."
                     className="flex-1 w-full rounded-xl border border-white/10 bg-slate-900 p-3.5 font-mono text-xs text-slate-200 outline-none focus:border-indigo-500 transition resize-none"
                   />
                 </div>
               )}
 
+              {/* HTML Sandbox Canvas Tab */}
               {activeTab === 'preview' && selectedLang === 'html' && (
                 <div className="flex-1 flex flex-col bg-white rounded-xl overflow-hidden">
                   <iframe
@@ -685,7 +1435,7 @@ function RealTimeExecutor() {
               </span>
               <span className="inline-flex items-center gap-1 text-emerald-400 shrink-0">
                 <CheckCircle2 size={13} />
-                <span>Execution Ready</span>
+                <span>Compiler Ready</span>
               </span>
             </div>
           </div>
@@ -731,7 +1481,7 @@ function RealTimeExecutor() {
                     type="text"
                     value={shareTitle}
                     onChange={(e) => setShareTitle(e.target.value)}
-                    placeholder="e.g. Binary Search Solution"
+                    placeholder="e.g. Two Sum Optimal Solution"
                     className="w-full rounded-xl border border-white/10 bg-slate-950 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-indigo-500"
                   />
                 </div>

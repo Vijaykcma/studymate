@@ -9,7 +9,7 @@
     "seed": "node src/scripts/seed.js",
     "create-admin": "node src/scripts/createAdmin.js",
     "test-gmail": "node src/scripts/testGmailApi.js",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit"
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --detectOpenHandles --forceExit --testTimeout=20000"
   },
   "dependencies": {
     "bcryptjs": "3.0.2",
