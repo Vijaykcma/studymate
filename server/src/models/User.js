@@ -81,6 +81,22 @@ const userSchema = new mongoose.Schema(
       profileVisible: { type: Boolean, default: true },
       darkMode: { type: Boolean, default: true },
     },
+    blockedUsers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User',
+      },
+    ],
+    mutedChats: [
+      {
+        type: String, // 'direct:userId' or 'group:groupId'
+      },
+    ],
+    pinnedChats: [
+      {
+        type: String, // 'direct:userId' or 'group:groupId'
+      },
+    ],
     isEmailVerified: {
       type: Boolean,
       default: false,

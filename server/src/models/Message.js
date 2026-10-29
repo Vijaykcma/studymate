@@ -42,7 +42,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'voice', 'code', 'file', 'image', 'call_log'],
+      enum: ['text', 'voice', 'code', 'file', 'image', 'call_log', 'poll'],
       default: 'text',
     },
     voiceDuration: {
@@ -57,6 +57,20 @@ const messageSchema = new mongoose.Schema(
       language: { type: String, default: '' },
       code: { type: String, default: '' },
       title: { type: String, default: '' },
+    },
+    poll: {
+      question: { type: String, default: '' },
+      options: [
+        {
+          text: { type: String, required: true },
+          votes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+        },
+      ],
+    },
+    callInfo: {
+      callType: { type: String, enum: ['audio', 'video'], default: 'audio' },
+      duration: { type: Number, default: 0 },
+      callStatus: { type: String, enum: ['completed', 'missed', 'rejected'], default: 'completed' },
     },
     attachments: [
       {

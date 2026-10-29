@@ -27,6 +27,7 @@ import {
   Sparkles,
   ChevronDown,
   Volume2,
+  VolumeX,
   Copy,
   Info,
   Calendar,
@@ -39,12 +40,27 @@ import {
   Star,
   Pin,
   CornerDownRight,
+  BarChart2,
+  Radio,
+  Camera,
+  Download,
+  FileText,
+  Image as ImageIcon,
+  CheckCircle2,
+  ShieldAlert,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, messagesAPI } from '../services/api';
 import { getSocket } from '../services/socket';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+
+// Chat Modals
+import { WebRTCCallModal } from '../components/chat/WebRTCCallModal';
+import { StatusStoriesModal } from '../components/chat/StatusStoriesModal';
+import { PollModal } from '../components/chat/PollModal';
+import { BroadcastModal } from '../components/chat/BroadcastModal';
+import { NewGroupModal } from '../components/chat/NewGroupModal';
 
 const QUICK_EMOJIS = ['👍', '❤️', '😂', '🔥', '🚀', '💻', '🎉', '💯', '👏', '🧠', '📚', '✨', '🙌', '💡'];
 
@@ -61,6 +77,11 @@ export function Messages() {
   const [directConversations, setDirectConversations] = useState([]);
   const [activeChat, setActiveChat] = useState(null); // { type: 'direct' | 'group', id: string, data: object }
 
+  // Chat Personalization
+  const [pinnedChats, setPinnedChats] = useState(new Set());
+  const [mutedChats, setMutedChats] = useState(new Set());
+  const [blockedUsers, setBlockedUsers] = useState(new Set());
+
   // Chat Data
   const [messages, setMessages] = useState([]);
   const [inputContent, setInputContent] = useState('');
@@ -71,7 +92,7 @@ export function Messages() {
 
   // Online & Typing Presence
   const [onlineUsers, setOnlineUsers] = useState(new Set());
-  const [typingMap, setTypingMap] = useState({}); // key: userId or groupId -> boolean
+  const [typingMap, setTypingMap] = useState({});
   const typingTimeoutRef = useRef(null);
 
   // Modals & Panels
@@ -79,12 +100,6 @@ export function Messages() {
   const [availablePeers, setAvailablePeers] = useState([]);
   const [peerSearchQuery, setPeerSearchQuery] = useState('');
   const [loadingPeers, setLoadingPeers] = useState(false);
-
-  // Audio Voice Note Simulation & Code Snippet Modal
-  const [voiceRecording, setVoiceRecording] = useState(false);
-  const [voiceSeconds, setVoiceSeconds] = useState(0);
-  const voiceIntervalRef = useRef(null);
-  const [playingVoiceId, setPlayingVoiceId] = useState(null);
 
   const [codeModalOpen, setCodeModalOpen] = useState(false);
   const [codeSnippet, setCodeSnippet] = useState({ language: 'javascript', title: '', code: '' });
@@ -98,18 +113,54 @@ export function Messages() {
   const [deleteModalMsg, setDeleteModalMsg] = useState(null);
   const [activeActionMessageId, setActiveActionMessageId] = useState(null);
 
+  // Media, Audio & File Uploads
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [previewImage, setPreviewImage] = useState(null);
+  const fileInputRef = useRef(null);
+
+  // Real Audio Voice Recording (MediaRecorder API)
+  const [voiceRecording, setVoiceRecording] = useState(false);
+  const [voiceSeconds, setVoiceSeconds] = useState(0);
+  const voiceIntervalRef = useRef(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
+  const [playingVoiceId, setPlayingVoiceId] = useState(null);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1); // 1x, 1.5x, 2x
+
+  // In-Chat Search
+  const [inChatSearchOpen, setInChatSearchOpen] = useState(false);
+  const [inChatSearchQuery, setInChatSearchQuery] = useState('');
+
+  // WebRTC Calling State
+  const [callState, setCallState] = useState(null); // { status: 'incoming'|'outgoing'|'connected', callType: 'audio'|'video', peer, offer }
+
+  // Stories (24h Statuses)
+  const [statusModalOpen, setStatusModalOpen] = useState(false);
+  const [stories, setStories] = useState([]);
+
+  // Study Polls
+  const [pollModalOpen, setPollModalOpen] = useState(false);
+
+  // Broadcast Messaging
+  const [broadcastModalOpen, setBroadcastModalOpen] = useState(false);
+
+  // New Group Modal
+  const [newGroupModalOpen, setNewGroupModalOpen] = useState(false);
+
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
+  const audioElementsRef = useRef({});
 
-  // 1. Initial Load: Load Groups and Direct Conversations
+  // 1. Initial Load: Load Groups, Direct Conversations, and Stories
   const refreshAllChats = async () => {
     try {
       setLoadingChats(true);
       setError('');
 
-      const [groupsRes, convosRes] = await Promise.allSettled([
+      const [groupsRes, convosRes, storiesRes] = await Promise.allSettled([
         groupsAPI.getMyGroups(),
         messagesAPI.getConversations(),
+        messagesAPI.getStatuses(),
       ]);
 
       let loadedGroups = [];
@@ -123,6 +174,13 @@ export function Messages() {
       if (convosRes.status === 'fulfilled' && convosRes.value.success) {
         loadedDirect = convosRes.value.conversations || [];
         setDirectConversations(loadedDirect);
+        if (convosRes.value.pinnedChats) setPinnedChats(new Set(convosRes.value.pinnedChats));
+        if (convosRes.value.mutedChats) setMutedChats(new Set(convosRes.value.mutedChats));
+        if (convosRes.value.blockedUsers) setBlockedUsers(new Set(convosRes.value.blockedUsers));
+      }
+
+      if (storiesRes.status === 'fulfilled' && storiesRes.value.success) {
+        setStories(storiesRes.value.stories || []);
       }
 
       // Default active chat if none selected (desktop viewports only)
@@ -158,45 +216,51 @@ export function Messages() {
 
     const handleConnect = () => setConnected(true);
     const handleDisconnect = () => setConnected(false);
+    const handleOnlineUsers = (usersList) => setOnlineUsers(new Set(usersList));
 
-    setConnected(socket.connected);
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
-
-    // Online users list
-    const handleOnlineUsers = (userList) => {
-      setOnlineUsers(new Set(userList));
-    };
     socket.on('online_users', handleOnlineUsers);
+
+    if (socket.connected) {
+      setConnected(true);
+    }
 
     // Direct message listener
     const handleNewDirectMessage = (msg) => {
-      const isCurrentChat =
+      const isCurrentConversation =
         activeChat?.type === 'direct' &&
         (msg.sender?._id === activeChat.id || msg.recipient?._id === activeChat.id);
 
-      if (isCurrentChat) {
+      if (isCurrentConversation) {
         setMessages((prev) => {
           if (prev.some((m) => m._id === msg._id)) return prev;
           return [...prev, msg];
         });
+
+        // Mark as read immediately if current active conversation
+        if (msg.sender?._id === activeChat.id) {
+          socket.emit('mark_as_read', { peerId: activeChat.id });
+        }
       }
 
-      // Update sidebar conversations preview
+      // Update sidebar conversations list preview
       setDirectConversations((prev) => {
-        const peerId = msg.sender?._id === user?._id ? msg.recipient?._id : msg.sender?._id;
-        const peer = msg.sender?._id === user?._id ? msg.recipient : msg.sender;
-        if (!peerId) return prev;
+        const partnerId =
+          msg.sender?._id === user?._id ? msg.recipient?._id : msg.sender?._id;
+        const partner = msg.sender?._id === user?._id ? msg.recipient : msg.sender;
 
-        const filtered = prev.filter((c) => c.peer._id !== peerId);
-        const unreadInc = !isCurrentChat && msg.sender?._id !== user?._id ? 1 : 0;
-        const existing = prev.find((c) => c.peer._id === peerId);
+        const filtered = prev.filter((c) => c.peer._id !== partnerId);
+        const existing = prev.find((c) => c.peer._id === partnerId);
 
         return [
           {
-            peer: peer || existing?.peer,
+            peer: partner || existing?.peer,
             lastMessage: msg,
-            unreadCount: (existing?.unreadCount || 0) + unreadInc,
+            unreadCount:
+              isCurrentConversation || msg.sender?._id === user?._id
+                ? 0
+                : (existing?.unreadCount || 0) + 1,
           },
           ...filtered,
         ];
@@ -234,7 +298,7 @@ export function Messages() {
     };
     socket.on('user_typing_group', handleGroupTyping);
 
-    // WhatsApp Real-Time Listeners: Reactions, Edits, Deletions, Read Receipts
+    // WhatsApp Real-Time Listeners: Reactions, Edits, Deletions, Read Receipts, Polls
     const handleReactionUpdated = ({ messageId, reactions }) => {
       setMessages((prev) =>
         prev.map((m) => (m._id === messageId ? { ...m, reactions } : m))
@@ -260,16 +324,42 @@ export function Messages() {
     };
     socket.on('message_deleted_everyone', handleMessageDeletedEveryone);
 
-    const handleReadReceipt = ({ readBy }) => {
-      if (activeChat?.type === 'direct' && activeChat.id === readBy) {
-        setMessages((prev) =>
-          prev.map((m) =>
-            m.sender?._id === user?._id ? { ...m, status: 'read' } : m
-          )
-        );
-      }
+    const handleReadReceipt = ({ peerId }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.sender?._id === user?._id ? { ...m, status: 'read' } : m
+        )
+      );
     };
     socket.on('messages_read_receipt', handleReadReceipt);
+
+    const handlePollVoted = ({ messageId, poll }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, poll } : m))
+      );
+    };
+    socket.on('poll_voted', handlePollVoted);
+
+    // WebRTC Real-Time Audio & Video Calling Listeners
+    const handleIncomingCall = ({ fromUser, offer, callType }) => {
+      setCallState({
+        status: 'incoming',
+        peer: fromUser,
+        callType,
+        offer,
+      });
+    };
+    socket.on('webrtc_incoming_call', handleIncomingCall);
+
+    const handleCallRejected = () => {
+      setCallState(null);
+    };
+    socket.on('webrtc_call_rejected', handleCallRejected);
+
+    const handleCallEnded = () => {
+      setCallState(null);
+    };
+    socket.on('webrtc_call_ended', handleCallEnded);
 
     return () => {
       socket.off('connect', handleConnect);
@@ -283,77 +373,83 @@ export function Messages() {
       socket.off('message_edited', handleMessageEdited);
       socket.off('message_deleted_everyone', handleMessageDeletedEveryone);
       socket.off('messages_read_receipt', handleReadReceipt);
+      socket.off('poll_voted', handlePollVoted);
+      socket.off('webrtc_incoming_call', handleIncomingCall);
+      socket.off('webrtc_call_rejected', handleCallRejected);
+      socket.off('webrtc_call_ended', handleCallEnded);
     };
   }, [activeChat, user]);
 
-  // 3. Switch Active Chat and Load History
+  // 3. Load active conversation messages and join socket rooms
   useEffect(() => {
     if (!activeChat) return;
 
+    let isSubscribed = true;
     const socket = getSocket();
 
-    // If switching to group, join room
-    if (activeChat.type === 'group') {
-      socket.emit('join_group', { groupId: activeChat.id });
-    }
-
-    const loadHistory = async () => {
+    const fetchMessages = async () => {
       try {
         setLoadingMessages(true);
-        if (activeChat.type === 'group') {
-          const res = await messagesAPI.getByGroup(activeChat.id);
-          if (res.success) {
-            setMessages(res.messages || []);
-          }
-        } else if (activeChat.type === 'direct') {
+        setError('');
+
+        if (activeChat.type === 'direct') {
           const res = await messagesAPI.getDirect(activeChat.id);
-          if (res.success) {
+          if (isSubscribed && res.success) {
             setMessages(res.messages || []);
+            // Emit mark as read
             socket.emit('mark_as_read', { peerId: activeChat.id });
-            // Clear unread indicator locally
+
+            // Reset unread badge on sidebar
             setDirectConversations((prev) =>
               prev.map((c) =>
                 c.peer._id === activeChat.id ? { ...c, unreadCount: 0 } : c
               )
             );
           }
+        } else {
+          socket.emit('join_group', activeChat.id);
+          const res = await messagesAPI.getByGroup(activeChat.id);
+          if (isSubscribed && res.success) {
+            setMessages(res.messages || []);
+          }
         }
       } catch (err) {
-        setError(err.userMessage || 'Could not load conversation history.');
+        if (isSubscribed) {
+          setError(err.userMessage || 'Failed to load conversation history.');
+        }
       } finally {
-        setLoadingMessages(false);
+        if (isSubscribed) setLoadingMessages(false);
       }
     };
 
-    loadHistory();
+    fetchMessages();
 
     return () => {
+      isSubscribed = false;
       if (activeChat.type === 'group') {
-        socket.emit('leave_group', { groupId: activeChat.id });
+        socket.emit('leave_group', activeChat.id);
       }
     };
   }, [activeChat]);
 
-  // 4. Auto scroll to bottom
+  // Scroll to bottom on new message
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, typingMap]);
+  }, [messages]);
 
-  // 5. Typing Indicator Dispatch
+  // Typing emitter
   const handleInputChange = (e) => {
-    const val = e.target.value;
-    setInputContent(val);
-
-    const socket = getSocket();
+    setInputContent(e.target.value);
     if (!activeChat) return;
 
+    const socket = getSocket();
     if (activeChat.type === 'direct') {
       socket.emit('typing_direct', { toUserId: activeChat.id, isTyping: true });
     } else {
       socket.emit('typing_group', { groupId: activeChat.id, isTyping: true });
     }
 
-    if (typingTimeoutRef.current) clearTimeout(typingTimeoutRef.current);
+    clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = setTimeout(() => {
       if (activeChat.type === 'direct') {
         socket.emit('typing_direct', { toUserId: activeChat.id, isTyping: false });
@@ -363,22 +459,33 @@ export function Messages() {
     }, 1500);
   };
 
-  // 6. Send Message (Text / Code / Voice / Reply / Edit)
+  // Send Message (Text / Quoted / Edited)
   const handleSendMessage = async (e) => {
-    if (e) e.preventDefault();
-    if (!activeChat) return;
-    const textToSend = inputContent.trim();
-    if (!textToSend) return;
+    e?.preventDefault();
+    if (!inputContent.trim() || !activeChat) return;
 
-    // Handle Edit Mode
+    const textToSend = inputContent.trim();
+
+    // If Editing an existing message
     if (editingMessage) {
       try {
-        const res = await messagesAPI.edit(editingMessage._id, textToSend);
-        if (res.success && res.message) {
-          setMessages((prev) =>
-            prev.map((m) => (m._id === editingMessage._id ? res.message : m))
-          );
+        const socket = getSocket();
+        if (socket.connected) {
+          socket.emit('edit_message', {
+            messageId: editingMessage._id,
+            newContent: textToSend,
+          });
+        } else {
+          await messagesAPI.edit(editingMessage._id, textToSend);
         }
+
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === editingMessage._id
+              ? { ...m, content: textToSend, isEdited: true, editedAt: new Date() }
+              : m
+          )
+        );
         setEditingMessage(null);
         setInputContent('');
         return;
@@ -410,7 +517,6 @@ export function Messages() {
             replyTo: currentReplyTo,
           });
         } else {
-          // REST Fallback
           const res = await messagesAPI.sendDirect(activeChat.id, {
             content: textToSend,
             replyTo: currentReplyTo,
@@ -441,7 +547,7 @@ export function Messages() {
     }
   };
 
-  // WhatsApp Actions: Reactions, Reply, Edit, Delete, Star
+  // WhatsApp Message Actions: Reactions, Reply, Edit, Delete, Star
   const handleToggleReaction = async (messageId, emoji) => {
     try {
       const socket = getSocket();
@@ -525,98 +631,266 @@ export function Messages() {
     }
   };
 
-  // Send Code Snippet
-  const handleSendCodeSnippet = async () => {
-    if (!codeSnippet.code.trim() || !activeChat) return;
-    const socket = getSocket();
-
-    const payload = {
-      content: codeSnippet.title ? `[Code Snippet] ${codeSnippet.title}` : `[Code Snippet: ${codeSnippet.language}]`,
-      messageType: 'code',
-      codeSnippet: {
-        language: codeSnippet.language,
-        title: codeSnippet.title || 'Code Snippet',
-        code: codeSnippet.code.trim(),
-      },
-    };
-
-    setCodeModalOpen(false);
-    setCodeSnippet({ language: 'javascript', title: '', code: '' });
-
-    try {
-      if (activeChat.type === 'direct') {
-        if (socket.connected) {
-          socket.emit('send_direct_message', {
-            recipientId: activeChat.id,
-            ...payload,
-          });
-        } else {
-          const res = await messagesAPI.sendDirect(activeChat.id, payload);
-          if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
-        }
-      } else {
-        if (socket.connected) {
-          socket.emit('send_message', {
-            groupId: activeChat.id,
-            ...payload,
-          });
-        } else {
-          const res = await messagesAPI.send(activeChat.id, payload.content, payload);
-          if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
-        }
-      }
-    } catch (err) {
-      setError('Could not send code snippet.');
-    }
+  // Real Audio Voice Recording (MediaRecorder API)
+  const formatVoiceDuration = (sec) => {
+    const mins = Math.floor(sec / 60);
+    const remainder = sec % 60;
+    return `${mins}:${remainder < 10 ? '0' : ''}${remainder}`;
   };
 
-  // Voice Note Recording Simulation
-  const handleToggleVoiceRecording = () => {
-    if (!voiceRecording) {
+  const handleStartRealRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunksRef.current = [];
+      const mr = new MediaRecorder(stream);
+      mediaRecorderRef.current = mr;
+
+      mr.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mr.start();
       setVoiceRecording(true);
       setVoiceSeconds(0);
+      clearInterval(voiceIntervalRef.current);
       voiceIntervalRef.current = setInterval(() => {
         setVoiceSeconds((s) => s + 1);
       }, 1000);
-    } else {
-      clearInterval(voiceIntervalRef.current);
-      setVoiceRecording(false);
-      const recordedDuration = voiceSeconds || 1;
+    } catch (err) {
+      setError('Microphone access denied or not supported.');
+    }
+  };
 
-      const socket = getSocket();
-      const payload = {
-        content: `🎤 Voice Message (${formatVoiceDuration(recordedDuration)})`,
-        messageType: 'voice',
-        voiceDuration: recordedDuration,
-      };
+  const handleStopAndSendRecording = () => {
+    if (!mediaRecorderRef.current) return;
+    clearInterval(voiceIntervalRef.current);
+    const recordedDuration = voiceSeconds || 1;
+    setVoiceRecording(false);
 
-      if (activeChat.type === 'direct') {
-        socket.emit('send_direct_message', {
-          recipientId: activeChat.id,
-          ...payload,
-        });
+    mediaRecorderRef.current.onstop = async () => {
+      const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+      mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop());
+
+      try {
+        const formData = new FormData();
+        formData.append('file', audioBlob, `voice-${Date.now()}.webm`);
+        const uploadRes = await messagesAPI.upload(formData);
+        const audioUrl = uploadRes.file?.url;
+
+        const payload = {
+          content: `🎤 Voice Note (${formatVoiceDuration(recordedDuration)})`,
+          messageType: 'voice',
+          audioUrl,
+          voiceDuration: recordedDuration,
+        };
+
+        const socket = getSocket();
+        if (activeChat.type === 'direct') {
+          if (socket.connected) {
+            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+          } else {
+            const res = await messagesAPI.sendDirect(activeChat.id, payload);
+            if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
+          }
+        } else {
+          if (socket.connected) {
+            socket.emit('send_message', { groupId: activeChat.id, ...payload });
+          } else {
+            const res = await messagesAPI.send(activeChat.id, payload.content, payload);
+            if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
+          }
+        }
+      } catch (err) {
+        setError('Failed to upload voice note.');
+      }
+    };
+
+    mediaRecorderRef.current.stop();
+  };
+
+  const handleCancelRealRecording = () => {
+    if (mediaRecorderRef.current) {
+      mediaRecorderRef.current.stream?.getTracks().forEach((t) => t.stop());
+      mediaRecorderRef.current = null;
+    }
+    clearInterval(voiceIntervalRef.current);
+    setVoiceRecording(false);
+    setVoiceSeconds(0);
+    audioChunksRef.current = [];
+  };
+
+  // Media / File Upload
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !activeChat) return;
+
+    try {
+      setUploadingFile(true);
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await messagesAPI.upload(formData);
+
+      if (res.success && res.file) {
+        const isImage = file.type.startsWith('image/');
+        const payload = {
+          content: isImage ? `📷 Photo` : `📄 Document: ${res.file.fileName}`,
+          messageType: isImage ? 'image' : 'file',
+          attachments: [res.file],
+        };
+
+        const socket = getSocket();
+        if (activeChat.type === 'direct') {
+          if (socket.connected) {
+            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+          } else {
+            const sendRes = await messagesAPI.sendDirect(activeChat.id, payload);
+            if (sendRes.success && sendRes.message) setMessages((prev) => [...prev, sendRes.message]);
+          }
+        } else {
+          if (socket.connected) {
+            socket.emit('send_message', { groupId: activeChat.id, ...payload });
+          } else {
+            const sendRes = await messagesAPI.send(activeChat.id, payload.content, payload);
+            if (sendRes.success && sendRes.message) setMessages((prev) => [...prev, sendRes.message]);
+          }
+        }
+      }
+    } catch (err) {
+      setError('File upload failed.');
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  // Poll Sending and Voting
+  const handleSendPoll = async (pollData) => {
+    if (!activeChat) return;
+    const payload = {
+      content: `📊 Poll: ${pollData.question}`,
+      messageType: 'poll',
+      poll: pollData,
+    };
+
+    const socket = getSocket();
+    if (activeChat.type === 'direct') {
+      if (socket.connected) {
+        socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
       } else {
-        socket.emit('send_message', {
-          groupId: activeChat.id,
-          ...payload,
-        });
+        const res = await messagesAPI.sendDirect(activeChat.id, payload);
+        if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
+      }
+    } else {
+      if (socket.connected) {
+        socket.emit('send_message', { groupId: activeChat.id, ...payload });
+      } else {
+        const res = await messagesAPI.send(activeChat.id, payload.content, payload);
+        if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
       }
     }
   };
 
-  const handleCancelVoiceRecording = () => {
-    clearInterval(voiceIntervalRef.current);
-    setVoiceRecording(false);
-    setVoiceSeconds(0);
+  const handleVotePoll = async (messageId, optionIndex) => {
+    try {
+      const res = await messagesAPI.votePoll(messageId, optionIndex);
+      if (res.success) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === messageId ? { ...m, poll: res.poll } : m))
+        );
+      }
+    } catch (err) {
+      setError('Failed to record vote.');
+    }
   };
 
-  const formatVoiceDuration = (sec) => {
-    const mins = Math.floor(sec / 60);
-    const s = sec % 60;
-    return `${mins}:${s < 10 ? '0' : ''}${s}`;
+  // WebRTC Calling
+  const handleStartCall = (callType) => {
+    if (!activeChat || activeChat.type !== 'direct') {
+      alert('1-on-1 audio and video calling is available in personal discussions.');
+      return;
+    }
+    setCallState({
+      status: 'outgoing',
+      callType,
+      peer: activeChat.data,
+    });
   };
 
-  // Peer Contact Picker for New Chat
+  const handleAcceptCall = () => {
+    if (!callState) return;
+    setCallState((prev) => ({
+      ...prev,
+      status: 'connected',
+    }));
+  };
+
+  const handleRejectCall = () => {
+    if (callState?.peer?._id) {
+      const socket = getSocket();
+      socket.emit('webrtc_reject_call', { toUserId: callState.peer._id });
+    }
+    setCallState(null);
+  };
+
+  const handleEndCall = (duration, status) => {
+    if (callState?.peer?._id) {
+      const socket = getSocket();
+      socket.emit('webrtc_end_call', {
+        toUserId: callState.peer._id,
+        duration: duration || 0,
+        callType: callState.callType,
+        callStatus: status || (duration > 0 ? 'completed' : 'missed'),
+      });
+    }
+    setCallState(null);
+  };
+
+  // Chat Personalization Actions: Pin, Mute, Block, Clear
+  const handleTogglePin = async (chatKey) => {
+    try {
+      const res = await messagesAPI.togglePin(chatKey);
+      if (res.success) {
+        setPinnedChats(new Set(res.pinnedChats || []));
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleToggleMute = async (chatKey) => {
+    try {
+      const res = await messagesAPI.toggleMute(chatKey);
+      if (res.success) {
+        setMutedChats(new Set(res.mutedChats || []));
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleToggleBlock = async (userId) => {
+    try {
+      const res = await messagesAPI.toggleBlock(userId);
+      if (res.success) {
+        setBlockedUsers(new Set(res.blockedUsers || []));
+      }
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleClearChatHistory = async () => {
+    if (!activeChat) return;
+    if (!window.confirm('Are you sure you want to clear your message history in this chat?')) return;
+    try {
+      await messagesAPI.clearHistory(activeChat.type, activeChat.id);
+      setMessages([]);
+    } catch (err) {
+      setError('Could not clear history.');
+    }
+  };
+
+  // Contacts modal handlers
   const handleOpenNewChatModal = async () => {
     setNewChatModalOpen(true);
     try {
@@ -641,7 +915,46 @@ export function Messages() {
     });
   };
 
-  // Filtered chats for sidebar list
+  // Send Code Snippet
+  const handleSendCodeSnippet = async () => {
+    if (!codeSnippet.code.trim() || !activeChat) return;
+    const socket = getSocket();
+
+    const payload = {
+      content: codeSnippet.title ? `[Code Snippet] ${codeSnippet.title}` : `[Code Snippet: ${codeSnippet.language}]`,
+      messageType: 'code',
+      codeSnippet: {
+        language: codeSnippet.language,
+        title: codeSnippet.title || 'Code Snippet',
+        code: codeSnippet.code.trim(),
+      },
+    };
+
+    setCodeModalOpen(false);
+    setCodeSnippet({ language: 'javascript', title: '', code: '' });
+
+    try {
+      if (activeChat.type === 'direct') {
+        if (socket.connected) {
+          socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+        } else {
+          const res = await messagesAPI.sendDirect(activeChat.id, payload);
+          if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
+        }
+      } else {
+        if (socket.connected) {
+          socket.emit('send_message', { groupId: activeChat.id, ...payload });
+        } else {
+          const res = await messagesAPI.send(activeChat.id, payload.content, payload);
+          if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
+        }
+      }
+    } catch (err) {
+      setError('Could not send code snippet.');
+    }
+  };
+
+  // Filtered chats for sidebar list (with pinned items at top)
   const filteredChats = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
 
@@ -649,6 +962,7 @@ export function Messages() {
     const directItems = directConversations.map((c) => ({
       type: 'direct',
       id: c.peer._id,
+      chatKey: `direct:${c.peer._id}`,
       name: c.peer.name,
       subtitle: c.peer.department ? `${c.peer.department} • ${c.peer.semester || ''}` : 'Student',
       avatar: c.peer.avatar,
@@ -662,6 +976,7 @@ export function Messages() {
     const groupItems = userGroups.map((g) => ({
       type: 'group',
       id: g._id,
+      chatKey: `group:${g._id}`,
       name: g.name,
       subtitle: `${g.members?.length || 1} members • ${g.subject}`,
       avatar: null,
@@ -682,20 +997,49 @@ export function Messages() {
       combined = directItems.filter((c) => c.unreadCount > 0);
     }
 
-    if (!q) return combined;
+    // Filter by search query
+    if (q) {
+      combined = combined.filter(
+        (c) =>
+          c.name.toLowerCase().includes(q) ||
+          (c.subtitle && c.subtitle.toLowerCase().includes(q))
+      );
+    }
 
-    return combined.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        (c.subtitle && c.subtitle.toLowerCase().includes(q))
+    // Sort pinned chats to the top
+    combined.sort((a, b) => {
+      const isAPinned = pinnedChats.has(a.chatKey);
+      const isBPinned = pinnedChats.has(b.chatKey);
+      if (isAPinned && !isBPinned) return -1;
+      if (!isAPinned && isBPinned) return 1;
+      return 0;
+    });
+
+    return combined;
+  }, [activeTab, searchQuery, directConversations, userGroups, onlineUsers, pinnedChats]);
+
+  // Messages filtered by in-chat search query
+  const displayedMessages = useMemo(() => {
+    if (!inChatSearchQuery.trim()) return messages;
+    const query = inChatSearchQuery.toLowerCase().trim();
+    return messages.filter(
+      (m) =>
+        m.content?.toLowerCase().includes(query) ||
+        m.senderName?.toLowerCase().includes(query) ||
+        m.codeSnippet?.code?.toLowerCase().includes(query) ||
+        m.poll?.question?.toLowerCase().includes(query)
     );
-  }, [activeTab, searchQuery, directConversations, userGroups, onlineUsers]);
+  }, [messages, inChatSearchQuery]);
 
   const activePeerIsOnline = activeChat?.type === 'direct' && onlineUsers.has(activeChat.id);
   const activeChatTyping =
     activeChat?.type === 'direct'
       ? typingMap[activeChat.id]
       : typingMap[`group:${activeChat?.id}`];
+  const activeChatKey = activeChat ? `${activeChat.type}:${activeChat.id}` : '';
+  const isActiveChatPinned = pinnedChats.has(activeChatKey);
+  const isActiveChatMuted = mutedChats.has(activeChatKey);
+  const isPeerBlocked = activeChat?.type === 'direct' && blockedUsers.has(activeChat.id);
 
   const formatMessageTime = (dateStr) => {
     if (!dateStr) return '';
@@ -713,21 +1057,25 @@ export function Messages() {
     <DashboardLayout>
       <div className="flex-1 flex flex-col h-[calc(100dvh-4rem)] lg:h-screen w-full overflow-hidden">
         {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
-        <div className={`flex-1 flex overflow-hidden w-full h-full ${
-          isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
-        } transition-colors relative`}>
-
+        <div
+          className={`flex-1 flex overflow-hidden w-full h-full ${
+            isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
+          } transition-colors relative`}
+        >
           {/* LEFT SIDEBAR: Chats & Contacts List */}
-          <div className={`${
-            activeChat ? 'hidden md:flex' : 'flex'
-          } w-full md:w-[380px] lg:w-[400px] flex-col border-r ${
-            isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white'
-          } shrink-0`}>
-            
+          <div
+            className={`${
+              activeChat ? 'hidden md:flex' : 'flex'
+            } w-full md:w-[380px] lg:w-[400px] flex-col border-r ${
+              isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white'
+            } shrink-0`}
+          >
             {/* Sidebar Header */}
-            <div className={`px-4 py-3.5 flex items-center justify-between border-b ${
-              isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
-            }`}>
+            <div
+              className={`px-4 py-3.5 flex items-center justify-between border-b ${
+                isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
+              }`}
+            >
               <div className="flex items-center gap-3">
                 <div className="relative">
                   <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shadow-md shadow-indigo-500/20">
@@ -743,35 +1091,73 @@ export function Messages() {
                 </div>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex items-center gap-1">
+              {/* Action Buttons: Status, Broadcast, New Group, New Chat */}
+              <div className="flex items-center gap-0.5">
+                {/* 24h Status / Stories */}
                 <button
+                  type="button"
+                  onClick={() => setStatusModalOpen(true)}
+                  className={`p-2 rounded-xl transition cursor-pointer relative ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                  title="24-Hour Statuses / Stories"
+                >
+                  <Camera size={18} />
+                  {stories.some((s) => s.hasUnviewed) && (
+                    <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+                  )}
+                </button>
+
+                {/* Broadcast List */}
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const res = await messagesAPI.getPeers({});
+                    if (res.success) setAvailablePeers(res.peers || []);
+                    setBroadcastModalOpen(true);
+                  }}
+                  className={`p-2 rounded-xl transition cursor-pointer ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                  title="Broadcast List"
+                >
+                  <Radio size={18} />
+                </button>
+
+                {/* Create Study Group */}
+                <button
+                  type="button"
+                  onClick={() => setNewGroupModalOpen(true)}
+                  className={`p-2 rounded-xl transition cursor-pointer ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                  title="Create Study Group"
+                >
+                  <Users size={18} />
+                </button>
+
+                {/* New Personal Chat */}
+                <button
+                  type="button"
                   onClick={handleOpenNewChatModal}
                   className={`p-2 rounded-xl transition cursor-pointer ${
                     isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="New Personal Chat"
                 >
-                  <MessageSquarePlus size={19} />
-                </button>
-                <button
-                  onClick={refreshAllChats}
-                  className={`p-2 rounded-xl transition cursor-pointer ${
-                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
-                  }`}
-                  title="Refresh Conversations"
-                >
-                  <Sparkles size={18} />
+                  <MessageSquarePlus size={18} />
                 </button>
               </div>
             </div>
 
             {/* Search Bar */}
             <div className={`px-3 py-2 border-b ${isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
-              <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border ${
-                isDark ? 'bg-slate-950/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-              }`}>
-                <Search size={15} className={isDark ? "text-slate-400" : "text-slate-500"} />
+              <div
+                className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border ${
+                  isDark ? 'bg-slate-950/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                }`}
+              >
+                <Search size={15} className={isDark ? 'text-slate-400' : 'text-slate-500'} />
                 <input
                   type="text"
                   value={searchQuery}
@@ -788,9 +1174,11 @@ export function Messages() {
             </div>
 
             {/* Filter Tabs: All, Personal, Groups, Unread */}
-            <div className={`flex items-center gap-1.5 px-3 py-2 border-b ${
-              isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
-            } text-xs font-medium overflow-x-auto`}>
+            <div
+              className={`flex items-center gap-1.5 px-3 py-2 border-b ${
+                isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
+              } text-xs font-medium overflow-x-auto`}
+            >
               <button
                 onClick={() => setActiveTab('all')}
                 className={`px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0 font-semibold ${
@@ -869,6 +1257,8 @@ export function Messages() {
                     chat.type === 'direct'
                       ? typingMap[chat.id]
                       : typingMap[`group:${chat.id}`];
+                  const isPinned = pinnedChats.has(chat.chatKey);
+                  const isMuted = mutedChats.has(chat.chatKey);
 
                   return (
                     <button
@@ -894,11 +1284,13 @@ export function Messages() {
                     >
                       {/* Avatar with Online Green Dot */}
                       <div className="relative shrink-0">
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm ${
-                          chat.type === 'group'
-                            ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-sm'
-                            : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-sm'
-                        }`}>
+                        <div
+                          className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm ${
+                            chat.type === 'group'
+                              ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-sm'
+                              : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-sm'
+                          }`}
+                        >
                           {chat.type === 'group' ? (
                             <Users size={19} />
                           ) : (
@@ -913,16 +1305,23 @@ export function Messages() {
                       {/* Info & Last Message */}
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
-                          <span className={`font-semibold text-sm truncate ${
-                            isSelected
-                              ? isDark ? 'text-white' : 'text-indigo-950'
-                              : isDark ? 'text-slate-200' : 'text-slate-900'
-                          }`}>
-                            {chat.name}
-                          </span>
-                          <span className={`text-[11px] shrink-0 ${
-                            chat.unreadCount > 0 ? 'text-indigo-400 font-bold' : 'text-slate-400'
-                          }`}>
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            {isPinned && <Pin size={12} className="text-amber-400 shrink-0 fill-amber-400" />}
+                            <span
+                              className={`font-semibold text-sm truncate ${
+                                isSelected
+                                  ? isDark ? 'text-white' : 'text-indigo-950'
+                                  : isDark ? 'text-slate-200' : 'text-slate-900'
+                              }`}
+                            >
+                              {chat.name}
+                            </span>
+                          </div>
+                          <span
+                            className={`text-[11px] shrink-0 ${
+                              chat.unreadCount > 0 ? 'text-indigo-400 font-bold' : 'text-slate-400'
+                            }`}
+                          >
                             {chat.lastMessage
                               ? formatMessageTime(chat.lastMessage.createdAt)
                               : ''}
@@ -951,11 +1350,14 @@ export function Messages() {
                             )}
                           </div>
 
-                          {chat.unreadCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow">
-                              {chat.unreadCount}
-                            </span>
-                          )}
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {isMuted && <VolumeX size={13} className="text-slate-400" />}
+                            {chat.unreadCount > 0 && (
+                              <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shadow">
+                                {chat.unreadCount}
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </div>
                     </button>
@@ -967,14 +1369,17 @@ export function Messages() {
 
           {/* MAIN CHAT CONVERSATION WINDOW */}
           {activeChat ? (
-            <div className={`${
-              activeChat ? 'flex' : 'hidden md:flex'
-            } flex-1 flex-col min-w-0 h-full relative`}>
-              
+            <div
+              className={`${
+                activeChat ? 'flex' : 'hidden md:flex'
+              } flex-1 flex-col min-w-0 h-full relative`}
+            >
               {/* Header */}
-              <div className={`px-3 sm:px-5 py-3.5 flex items-center justify-between border-b ${
-                isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
-              } shrink-0 z-20`}>
+              <div
+                className={`px-3 sm:px-5 py-3.5 flex items-center justify-between border-b ${
+                  isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
+                } shrink-0 z-20`}
+              >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   {/* Mobile Back Button to return to contact list */}
                   <button
@@ -984,17 +1389,18 @@ export function Messages() {
                       isDark ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                     title="Back to conversations"
-                    aria-label="Back to conversations"
                   >
                     <ArrowLeft size={19} />
                   </button>
 
                   <div className="relative shrink-0">
-                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
-                      activeChat.type === 'group'
-                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
-                        : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white'
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
+                        activeChat.type === 'group'
+                          ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+                          : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white'
+                      }`}
+                    >
                       {activeChat.type === 'group' ? (
                         <Users size={18} />
                       ) : (
@@ -1007,9 +1413,18 @@ export function Messages() {
                   </div>
 
                   <div className="min-w-0">
-                    <h3 className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                      {activeChat.data?.name}
-                    </h3>
+                    <div className="flex items-center gap-1.5">
+                      <h3 className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                        {activeChat.data?.name}
+                      </h3>
+                      {isActiveChatPinned && <Pin size={11} className="text-amber-400 fill-amber-400" />}
+                      {isActiveChatMuted && <VolumeX size={11} className="text-slate-400" />}
+                      {isPeerBlocked && (
+                        <span className="px-1.5 py-0.5 rounded bg-rose-500/20 text-rose-400 text-[10px] font-bold">
+                          Blocked
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] truncate flex items-center gap-1.5">
                       {activeChatTyping ? (
                         <span className="text-emerald-400 font-semibold italic">
@@ -1019,12 +1434,12 @@ export function Messages() {
                         activePeerIsOnline ? (
                           <span className="text-emerald-400 font-medium">● Online</span>
                         ) : (
-                          <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+                          <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
                             {activeChat.data?.department || 'Student'} • {activeChat.data?.semester || 'MCA'}
                           </span>
                         )
                       ) : (
-                        <span className={isDark ? "text-slate-400" : "text-slate-500"}>
+                        <span className={isDark ? 'text-slate-400' : 'text-slate-500'}>
                           {activeChat.data?.members?.length || 1} participants • {activeChat.data?.subject}
                         </span>
                       )}
@@ -1032,27 +1447,44 @@ export function Messages() {
                   </div>
                 </div>
 
-                {/* Actions */}
+                {/* Actions: WebRTC Audio, Video, In-Chat Search, Details */}
                 <div className="flex items-center gap-1 text-slate-400">
                   <button
-                    onClick={() => alert(`Starting audio study room with ${activeChat.data?.name}...`)}
+                    type="button"
+                    onClick={() => handleStartCall('audio')}
                     className={`p-2 rounded-xl transition cursor-pointer ${
                       isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
-                    title="Audio Call"
+                    title="Start Voice Call"
                   >
                     <Phone size={17} />
                   </button>
                   <button
-                    onClick={() => alert(`Starting video study session with ${activeChat.data?.name}...`)}
+                    type="button"
+                    onClick={() => handleStartCall('video')}
                     className={`p-2 rounded-xl transition cursor-pointer ${
                       isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
-                    title="Video Call"
+                    title="Start Video Call"
                   >
                     <Video size={17} />
                   </button>
                   <button
+                    type="button"
+                    onClick={() => setInChatSearchOpen(!inChatSearchOpen)}
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      inChatSearchOpen
+                        ? 'text-indigo-400 bg-indigo-500/10'
+                        : isDark
+                        ? 'hover:text-white hover:bg-white/5'
+                        : 'hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                    title="Search Messages in Chat"
+                  >
+                    <Search size={17} />
+                  </button>
+                  <button
+                    type="button"
                     onClick={() => setInfoDrawerOpen(!infoDrawerOpen)}
                     className={`p-2 rounded-xl transition cursor-pointer ${
                       infoDrawerOpen
@@ -1061,12 +1493,46 @@ export function Messages() {
                         ? 'hover:text-white hover:bg-white/5'
                         : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
-                    title="Details"
+                    title="Chat Details & Settings"
                   >
                     <Info size={17} />
                   </button>
                 </div>
               </div>
+
+              {/* In-Chat Search Filter Bar */}
+              {inChatSearchOpen && (
+                <div
+                  className={`px-4 py-2 border-b flex items-center justify-between gap-3 ${
+                    isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 flex-1">
+                    <Search size={15} className="text-slate-400" />
+                    <input
+                      type="text"
+                      value={inChatSearchQuery}
+                      onChange={(e) => setInChatSearchQuery(e.target.value)}
+                      placeholder="Search messages in this conversation..."
+                      className="w-full bg-transparent text-xs outline-none"
+                    />
+                  </div>
+                  {inChatSearchQuery && (
+                    <span className="text-[11px] text-slate-400 font-semibold">
+                      {displayedMessages.length} match{displayedMessages.length !== 1 ? 'es' : ''}
+                    </span>
+                  )}
+                  <button
+                    onClick={() => {
+                      setInChatSearchOpen(false);
+                      setInChatSearchQuery('');
+                    }}
+                    className="text-slate-400 hover:text-white"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              )}
 
               {/* Messages Canvas with Website Palette */}
               <div
@@ -1080,9 +1546,11 @@ export function Messages() {
               >
                 {/* Date Divider Chip */}
                 <div className="flex justify-center my-2">
-                  <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm border ${
-                    isDark ? 'bg-slate-900 text-slate-400 border-white/5' : 'bg-white text-slate-600 border-slate-200'
-                  }`}>
+                  <span
+                    className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm border ${
+                      isDark ? 'bg-slate-900 text-slate-400 border-white/5' : 'bg-white text-slate-600 border-slate-200'
+                    }`}
+                  >
                     Today
                   </span>
                 </div>
@@ -1092,17 +1560,19 @@ export function Messages() {
                     <Loader2 size={24} className="animate-spin text-indigo-500 mr-2" />
                     <span>Loading message history...</span>
                   </div>
-                ) : messages.length === 0 ? (
+                ) : displayedMessages.length === 0 ? (
                   <div className="max-w-sm mx-auto my-14 text-center p-6 rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur text-xs space-y-2">
                     <p className="font-semibold text-indigo-400 text-sm">
                       🔒 StudyMate Secure Discussions
                     </p>
-                    <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-                      Direct messages and group chats are private to enrolled students. Say hello to get started!
+                    <p className={isDark ? 'text-slate-400' : 'text-slate-600'}>
+                      {inChatSearchQuery
+                        ? 'No messages match your search keyword in this chat.'
+                        : 'Direct messages and group chats are private to enrolled students. Say hello or share notes!'}
                     </p>
                   </div>
                 ) : (
-                  messages.map((msg) => {
+                  displayedMessages.map((msg) => {
                     const isMe = msg.sender?._id === user?._id;
 
                     return (
@@ -1178,7 +1648,7 @@ export function Messages() {
                         {/* Message Bubble */}
                         <div
                           onClick={() => setActiveActionMessageId(activeActionMessageId === msg._id ? null : msg._id)}
-                          className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 relative shadow-sm cursor-pointer sm:cursor-default ${
+                          className={`max-w-[88%] md:max-w-[72%] rounded-2xl px-4 py-2.5 relative shadow-sm cursor-pointer sm:cursor-default ${
                             isMe
                               ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md shadow-indigo-600/15'
                               : isDark
@@ -1200,13 +1670,73 @@ export function Messages() {
                                 {msg.replyTo.senderName || msg.replyTo.sender?.name || 'Classmate'}
                               </div>
                               <div className="truncate text-[11px] opacity-80">
-                                {msg.replyTo.content || (msg.replyTo.messageType === 'code' ? 'Code Snippet' : 'Voice message')}
+                                {msg.replyTo.content || (msg.replyTo.messageType === 'code' ? 'Code Snippet' : 'Voice note')}
                               </div>
                             </div>
                           )}
 
-                          {/* Message Content: Code Snippet, Voice Note, or Text */}
-                          {msg.messageType === 'code' && msg.codeSnippet ? (
+                          {/* 1. Interactive Study Poll Bubble */}
+                          {msg.messageType === 'poll' && msg.poll ? (
+                            <div className="my-1 space-y-3 min-w-[240px] sm:min-w-[280px]">
+                              <div className="flex items-center gap-2 border-b border-white/10 pb-1.5">
+                                <BarChart2 size={16} className="text-cyan-300" />
+                                <span className="font-bold text-xs sm:text-sm">{msg.poll.question}</span>
+                              </div>
+
+                              <div className="space-y-2">
+                                {msg.poll.options?.map((opt, optIdx) => {
+                                  const totalVotes = msg.poll.options.reduce(
+                                    (sum, o) => sum + (o.votes?.length || 0),
+                                    0
+                                  );
+                                  const optVoteCount = opt.votes?.length || 0;
+                                  const percent = totalVotes > 0 ? Math.round((optVoteCount / totalVotes) * 100) : 0;
+                                  const hasMyVote = opt.votes?.some(
+                                    (v) => (v._id || v).toString() === user?._id?.toString()
+                                  );
+
+                                  return (
+                                    <button
+                                      key={optIdx}
+                                      type="button"
+                                      onClick={() => handleVotePoll(msg._id, optIdx)}
+                                      className={`w-full text-left p-2.5 rounded-xl border relative overflow-hidden transition cursor-pointer ${
+                                        hasMyVote
+                                          ? isDark
+                                            ? 'border-indigo-400 bg-indigo-500/20'
+                                            : 'border-indigo-600 bg-indigo-50'
+                                          : isDark
+                                          ? 'border-white/10 bg-slate-950/60 hover:bg-white/5'
+                                          : 'border-slate-200 bg-slate-50 hover:bg-slate-100'
+                                      }`}
+                                    >
+                                      {/* Percentage Progress Fill */}
+                                      <div
+                                        style={{ width: `${percent}%` }}
+                                        className={`absolute inset-y-0 left-0 transition-all duration-300 opacity-25 ${
+                                          hasMyVote ? 'bg-cyan-400' : 'bg-slate-400'
+                                        }`}
+                                      />
+                                      <div className="relative z-10 flex items-center justify-between text-xs">
+                                        <div className="flex items-center gap-2 font-medium">
+                                          <div
+                                            className={`w-4 h-4 rounded-full border flex items-center justify-center ${
+                                              hasMyVote ? 'border-cyan-400 bg-cyan-400 text-slate-900 font-bold' : 'border-slate-400'
+                                            }`}
+                                          >
+                                            {hasMyVote && <Check size={11} />}
+                                          </div>
+                                          <span>{opt.text}</span>
+                                        </div>
+                                        <span className="font-bold text-[11px] opacity-80">{percent}% ({optVoteCount})</span>
+                                      </div>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          ) : msg.messageType === 'code' && msg.codeSnippet ? (
+                            /* 2. Code Snippet */
                             <div className="my-1 space-y-1.5 font-mono text-xs">
                               <div className="flex items-center justify-between text-[11px] opacity-90 border-b border-white/10 pb-1">
                                 <span className="font-bold">{msg.codeSnippet.title || 'Code Snippet'}</span>
@@ -1214,9 +1744,11 @@ export function Messages() {
                                   {msg.codeSnippet.language}
                                 </span>
                               </div>
-                              <pre className={`p-3 rounded-xl text-xs overflow-x-auto ${
-                                isDark ? 'bg-slate-950 border border-white/10 text-cyan-300' : 'bg-slate-900 text-cyan-300'
-                              }`}>
+                              <pre
+                                className={`p-3 rounded-xl text-xs overflow-x-auto ${
+                                  isDark ? 'bg-slate-950 border border-white/10 text-cyan-300' : 'bg-slate-900 text-cyan-300'
+                                }`}
+                              >
                                 {msg.codeSnippet.code}
                               </pre>
                               <div className="flex justify-end">
@@ -1233,13 +1765,25 @@ export function Messages() {
                               </div>
                             </div>
                           ) : msg.messageType === 'voice' ? (
-                            <div className="flex items-center gap-3 py-1 min-w-[200px]">
+                            /* 3. Real Audio Voice Note */
+                            <div className="flex items-center gap-3 py-1 min-w-[220px]">
                               <button
+                                type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  setPlayingVoiceId(playingVoiceId === msg._id ? null : msg._id);
+                                  const audioEl = audioElementsRef.current[msg._id];
+                                  if (audioEl) {
+                                    if (playingVoiceId === msg._id) {
+                                      audioEl.pause();
+                                      setPlayingVoiceId(null);
+                                    } else {
+                                      audioEl.playbackRate = playbackSpeed;
+                                      audioEl.play();
+                                      setPlayingVoiceId(msg._id);
+                                    }
+                                  }
                                 }}
-                                className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
+                                className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer shrink-0 ${
                                   isMe
                                     ? 'bg-white text-indigo-700 hover:bg-slate-100'
                                     : 'bg-indigo-600 text-white hover:bg-indigo-500'
@@ -1251,35 +1795,104 @@ export function Messages() {
                                   <Play size={16} className="ml-0.5" />
                                 )}
                               </button>
+
+                              {/* Hidden HTML5 Audio Element */}
+                              {msg.audioUrl && (
+                                <audio
+                                  ref={(el) => (audioElementsRef.current[msg._id] = el)}
+                                  src={msg.audioUrl}
+                                  onEnded={() => setPlayingVoiceId(null)}
+                                  className="hidden"
+                                />
+                              )}
+
                               <div className="flex-1">
-                                {/* Audio Waveform Bar */}
                                 <div className="h-4 flex items-center gap-0.5">
-                                  {[40, 70, 90, 60, 100, 50, 80, 45, 95, 30, 85, 60, 40].map(
-                                    (h, idx) => (
-                                      <span
-                                        key={idx}
-                                        style={{ height: `${h}%` }}
-                                        className={`w-1 rounded-full ${
-                                          playingVoiceId === msg._id
-                                            ? 'bg-cyan-400 animate-pulse'
-                                            : isMe
-                                            ? 'bg-white/60'
-                                            : 'bg-indigo-400/60'
-                                        }`}
-                                      />
-                                    )
-                                  )}
+                                  {[40, 70, 90, 60, 100, 50, 80, 45, 95, 30, 85, 60, 40].map((h, idx) => (
+                                    <span
+                                      key={idx}
+                                      style={{ height: `${h}%` }}
+                                      className={`w-1 rounded-full ${
+                                        playingVoiceId === msg._id
+                                          ? 'bg-cyan-400 animate-pulse'
+                                          : isMe
+                                          ? 'bg-white/60'
+                                          : 'bg-indigo-400/60'
+                                      }`}
+                                    />
+                                  ))}
                                 </div>
-                                <div className="flex justify-between items-center text-[10px] opacity-75 mt-0.5">
-                                  <span>{formatVoiceDuration(msg.voiceDuration || 18)}</span>
-                                  <Volume2 size={11} />
+                                <div className="flex justify-between items-center text-[10px] opacity-80 mt-1">
+                                  <span>{formatVoiceDuration(msg.voiceDuration || 12)}</span>
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const nextSpeed = playbackSpeed === 1 ? 1.5 : playbackSpeed === 1.5 ? 2 : 1;
+                                      setPlaybackSpeed(nextSpeed);
+                                      const audioEl = audioElementsRef.current[msg._id];
+                                      if (audioEl) audioEl.playbackRate = nextSpeed;
+                                    }}
+                                    className="px-1.5 py-0.5 rounded bg-black/20 hover:bg-black/30 text-[9px] font-bold"
+                                  >
+                                    {playbackSpeed}x
+                                  </button>
                                 </div>
                               </div>
                             </div>
+                          ) : msg.messageType === 'call_log' ? (
+                            /* 4. Call Log History Entry */
+                            <div className="flex items-center gap-2 py-1 text-xs">
+                              {msg.callInfo?.callType === 'video' ? <Video size={16} /> : <Phone size={16} />}
+                              <span className="font-semibold">{msg.content}</span>
+                            </div>
                           ) : (
+                            /* 5. Standard Text Message */
                             <p className="text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
                               {msg.content}
                             </p>
+                          )}
+
+                          {/* Image or Document Attachments */}
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="mt-2 space-y-2">
+                              {msg.attachments.map((att, idx) => {
+                                const isImg =
+                                  att.fileType?.startsWith('image/') ||
+                                  /\.(png|jpg|jpeg|gif|webp)$/i.test(att.url);
+
+                                return isImg ? (
+                                  <img
+                                    key={idx}
+                                    src={att.url}
+                                    alt={att.fileName || 'Attachment'}
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setPreviewImage(att.url);
+                                    }}
+                                    className="max-h-60 rounded-xl object-cover cursor-pointer hover:opacity-95 transition"
+                                  />
+                                ) : (
+                                  <a
+                                    key={idx}
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    onClick={(e) => e.stopPropagation()}
+                                    className="flex items-center gap-2.5 p-2 rounded-xl bg-black/20 hover:bg-black/30 transition text-xs"
+                                  >
+                                    <FileText size={18} className="text-cyan-300 shrink-0" />
+                                    <div className="flex-1 min-w-0">
+                                      <p className="font-semibold truncate text-[11px]">{att.fileName || 'Document'}</p>
+                                      <span className="text-[9px] opacity-75">
+                                        {att.fileSize ? `${Math.round(att.fileSize / 1024)} KB` : 'Download file'}
+                                      </span>
+                                    </div>
+                                    <Download size={14} className="opacity-80 shrink-0" />
+                                  </a>
+                                );
+                              })}
+                            </div>
                           )}
 
                           {/* Timestamp + WhatsApp Ticks + Star Indicator */}
@@ -1328,9 +1941,11 @@ export function Messages() {
                 {/* Real-time Typing Bubble indicator */}
                 {activeChatTyping && (
                   <div className="flex items-center gap-2">
-                    <div className={`px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs flex items-center gap-1.5 shadow-sm border ${
-                      isDark ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
-                    }`}>
+                    <div
+                      className={`px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs flex items-center gap-1.5 shadow-sm border ${
+                        isDark ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
+                      }`}
+                    >
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" />
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
                       <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
@@ -1346,9 +1961,11 @@ export function Messages() {
 
               {/* Emoji Quick Picker Bar */}
               {emojiPickerOpen && (
-                <div className={`p-2.5 border-t flex items-center gap-2 overflow-x-auto ${
-                  isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
-                }`}>
+                <div
+                  className={`p-2.5 border-t flex items-center gap-2 overflow-x-auto ${
+                    isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
+                  }`}
+                >
                   <span className="text-xs text-slate-400 font-semibold shrink-0">Emojis:</span>
                   {QUICK_EMOJIS.map((emoji) => (
                     <button
@@ -1367,9 +1984,11 @@ export function Messages() {
 
               {/* Quoted Reply Banner */}
               {replyingTo && (
-                <div className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
-                  isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
-                }`}>
+                <div
+                  className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
+                    isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
+                  }`}
+                >
                   <div className="flex items-center gap-2.5 overflow-hidden">
                     <div className="w-1 h-8 rounded-full bg-indigo-500 shrink-0" />
                     <div className="text-xs min-w-0">
@@ -1395,9 +2014,11 @@ export function Messages() {
 
               {/* Editing Message Banner */}
               {editingMessage && (
-                <div className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
-                  isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
-                }`}>
+                <div
+                  className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
+                    isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
+                  }`}
+                >
                   <div className="flex items-center gap-2.5 overflow-hidden">
                     <div className="w-1 h-8 rounded-full bg-amber-500 shrink-0" />
                     <div className="text-xs min-w-0">
@@ -1426,9 +2047,11 @@ export function Messages() {
 
               {/* Voice Recording Active Bar */}
               {voiceRecording ? (
-                <div className={`px-5 py-3 flex items-center justify-between border-t ${
-                  isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
-                }`}>
+                <div
+                  className={`px-5 py-3 flex items-center justify-between border-t ${
+                    isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
+                  }`}
+                >
                   <div className="flex items-center gap-3">
                     <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
                     <span className="font-mono text-sm font-bold text-rose-500">
@@ -1437,13 +2060,15 @@ export function Messages() {
                   </div>
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={handleCancelVoiceRecording}
+                      type="button"
+                      onClick={handleCancelRealRecording}
                       className="px-3.5 py-1.5 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-xs font-semibold transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
-                      onClick={handleToggleVoiceRecording}
+                      type="button"
+                      onClick={handleStopAndSendRecording}
                       className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/30"
                     >
                       <Send size={13} />
@@ -1451,11 +2076,27 @@ export function Messages() {
                     </button>
                   </div>
                 </div>
+              ) : isPeerBlocked ? (
+                /* Blocked Contact Warning Bar */
+                <div
+                  className={`px-4 py-3 border-t text-center text-xs flex items-center justify-center gap-2 ${
+                    isDark ? 'bg-slate-900 text-rose-400 border-white/10' : 'bg-rose-50 text-rose-600 border-rose-200'
+                  }`}
+                >
+                  <ShieldAlert size={16} />
+                  <span>You cannot message this contact because they are blocked.</span>
+                  <button
+                    onClick={() => handleToggleBlock(activeChat.id)}
+                    className="underline font-bold ml-1 cursor-pointer"
+                  >
+                    Unblock
+                  </button>
+                </div>
               ) : (
                 /* Bottom Message Input Bar */
                 <form
                   onSubmit={handleSendMessage}
-                  className={`px-4 py-3 flex items-center gap-2.5 border-t ${
+                  className={`px-4 py-3 flex items-center gap-2 border-t ${
                     isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
                   }`}
                 >
@@ -1472,7 +2113,42 @@ export function Messages() {
                     }`}
                     title="Insert Emoji"
                   >
-                    <Smile size={20} />
+                    <Smile size={19} />
+                  </button>
+
+                  {/* Attachment Upload (Photo, Document, PDF) */}
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploadingFile}
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      uploadingFile
+                        ? 'animate-pulse text-indigo-400'
+                        : isDark
+                        ? 'text-slate-400 hover:text-white'
+                        : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Attach Photo or Document"
+                  >
+                    <Paperclip size={19} />
+                  </button>
+
+                  {/* Create Poll Button */}
+                  <button
+                    type="button"
+                    onClick={() => setPollModalOpen(true)}
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                    title="Create Interactive Poll"
+                  >
+                    <BarChart2 size={19} />
                   </button>
 
                   {/* Share Code Snippet */}
@@ -1482,17 +2158,19 @@ export function Messages() {
                     className={`p-2 rounded-xl transition cursor-pointer ${
                       isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
                     }`}
-                    title="Send Code Snippet / Solution"
+                    title="Share Code Snippet"
                   >
-                    <Code2 size={20} />
+                    <Code2 size={19} />
                   </button>
 
                   {/* Text Input Pill */}
-                  <div className={`flex-1 rounded-xl px-4 py-2.5 flex items-center border ${
-                    isDark
-                      ? 'bg-slate-950 border-white/10 text-white focus-within:border-indigo-500'
-                      : 'bg-slate-100/90 border-slate-200 text-slate-900 focus-within:border-indigo-600'
-                  }`}>
+                  <div
+                    className={`flex-1 rounded-xl px-4 py-2.5 flex items-center border ${
+                      isDark
+                        ? 'bg-slate-950 border-white/10 text-white focus-within:border-indigo-500'
+                        : 'bg-slate-100/90 border-slate-200 text-slate-900 focus-within:border-indigo-600'
+                    }`}
+                  >
                     <input
                       ref={textareaRef}
                       type="text"
@@ -1503,7 +2181,7 @@ export function Messages() {
                     />
                   </div>
 
-                  {/* Microphone or Send Button */}
+                  {/* Microphone (Real Audio Recording) or Send Button */}
                   {inputContent.trim() ? (
                     <button
                       type="submit"
@@ -1515,7 +2193,7 @@ export function Messages() {
                   ) : (
                     <button
                       type="button"
-                      onClick={handleToggleVoiceRecording}
+                      onClick={handleStartRealRecording}
                       className="w-10 h-10 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition border border-indigo-500/20 cursor-pointer shrink-0"
                       title="Record Voice Note"
                     >
@@ -1527,9 +2205,11 @@ export function Messages() {
             </div>
           ) : (
             /* No Chat Selected Placeholder (Desktop only) */
-            <div className={`hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center ${
-              isDark ? 'bg-slate-950' : 'bg-slate-50'
-            }`}>
+            <div
+              className={`hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center ${
+                isDark ? 'bg-slate-950' : 'bg-slate-50'
+              }`}
+            >
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white mb-4 shadow-xl shadow-indigo-500/20">
                 <GraduationCap size={40} />
               </div>
@@ -1537,25 +2217,38 @@ export function Messages() {
                 StudyMate Discussions
               </h3>
               <p className={`text-xs max-w-md ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed`}>
-                Connect 1-on-1 with classmates, coordinate study groups, share DSA programming solutions, and collaborate in real-time.
+                Connect 1-on-1 with classmates, coordinate study groups, share DSA programming solutions, host real-time voice and video study rooms, and collaborate in real-time.
               </p>
-              <button
-                onClick={handleOpenNewChatModal}
-                className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-xs hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
-              >
-                <MessageSquarePlus size={16} />
-                <span>Start Personal Chat</span>
-              </button>
+              <div className="flex items-center gap-3 mt-6">
+                <button
+                  onClick={handleOpenNewChatModal}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-xs hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
+                >
+                  <MessageSquarePlus size={16} />
+                  <span>Start Personal Chat</span>
+                </button>
+                <button
+                  onClick={() => setNewGroupModalOpen(true)}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-semibold transition cursor-pointer ${
+                    isDark ? 'border-white/10 hover:bg-white/5 text-white' : 'border-slate-200 hover:bg-slate-100 text-slate-800'
+                  }`}
+                >
+                  <Users size={15} />
+                  <span>Create Study Group</span>
+                </button>
+              </div>
             </div>
           )}
 
-          {/* RIGHT CONTACT INFO DRAWER */}
+          {/* RIGHT CONTACT INFO & SETTINGS DRAWER */}
           {infoDrawerOpen && activeChat && (
-            <div className={`fixed inset-y-0 right-0 z-40 md:static w-72 max-w-[85vw] border-l shadow-2xl md:shadow-none ${
-              isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'
-            } p-5 flex flex-col space-y-4 shrink-0 overflow-y-auto`}>
+            <div
+              className={`fixed inset-y-0 right-0 z-40 md:static w-80 max-w-[85vw] border-l shadow-2xl md:shadow-none ${
+                isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'
+              } p-5 flex flex-col space-y-4 shrink-0 overflow-y-auto`}
+            >
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
-                <h4 className="font-bold text-sm">Contact Info</h4>
+                <h4 className="font-bold text-sm">Conversation Details</h4>
                 <button onClick={() => setInfoDrawerOpen(false)} className="text-slate-400 hover:text-white">
                   <X size={16} />
                 </button>
@@ -1571,9 +2264,65 @@ export function Messages() {
                 </p>
               </div>
 
-              <div className={`p-3.5 rounded-xl text-xs space-y-2 border ${
-                isDark ? 'bg-slate-950/70 border-white/5' : 'bg-slate-50 border-slate-200'
-              }`}>
+              {/* Chat Controls: Pin, Mute, Clear, Block */}
+              <div className="space-y-1.5 pt-2 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={() => handleTogglePin(activeChatKey)}
+                  className={`w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-medium transition cursor-pointer ${
+                    isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    <Pin size={15} className={isActiveChatPinned ? 'text-amber-400 fill-amber-400' : 'text-slate-400'} />
+                    <span>{isActiveChatPinned ? 'Unpin Conversation' : 'Pin to Top'}</span>
+                  </div>
+                  {isActiveChatPinned && <span className="text-[10px] text-amber-400 font-bold">Pinned</span>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleToggleMute(activeChatKey)}
+                  className={`w-full p-2.5 rounded-xl flex items-center justify-between text-xs font-medium transition cursor-pointer ${
+                    isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <div className="flex items-center gap-2">
+                    {isActiveChatMuted ? <VolumeX size={15} className="text-rose-400" /> : <Volume2 size={15} className="text-slate-400" />}
+                    <span>{isActiveChatMuted ? 'Unmute Notifications' : 'Mute Notifications'}</span>
+                  </div>
+                  {isActiveChatMuted && <span className="text-[10px] text-rose-400 font-bold">Muted</span>}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClearChatHistory}
+                  className={`w-full p-2.5 rounded-xl flex items-center gap-2 text-xs font-medium transition cursor-pointer text-slate-400 hover:text-white ${
+                    isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <Trash2 size={15} />
+                  <span>Clear Chat History</span>
+                </button>
+
+                {activeChat.type === 'direct' && (
+                  <button
+                    type="button"
+                    onClick={() => handleToggleBlock(activeChat.id)}
+                    className="w-full p-2.5 rounded-xl flex items-center gap-2 text-xs font-medium transition cursor-pointer text-rose-400 hover:bg-rose-500/10"
+                  >
+                    <ShieldAlert size={15} />
+                    <span>{isPeerBlocked ? 'Unblock Student' : 'Block Student'}</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Contact Academic Metadata */}
+              <div
+                className={`p-3.5 rounded-xl text-xs space-y-2 border ${
+                  isDark ? 'bg-slate-950/70 border-white/5' : 'bg-slate-50 border-slate-200'
+                }`}
+              >
                 <div>
                   <span className="text-[11px] text-slate-400 block">Department</span>
                   <span className="font-semibold">{activeChat.data?.department || 'MCA'}</span>
@@ -1593,29 +2342,97 @@ export function Messages() {
           )}
         </div>
 
+        {/* MODAL: IMAGE PREVIEW LIGHTBOX */}
+        {previewImage && (
+          <div
+            onClick={() => setPreviewImage(null)}
+            className="fixed inset-0 z-[999999] bg-black/90 backdrop-blur-md flex items-center justify-center p-4 cursor-pointer"
+          >
+            <div className="relative max-w-4xl max-h-[90vh]">
+              <img src={previewImage} alt="Full Preview" className="max-h-[85vh] max-w-full rounded-2xl object-contain shadow-2xl" />
+              <button
+                onClick={() => setPreviewImage(null)}
+                className="absolute top-3 right-3 p-2 rounded-full bg-black/60 text-white hover:bg-black/80"
+              >
+                <X size={20} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: WEBRTC AUDIO & VIDEO CALL */}
+        {callState && (
+          <WebRTCCallModal
+            callState={callState}
+            onAccept={handleAcceptCall}
+            onReject={handleRejectCall}
+            onEndCall={handleEndCall}
+            socket={getSocket()}
+            currentUser={user}
+          />
+        )}
+
+        {/* MODAL: 24-HOUR STATUS STORIES */}
+        <StatusStoriesModal
+          isOpen={statusModalOpen}
+          onClose={() => setStatusModalOpen(false)}
+          stories={stories}
+          currentUser={user}
+          onStatusCreated={refreshAllChats}
+        />
+
+        {/* MODAL: STUDY POLL */}
+        <PollModal
+          isOpen={pollModalOpen}
+          onClose={() => setPollModalOpen(false)}
+          onSendPoll={handleSendPoll}
+          isDark={isDark}
+        />
+
+        {/* MODAL: BROADCAST LIST */}
+        <BroadcastModal
+          isOpen={broadcastModalOpen}
+          onClose={() => setBroadcastModalOpen(false)}
+          peers={availablePeers}
+          isDark={isDark}
+          onBroadcastSent={refreshAllChats}
+        />
+
+        {/* MODAL: NEW STUDY GROUP */}
+        <NewGroupModal
+          isOpen={newGroupModalOpen}
+          onClose={() => setNewGroupModalOpen(false)}
+          onGroupCreated={(newGrp) => {
+            setUserGroups((prev) => [newGrp, ...prev]);
+            setActiveChat({ type: 'group', id: newGrp._id, data: newGrp });
+          }}
+          isDark={isDark}
+        />
+
         {/* MODAL: START NEW PERSONAL CHAT (Classmate Contacts) */}
         {newChatModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-            <div className={`w-full max-w-md rounded-2xl border ${
-              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
-            } shadow-2xl p-6`}>
+            <div
+              className={`w-full max-w-md rounded-2xl border ${
+                isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
+              } shadow-2xl p-6`}
+            >
               <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
                 <div className="flex items-center gap-2">
                   <MessageSquarePlus className="text-indigo-400" size={20} />
                   <h3 className="font-bold text-base">New Personal Chat</h3>
                 </div>
-                <button
-                  onClick={() => setNewChatModalOpen(false)}
-                  className="text-slate-400 hover:text-white"
-                >
+                <button onClick={() => setNewChatModalOpen(false)} className="text-slate-400 hover:text-white">
                   <X size={18} />
                 </button>
               </div>
 
               {/* Search peer */}
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-4 border ${
-                isDark ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
-              }`}>
+              <div
+                className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-4 border ${
+                  isDark ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
+                }`}
+              >
                 <Search size={15} className="text-slate-400" />
                 <input
                   type="text"
@@ -1667,9 +2484,11 @@ export function Messages() {
         {/* MODAL: SHARE CODE SNIPPET (DSA & Programming) */}
         {codeModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-            <div className={`w-full max-w-lg rounded-2xl border ${
-              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
-            } shadow-2xl p-6 space-y-4`}>
+            <div
+              className={`w-full max-w-lg rounded-2xl border ${
+                isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
+              } shadow-2xl p-6 space-y-4`}
+            >
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
                   <Code2 className="text-indigo-400" size={20} />
@@ -1750,9 +2569,11 @@ export function Messages() {
         {/* MODAL: DELETE MESSAGE (Delete for Me vs Delete for Everyone) */}
         {deleteModalMsg && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
-            <div className={`w-full max-w-sm rounded-2xl border ${
-              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
-            } shadow-2xl p-6 space-y-4`}>
+            <div
+              className={`w-full max-w-sm rounded-2xl border ${
+                isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
+              } shadow-2xl p-6 space-y-4`}
+            >
               <div className="flex items-center justify-between pb-2 border-b border-white/10">
                 <h3 className="font-bold text-sm">Delete message?</h3>
                 <button

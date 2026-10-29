@@ -1,6 +1,7 @@
 import { Message } from '../models/Message.js';
 import { StudyGroup } from '../models/StudyGroup.js';
 import { User } from '../models/User.js';
+import { Status } from '../models/Status.js';
 
 // ==========================================
 // GROUP MESSAGES
@@ -116,6 +117,8 @@ export const sendGroupMessage = async (req, res, next) => {
       codeSnippet: codeSnippet || undefined,
       replyTo: replyTo || undefined,
       attachments: attachments || [],
+      poll: req.body.poll || undefined,
+      callInfo: req.body.callInfo || undefined,
       status: 'read',
     });
 
@@ -253,6 +256,17 @@ export const sendDirectMessage = async (req, res, next) => {
       });
     }
 
+    const isBlocked =
+      (targetUser.blockedUsers || []).some((id) => id.toString() === req.user._id.toString()) ||
+      (req.user.blockedUsers || []).some((id) => id.toString() === targetUserId.toString());
+
+    if (isBlocked) {
+      return res.status(403).json({
+        success: false,
+        message: 'Cannot send message. This user is blocked.',
+      });
+    }
+
     const message = await Message.create({
       chatType: 'direct',
       recipient: targetUserId,
@@ -265,6 +279,8 @@ export const sendDirectMessage = async (req, res, next) => {
       codeSnippet: codeSnippet || undefined,
       replyTo: replyTo || undefined,
       attachments: attachments || [],
+      poll: req.body.poll || undefined,
+      callInfo: req.body.callInfo || undefined,
       status: 'sent',
     });
 
@@ -553,11 +569,15 @@ export const getConversations = async (req, res, next) => {
     }
 
     const conversations = Array.from(conversationsMap.values());
+    const currentUser = await User.findById(myId).select('pinnedChats mutedChats blockedUsers');
 
     res.status(200).json({
       success: true,
       count: conversations.length,
       conversations,
+      pinnedChats: currentUser?.pinnedChats || [],
+      mutedChats: currentUser?.mutedChats || [],
+      blockedUsers: currentUser?.blockedUsers || [],
     });
   } catch (error) {
     next(error);
@@ -586,6 +606,312 @@ export const getAvailablePeers = async (req, res, next) => {
       count: peers.length,
       peers,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// MEDIA & ATTACHMENT UPLOAD
+// ==========================================
+
+export const uploadMedia = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, message: 'No file uploaded.' });
+    }
+    const fileUrl = `/uploads/${req.file.filename}`;
+    res.status(200).json({
+      success: true,
+      file: {
+        url: fileUrl,
+        fileName: req.file.originalname,
+        fileType: req.file.mimetype,
+        fileSize: req.file.size,
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// POLL VOTING
+// ==========================================
+
+export const votePoll = async (req, res, next) => {
+  try {
+    const { messageId } = req.params;
+    const { optionIndex } = req.body;
+    const userId = req.user._id;
+
+    const message = await Message.findById(messageId);
+    if (!message || !message.poll || !message.poll.options) {
+      return res.status(404).json({ success: false, message: 'Poll message not found.' });
+    }
+
+    if (optionIndex < 0 || optionIndex >= message.poll.options.length) {
+      return res.status(400).json({ success: false, message: 'Invalid option index.' });
+    }
+
+    // Toggle or vote
+    message.poll.options.forEach((opt) => {
+      opt.votes = opt.votes.filter((v) => v.toString() !== userId.toString());
+    });
+
+    message.poll.options[optionIndex].votes.push(userId);
+    await message.save();
+
+    const io = req.app.get('io');
+    if (io) {
+      if (message.chatType === 'direct') {
+        io.to(`user:${message.recipient}`).emit('poll_voted', { messageId, poll: message.poll });
+        io.to(`user:${message.sender}`).emit('poll_voted', { messageId, poll: message.poll });
+      } else if (message.group) {
+        io.to(`group:${message.group}`).emit('poll_voted', { messageId, poll: message.poll });
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      poll: message.poll,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// 24-HOUR STATUS UPDATES (STORIES)
+// ==========================================
+
+export const createStatus = async (req, res, next) => {
+  try {
+    const { content, mediaUrl, mediaType = 'text', backgroundColor = '#4f46e5' } = req.body;
+    const newStatus = await Status.create({
+      user: req.user._id,
+      userName: req.user.name,
+      userAvatar: req.user.avatar || '',
+      content: content || '',
+      mediaUrl: mediaUrl || '',
+      mediaType,
+      backgroundColor,
+    });
+    res.status(201).json({ success: true, status: newStatus });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const getStatuses = async (req, res, next) => {
+  try {
+    const now = new Date();
+    const activeStatuses = await Status.find({ expiresAt: { $gt: now } })
+      .populate('user', 'name avatar department')
+      .populate('viewers.user', 'name avatar')
+      .sort({ createdAt: -1 });
+
+    const grouped = new Map();
+    for (const st of activeStatuses) {
+      const uId = st.user?._id?.toString() || st.user?.toString();
+      if (!grouped.has(uId)) {
+        grouped.set(uId, {
+          user: st.user,
+          statuses: [st],
+          hasUnviewed: !st.viewers.some((v) => v.user?._id?.toString() === req.user._id.toString()),
+        });
+      } else {
+        const item = grouped.get(uId);
+        item.statuses.push(st);
+        if (!st.viewers.some((v) => v.user?._id?.toString() === req.user._id.toString())) {
+          item.hasUnviewed = true;
+        }
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      stories: Array.from(grouped.values()),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const viewStatus = async (req, res, next) => {
+  try {
+    const { statusId } = req.params;
+    const status = await Status.findById(statusId);
+    if (!status) {
+      return res.status(404).json({ success: false, message: 'Status not found.' });
+    }
+    const alreadyViewed = status.viewers.some(
+      (v) => v.user?.toString() === req.user._id.toString()
+    );
+    if (!alreadyViewed) {
+      status.viewers.push({ user: req.user._id, viewedAt: new Date() });
+      await status.save();
+    }
+    res.status(200).json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// PIN & MUTE CONVERSATIONS
+// ==========================================
+
+export const togglePinChat = async (req, res, next) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ success: false, message: 'chatId is required' });
+
+    const user = await User.findById(req.user._id);
+    const pinnedSet = new Set(user.pinnedChats || []);
+    let isPinned = false;
+
+    if (pinnedSet.has(chatId)) {
+      pinnedSet.delete(chatId);
+    } else {
+      pinnedSet.add(chatId);
+      isPinned = true;
+    }
+
+    user.pinnedChats = Array.from(pinnedSet);
+    await user.save();
+
+    res.status(200).json({ success: true, isPinned, pinnedChats: user.pinnedChats });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const toggleMuteChat = async (req, res, next) => {
+  try {
+    const { chatId } = req.body;
+    if (!chatId) return res.status(400).json({ success: false, message: 'chatId is required' });
+
+    const user = await User.findById(req.user._id);
+    const mutedSet = new Set(user.mutedChats || []);
+    let isMuted = false;
+
+    if (mutedSet.has(chatId)) {
+      mutedSet.delete(chatId);
+    } else {
+      mutedSet.add(chatId);
+      isMuted = true;
+    }
+
+    user.mutedChats = Array.from(mutedSet);
+    await user.save();
+
+    res.status(200).json({ success: true, isMuted, mutedChats: user.mutedChats });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// BLOCK / UNBLOCK USERS
+// ==========================================
+
+export const toggleBlockUser = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(req.user._id);
+    const blockedSet = new Set((user.blockedUsers || []).map((id) => id.toString()));
+    let isBlocked = false;
+
+    if (blockedSet.has(userId)) {
+      blockedSet.delete(userId);
+    } else {
+      blockedSet.add(userId);
+      isBlocked = true;
+    }
+
+    user.blockedUsers = Array.from(blockedSet);
+    await user.save();
+
+    res.status(200).json({ success: true, isBlocked, blockedUsers: user.blockedUsers });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// CLEAR CHAT HISTORY
+// ==========================================
+
+export const clearChatHistory = async (req, res, next) => {
+  try {
+    const { chatType, targetId } = req.body;
+    const myId = req.user._id;
+
+    if (chatType === 'direct') {
+      await Message.updateMany(
+        {
+          chatType: 'direct',
+          $or: [
+            { sender: myId, recipient: targetId },
+            { sender: targetId, recipient: myId },
+          ],
+        },
+        { $addToSet: { deletedFor: myId } }
+      );
+    } else {
+      await Message.updateMany(
+        { group: targetId },
+        { $addToSet: { deletedFor: myId } }
+      );
+    }
+
+    res.status(200).json({ success: true, message: 'Chat history cleared for you.' });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// ==========================================
+// BROADCAST MESSAGING
+// ==========================================
+
+export const sendBroadcast = async (req, res, next) => {
+  try {
+    const { recipientIds, content, attachments, audioUrl } = req.body;
+    if (!Array.isArray(recipientIds) || recipientIds.length === 0) {
+      return res.status(400).json({ success: false, message: 'recipientIds array is required.' });
+    }
+
+    const createdMessages = [];
+    const io = req.app.get('io');
+
+    for (const recipientId of recipientIds) {
+      const msg = await Message.create({
+        chatType: 'direct',
+        sender: req.user._id,
+        senderName: req.user.name,
+        recipient: recipientId,
+        content: content || '',
+        messageType: audioUrl ? 'voice' : attachments?.length ? 'file' : 'text',
+        attachments: attachments || [],
+        audioUrl: audioUrl || '',
+        status: 'sent',
+      });
+
+      const populated = await Message.findById(msg._id)
+        .populate('sender', 'name email department semester avatar')
+        .populate('recipient', 'name email department semester avatar');
+
+      if (io) {
+        io.to(`user:${recipientId}`).emit('new_direct_message', populated);
+        io.to(`user:${req.user._id}`).emit('new_direct_message', populated);
+      }
+
+      createdMessages.push(populated);
+    }
+
+    res.status(201).json({ success: true, count: createdMessages.length, messages: createdMessages });
   } catch (error) {
     next(error);
   }

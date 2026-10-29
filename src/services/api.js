@@ -104,6 +104,23 @@ export const messagesAPI = {
   edit: (messageId, content) => apiClient.put(`/messages/${messageId}`, { content }).then((res) => res.data),
   delete: (messageId, deleteType = 'for_me') => apiClient.post(`/messages/${messageId}/delete`, { deleteType }).then((res) => res.data),
   toggleStar: (messageId) => apiClient.post(`/messages/${messageId}/star`).then((res) => res.data),
+  upload: (formData) =>
+    apiClient
+      .post('/messages/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((res) => res.data),
+  votePoll: (messageId, optionIndex) =>
+    apiClient.post(`/messages/${messageId}/poll/vote`, { optionIndex }).then((res) => res.data),
+  getStatuses: () => apiClient.get('/messages/status').then((res) => res.data),
+  createStatus: (data) => apiClient.post('/messages/status', data).then((res) => res.data),
+  viewStatus: (statusId) => apiClient.post(`/messages/status/${statusId}/view`).then((res) => res.data),
+  togglePin: (chatId) => apiClient.post('/messages/pin-chat', { chatId }).then((res) => res.data),
+  toggleMute: (chatId) => apiClient.post('/messages/mute-chat', { chatId }).then((res) => res.data),
+  toggleBlock: (userId) => apiClient.post(`/messages/block/${userId}`).then((res) => res.data),
+  clearHistory: (chatType, targetId) =>
+    apiClient.post('/messages/clear', { chatType, targetId }).then((res) => res.data),
+  broadcast: (data) => apiClient.post('/messages/broadcast', data).then((res) => res.data),
 };
 
 // Users / Settings

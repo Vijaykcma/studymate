@@ -121,6 +121,8 @@ export const setupSocket = (io) => {
           codeSnippet: codeSnippet || undefined,
           replyTo: replyTo || undefined,
           attachments: attachments || [],
+          poll: arguments[0]?.poll || undefined,
+          callInfo: arguments[0]?.callInfo || undefined,
           status: 'read',
         });
 
@@ -168,6 +170,8 @@ export const setupSocket = (io) => {
           codeSnippet: codeSnippet || undefined,
           replyTo: replyTo || undefined,
           attachments: attachments || [],
+          poll: arguments[0]?.poll || undefined,
+          callInfo: arguments[0]?.callInfo || undefined,
           status: isRecipientOnline ? 'delivered' : 'sent',
         });
 
@@ -335,6 +339,76 @@ export const setupSocket = (io) => {
         userName: socket.user.name,
         isTyping: !!isTyping,
       });
+    });
+
+    // WebRTC 1-on-1 Voice & Video Calling Signaling
+    socket.on('webrtc_call_user', ({ toUserId, offer, callType }) => {
+      io.to(`user:${toUserId}`).emit('webrtc_incoming_call', {
+        fromUser: {
+          _id: socket.user._id,
+          name: socket.user.name,
+          avatar: socket.user.avatar,
+        },
+        offer,
+        callType: callType || 'audio',
+      });
+    });
+
+    socket.on('webrtc_answer_call', ({ toUserId, answer }) => {
+      io.to(`user:${toUserId}`).emit('webrtc_call_answered', {
+        fromUserId: socket.user._id,
+        answer,
+      });
+    });
+
+    socket.on('webrtc_ice_candidate', ({ toUserId, candidate }) => {
+      io.to(`user:${toUserId}`).emit('webrtc_ice_candidate', {
+        fromUserId: socket.user._id,
+        candidate,
+      });
+    });
+
+    socket.on('webrtc_reject_call', ({ toUserId, reason }) => {
+      io.to(`user:${toUserId}`).emit('webrtc_call_rejected', {
+        fromUserId: socket.user._id,
+        reason: reason || 'declined',
+      });
+    });
+
+    socket.on('webrtc_end_call', async ({ toUserId, duration, callType, callStatus }) => {
+      io.to(`user:${toUserId}`).emit('webrtc_call_ended', {
+        fromUserId: socket.user._id,
+        duration: duration || 0,
+      });
+
+      // Save a call log message into direct chat history
+      try {
+        if (toUserId) {
+          const callMsg = await Message.create({
+            chatType: 'direct',
+            sender: socket.user._id,
+            senderName: socket.user.name,
+            recipient: toUserId,
+            content: `${callType === 'video' ? '📹 Video' : '📞 Voice'} Call (${duration ? `${Math.floor(duration / 60)}m ${duration % 60}s` : 'Missed'})`,
+            messageType: 'call_log',
+            callInfo: {
+              callType: callType || 'audio',
+              duration: duration || 0,
+              callStatus: callStatus || (duration > 0 ? 'completed' : 'missed'),
+            },
+            status: 'sent',
+          });
+
+          const populated = await Message.findById(callMsg._id)
+            .populate('sender', 'name email department semester avatar')
+            .populate('recipient', 'name email department semester avatar');
+
+          io.to(`user:${toUserId}`).emit('new_direct_message', populated);
+          io.to(`user:${socket.user._id}`).emit('new_direct_message', populated);
+        }
+      } catch (err) {
+        console.error('[Socket] call_log save error:', err.message);
+      }
     });
 
     socket.on('disconnect', () => {

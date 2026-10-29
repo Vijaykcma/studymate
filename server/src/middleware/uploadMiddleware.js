@@ -19,13 +19,17 @@ const storage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  const allowedExtensions = ['.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt'];
+  const allowedExtensions = [
+    '.pdf', '.doc', '.docx', '.ppt', '.pptx', '.txt', '.zip',
+    '.png', '.jpg', '.jpeg', '.gif', '.webp',
+    '.webm', '.mp3', '.wav', '.ogg', '.m4a'
+  ];
   const ext = path.extname(file.originalname).toLowerCase();
 
   if (allowedExtensions.includes(ext)) {
     cb(null, true);
   } else {
-    cb(new Error(`Invalid file type (${ext}). Only PDF, Word (.doc/.docx), PowerPoint (.ppt/.pptx), and text (.txt) files are permitted.`));
+    cb(new Error(`File type (${ext}) not supported. Supported: images, documents, and audio.`));
   }
 };
 
