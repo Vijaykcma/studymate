@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Phone, Video, Mic, MicOff, VideoOff, PhoneOff, User } from 'lucide-react';
+import {
+  Phone,
+  Video,
+  Mic,
+  MicOff,
+  VideoOff,
+  PhoneOff,
+  User,
+  Maximize2,
+  Minimize2,
+  Monitor,
+  MonitorOff,
+} from 'lucide-react';
 
 const ICE_SERVERS = {
   iceServers: [
@@ -116,14 +128,18 @@ export function WebRTCCallModal({
 }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoDisabled, setIsVideoDisabled] = useState(callState.callType === 'audio');
+  const [isScreenSharing, setIsScreenSharing] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
+  const modalContainerRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
   const pcRef = useRef(null);
   const localStreamRef = useRef(null);
+  const screenStreamRef = useRef(null);
   const remoteStreamRef = useRef(null);
   const candidateQueueRef = useRef([]);
   const timerRef = useRef(null);
@@ -381,6 +397,10 @@ export function WebRTCCallModal({
         localStreamRef.current.getTracks().forEach((t) => t.stop());
         localStreamRef.current = null;
       }
+      if (screenStreamRef.current) {
+        screenStreamRef.current.getTracks().forEach((t) => t.stop());
+        screenStreamRef.current = null;
+      }
       if (remoteStreamRef.current) {
         remoteStreamRef.current.getTracks().forEach((t) => t.stop());
         remoteStreamRef.current = null;
@@ -414,6 +434,57 @@ export function WebRTCCallModal({
     }
   };
 
+  // Toggle Screen Share
+  const handleToggleScreenShare = async () => {
+    try {
+      if (!isScreenSharing) {
+        const displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        const screenTrack = displayStream.getVideoTracks()[0];
+        if (pcRef.current && screenTrack) {
+          const sender = pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
+          if (sender) {
+            sender.replaceTrack(screenTrack);
+          }
+          screenTrack.onended = () => {
+            handleStopScreenShare();
+          };
+          screenStreamRef.current = displayStream;
+          setIsScreenSharing(true);
+        }
+      } else {
+        handleStopScreenShare();
+      }
+    } catch (e) {
+      console.warn('[WebRTC] Screen share cancelled or error:', e);
+    }
+  };
+
+  const handleStopScreenShare = () => {
+    if (screenStreamRef.current) {
+      screenStreamRef.current.getTracks().forEach((t) => t.stop());
+      screenStreamRef.current = null;
+    }
+    if (pcRef.current && localStreamRef.current) {
+      const videoTrack = localStreamRef.current.getVideoTracks()[0];
+      const sender = pcRef.current.getSenders().find((s) => s.track && s.track.kind === 'video');
+      if (sender && videoTrack) {
+        sender.replaceTrack(videoTrack);
+      }
+    }
+    setIsScreenSharing(false);
+  };
+
+  // Toggle Fullscreen
+  const handleToggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      modalContainerRef.current?.requestFullscreen?.();
+      setIsFullscreen(true);
+    } else {
+      document.exitFullscreen?.();
+      setIsFullscreen(false);
+    }
+  };
+
   const formatDuration = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
@@ -421,48 +492,70 @@ export function WebRTCCallModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
       {/* Permanent background audio element for remote stream */}
       <audio ref={remoteAudioRef} autoPlay playsInline />
 
-      <div className="w-full max-w-lg bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative text-white">
-        
-        {/* Top Header */}
-        <div className="p-4 flex items-center justify-between border-b border-white/10 z-10 bg-slate-900/90">
-          <div className="flex items-center gap-2">
+      {/* Main Call Modal - Locked to Max Viewport Height */}
+      <div
+        ref={modalContainerRef}
+        className={`w-full ${
+          callState.callType === 'video' ? 'max-w-4xl h-[92vh] max-h-[850px]' : 'max-w-lg h-auto max-h-[90vh]'
+        } bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative text-white`}
+      >
+        {/* Top Header - Always Static & Visible */}
+        <div className="px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between border-b border-white/10 shrink-0 z-30 bg-slate-900/95 backdrop-blur">
+          <div className="flex items-center gap-2.5 min-w-0">
             <span
-              className={`w-3 h-3 rounded-full ${
+              className={`w-3 h-3 rounded-full shrink-0 ${
                 callState.status === 'connected'
                   ? 'bg-emerald-500 animate-pulse'
                   : 'bg-amber-400 animate-ping'
               }`}
             />
-            <span className="text-xs font-semibold uppercase tracking-wider text-slate-300">
-              {callState.status === 'connected'
-                ? `In Call • ${formatDuration(callDuration)}`
-                : callState.status === 'incoming'
-                ? 'Incoming Call...'
-                : 'Ringing...'}
+            <div className="min-w-0">
+              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300 block truncate">
+                {callState.status === 'connected'
+                  ? `In Call • ${formatDuration(callDuration)}`
+                  : callState.status === 'incoming'
+                  ? 'Incoming Call...'
+                  : 'Ringing...'}
+              </span>
+              <p className="text-[11px] text-slate-400 truncate">{callState.peer?.name}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            {callState.callType === 'video' && (
+              <button
+                type="button"
+                onClick={handleToggleFullscreen}
+                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+                title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+              >
+                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+              </button>
+            )}
+            <span className="px-2.5 py-1 rounded-xl bg-white/10 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+              {callState.callType === 'video' ? 'Video Call' : 'Voice Call'}
             </span>
           </div>
-          <span className="px-2.5 py-1 rounded-xl bg-white/10 text-[11px] font-bold uppercase tracking-wider">
-            {callState.callType === 'video' ? 'Video Call' : 'Audio Call'}
-          </span>
         </div>
 
         {/* Center Canvas */}
-        <div className="flex-1 min-h-[300px] sm:min-h-[360px] relative flex flex-col items-center justify-center p-6 bg-gradient-to-b from-slate-900 to-slate-950">
+        <div className="flex-1 min-h-0 relative w-full h-full overflow-hidden flex flex-col items-center justify-center bg-black">
           {callState.callType === 'video' && callState.status === 'connected' ? (
-            <div className="w-full h-full min-h-[320px] relative rounded-2xl overflow-hidden bg-black flex items-center justify-center">
-              {/* Remote Video */}
+            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+              {/* Remote Video - object-contain ensures portrait & landscape fit without vertical overflow */}
               <video
                 ref={remoteVideoRef}
                 autoPlay
                 playsInline
-                className="w-full h-full object-cover"
+                className="w-full h-full object-contain bg-black"
               />
-              {/* Local PiP Video */}
-              <div className="absolute bottom-3 right-3 w-28 h-40 rounded-xl overflow-hidden border-2 border-indigo-500 bg-slate-800 shadow-xl">
+
+              {/* Local PiP Video Floating in Corner */}
+              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-28 h-36 sm:w-40 sm:h-52 rounded-2xl overflow-hidden border-2 border-indigo-500 bg-slate-900 shadow-2xl z-30 transition-all">
                 <video
                   ref={localVideoRef}
                   autoPlay
@@ -471,18 +564,24 @@ export function WebRTCCallModal({
                   className={`w-full h-full object-cover ${isVideoDisabled ? 'hidden' : 'block'}`}
                 />
                 {isVideoDisabled && (
-                  <div className="w-full h-full flex items-center justify-center bg-slate-900 text-slate-400">
-                    <VideoOff size={20} />
+                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 gap-1 p-2 text-center">
+                    <VideoOff size={20} className="text-rose-400" />
+                    <span className="text-[10px] font-semibold text-slate-400">Camera Off</span>
                   </div>
+                )}
+                {isMuted && (
+                  <span className="absolute bottom-2 left-2 p-1 rounded-md bg-rose-600 text-white shadow">
+                    <MicOff size={11} />
+                  </span>
                 )}
               </div>
             </div>
           ) : (
-            /* Audio Avatar Pulse Screen */
-            <div className="flex flex-col items-center text-center space-y-4">
+            /* Audio Avatar Pulse Screen or Pre-Connect Calling Screen */
+            <div className="flex flex-col items-center text-center space-y-4 p-6 sm:p-8">
               <div className="relative">
                 <div
-                  className={`w-28 h-28 rounded-3xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-4xl shadow-2xl ${
+                  className={`w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-4xl sm:text-5xl shadow-2xl ${
                     callState.status === 'incoming' || callState.status === 'outgoing'
                       ? 'animate-bounce'
                       : ''
@@ -495,31 +594,31 @@ export function WebRTCCallModal({
                 )}
               </div>
               <div>
-                <h3 className="font-bold text-xl">{callState.peer?.name}</h3>
-                <p className="text-xs text-slate-400 mt-1">
+                <h3 className="font-bold text-xl sm:text-2xl">{callState.peer?.name}</h3>
+                <p className="text-xs sm:text-sm text-slate-400 mt-1">
                   {callState.peer?.department ? `${callState.peer.department} Student` : 'StudyMate Classmate'}
                 </p>
-                <p className="text-[11px] font-semibold text-indigo-400 mt-1">
+                <p className="text-xs font-semibold text-indigo-400 mt-2">
                   {callState.status === 'connected'
                     ? formatDuration(callDuration)
                     : callState.status === 'incoming'
-                    ? 'Incoming StudyMate Call'
-                    : 'Connecting...'}
+                    ? 'Incoming StudyMate Call...'
+                    : 'Calling...'}
                 </p>
               </div>
             </div>
           )}
         </div>
 
-        {/* Bottom Call Controls Toolbar */}
-        <div className="p-5 border-t border-white/10 bg-slate-900/90 flex items-center justify-center gap-4">
+        {/* Bottom Call Controls Toolbar - Always Pinned & Visible */}
+        <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/95 backdrop-blur z-30 shrink-0 flex items-center justify-center gap-3 sm:gap-6">
           {callState.status === 'incoming' ? (
             /* Incoming Call Controls: Decline or Accept */
-            <div className="flex items-center gap-6">
+            <div className="flex items-center gap-6 sm:gap-10 py-1">
               <button
                 type="button"
                 onClick={onReject}
-                className="w-14 h-14 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30 cursor-pointer"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30 cursor-pointer"
                 title="Decline Call"
               >
                 <PhoneOff size={24} />
@@ -527,7 +626,7 @@ export function WebRTCCallModal({
               <button
                 type="button"
                 onClick={handleInternalAccept}
-                className="w-14 h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-lg shadow-emerald-600/30 cursor-pointer animate-pulse"
+                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-lg shadow-emerald-600/30 cursor-pointer animate-pulse"
                 title="Answer Call"
               >
                 {callState.callType === 'video' ? <Video size={24} /> : <Phone size={24} />}
@@ -535,24 +634,30 @@ export function WebRTCCallModal({
             </div>
           ) : (
             /* Active / Outgoing Call Controls */
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-5 py-1">
+              {/* Mute Button */}
               <button
                 type="button"
                 onClick={handleToggleMute}
-                className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer ${
-                  isMuted ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-white/10 text-white hover:bg-white/15'
+                className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition cursor-pointer ${
+                  isMuted
+                    ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
+                    : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
-                title={isMuted ? 'Unmute' : 'Mute'}
+                title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
               >
                 {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
               </button>
 
+              {/* Video Camera Toggle */}
               {callState.callType === 'video' && (
                 <button
                   type="button"
                   onClick={handleToggleVideo}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition cursor-pointer ${
-                    isVideoDisabled ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-white/10 text-white hover:bg-white/15'
+                  className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition cursor-pointer ${
+                    isVideoDisabled
+                      ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
+                      : 'bg-white/10 text-white hover:bg-white/20'
                   }`}
                   title={isVideoDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
                 >
@@ -560,13 +665,30 @@ export function WebRTCCallModal({
                 </button>
               )}
 
+              {/* Screen Share (Desktop Video Call) */}
+              {callState.callType === 'video' && callState.status === 'connected' && (
+                <button
+                  type="button"
+                  onClick={handleToggleScreenShare}
+                  className={`hidden sm:flex w-12 h-12 sm:w-13 sm:h-13 rounded-2xl items-center justify-center transition cursor-pointer ${
+                    isScreenSharing
+                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                      : 'bg-white/10 text-white hover:bg-white/20'
+                  }`}
+                  title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
+                >
+                  {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
+                </button>
+              )}
+
+              {/* Red Hang Up / End Call Button */}
               <button
                 type="button"
                 onClick={() => onEndCall(callDuration)}
-                className="w-12 h-12 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30 cursor-pointer"
+                className="w-14 h-12 sm:w-16 sm:h-13 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/40 cursor-pointer"
                 title="End Call"
               >
-                <PhoneOff size={20} />
+                <PhoneOff size={22} />
               </button>
             </div>
           )}
@@ -575,4 +697,5 @@ export function WebRTCCallModal({
     </div>
   );
 }
+
 export default WebRTCCallModal;
