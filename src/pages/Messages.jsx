@@ -31,6 +31,7 @@ import {
   Info,
   Calendar,
   Layers,
+  GraduationCap,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, messagesAPI } from '../services/api';
@@ -157,7 +158,6 @@ export function Messages() {
 
     // Direct message listener
     const handleNewDirectMessage = (msg) => {
-      // Check if this message belongs to the current open chat
       const isCurrentChat =
         activeChat?.type === 'direct' &&
         (msg.sender?._id === activeChat.id || msg.recipient?._id === activeChat.id);
@@ -413,7 +413,6 @@ export function Messages() {
         setVoiceSeconds((s) => s + 1);
       }, 1000);
     } else {
-      // Finish recording and send voice note preview
       clearInterval(voiceIntervalRef.current);
       setVoiceRecording(false);
       const recordedDuration = voiceSeconds || 1;
@@ -547,34 +546,32 @@ export function Messages() {
   return (
     <DashboardLayout>
       <div className="flex-1 flex flex-col h-full min-h-screen lg:h-screen w-full overflow-hidden">
-        {/* Full-Bleed Edge-to-Edge WhatsApp Container */}
+        {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
         <div className={`flex-1 flex overflow-hidden w-full h-full ${
-          isDark ? 'bg-[#111b21]' : 'bg-white'
+          isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
         } transition-colors relative`}>
 
-          {/* LEFT SIDEBAR: WhatsApp Chats & Contacts */}
-          <div className={`w-full md:w-[380px] lg:w-[420px] flex flex-col border-r ${
-            isDark ? 'border-[#222e35] bg-[#111b21]' : 'border-slate-200 bg-white'
+          {/* LEFT SIDEBAR: Chats & Contacts List */}
+          <div className={`w-full md:w-[380px] lg:w-[400px] flex flex-col border-r ${
+            isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white'
           } shrink-0`}>
             
-            {/* Sidebar WhatsApp Header */}
+            {/* Sidebar Header */}
             <div className={`px-4 py-3.5 flex items-center justify-between border-b ${
-              isDark ? 'bg-[#202c33] border-[#222e35]' : 'bg-[#f0f2f5] border-slate-200'
+              isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
             }`}>
               <div className="flex items-center gap-3">
                 <div className="relative">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-                    isDark ? 'bg-[#00a884] text-white' : 'bg-emerald-600 text-white'
-                  }`}>
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shadow-md shadow-indigo-500/20">
                     {user?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#202c33] rounded-full" />
+                  <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full" />
                 </div>
                 <div>
-                  <h2 className={`font-bold text-sm ${isDark ? 'text-[#e9edef]' : 'text-slate-900'} leading-none`}>
-                    Chats
+                  <h2 className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'} leading-none`}>
+                    Discussions
                   </h2>
-                  <span className="text-[11px] text-emerald-500 font-medium">WhatsApp Theme</span>
+                  <span className="text-[11px] text-emerald-400 font-medium">● Online</span>
                 </div>
               </div>
 
@@ -582,8 +579,8 @@ export function Messages() {
               <div className="flex items-center gap-1">
                 <button
                   onClick={handleOpenNewChatModal}
-                  className={`p-2 rounded-full transition cursor-pointer ${
-                    isDark ? 'text-[#aebac1] hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  className={`p-2 rounded-xl transition cursor-pointer ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="New Personal Chat"
                 >
@@ -591,8 +588,8 @@ export function Messages() {
                 </button>
                 <button
                   onClick={refreshAllChats}
-                  className={`p-2 rounded-full transition cursor-pointer ${
-                    isDark ? 'text-[#aebac1] hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200'
+                  className={`p-2 rounded-xl transition cursor-pointer ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                   }`}
                   title="Refresh Conversations"
                 >
@@ -601,40 +598,38 @@ export function Messages() {
               </div>
             </div>
 
-            {/* WhatsApp Search Bar */}
-            <div className={`px-3 py-2 border-b ${isDark ? 'border-[#222e35] bg-[#111b21]' : 'border-slate-200 bg-white'}`}>
-              <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl ${
-                isDark ? 'bg-[#202c33] text-[#e9edef]' : 'bg-[#f0f2f5] text-slate-900'
+            {/* Search Bar */}
+            <div className={`px-3 py-2 border-b ${isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+              <div className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border ${
+                isDark ? 'bg-slate-950/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
               }`}>
-                <Search size={16} className={isDark ? "text-[#8696a0]" : "text-slate-500"} />
+                <Search size={15} className={isDark ? "text-slate-400" : "text-slate-500"} />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search or start new chat"
-                  className="w-full bg-transparent text-xs outline-none placeholder-[#8696a0]"
+                  placeholder="Search contacts or groups..."
+                  className="w-full bg-transparent text-xs outline-none placeholder-slate-400"
                 />
                 {searchQuery && (
-                  <button onClick={() => setSearchQuery('')} className="text-[#8696a0] hover:text-white">
+                  <button onClick={() => setSearchQuery('')} className="text-slate-400 hover:text-white">
                     <X size={14} />
                   </button>
                 )}
               </div>
             </div>
 
-            {/* WhatsApp Filter Tabs: All, Direct, Groups, Unread */}
-            <div className={`flex items-center gap-1 px-3 py-2 border-b ${
-              isDark ? 'border-[#222e35] bg-[#111b21]' : 'border-slate-200 bg-slate-50/50'
+            {/* Filter Tabs: All, Personal, Groups, Unread */}
+            <div className={`flex items-center gap-1.5 px-3 py-2 border-b ${
+              isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
             } text-xs font-medium overflow-x-auto`}>
               <button
                 onClick={() => setActiveTab('all')}
-                className={`px-3 py-1 rounded-full transition cursor-pointer shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0 font-semibold ${
                   activeTab === 'all'
-                    ? isDark
-                      ? 'bg-[#00a884] text-[#111b21] font-bold'
-                      : 'bg-emerald-600 text-white font-bold'
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : isDark
-                    ? 'bg-[#202c33] text-[#8696a0] hover:text-[#e9edef]'
+                    ? 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -642,13 +637,11 @@ export function Messages() {
               </button>
               <button
                 onClick={() => setActiveTab('direct')}
-                className={`px-3 py-1 rounded-full transition cursor-pointer shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0 flex items-center gap-1.5 font-semibold ${
                   activeTab === 'direct'
-                    ? isDark
-                      ? 'bg-[#00a884] text-[#111b21] font-bold'
-                      : 'bg-emerald-600 text-white font-bold'
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : isDark
-                    ? 'bg-[#202c33] text-[#8696a0] hover:text-[#e9edef]'
+                    ? 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -657,13 +650,11 @@ export function Messages() {
               </button>
               <button
                 onClick={() => setActiveTab('group')}
-                className={`px-3 py-1 rounded-full transition cursor-pointer shrink-0 flex items-center gap-1 ${
+                className={`px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0 flex items-center gap-1.5 font-semibold ${
                   activeTab === 'group'
-                    ? isDark
-                      ? 'bg-[#00a884] text-[#111b21] font-bold'
-                      : 'bg-emerald-600 text-white font-bold'
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : isDark
-                    ? 'bg-[#202c33] text-[#8696a0] hover:text-[#e9edef]'
+                    ? 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -672,13 +663,11 @@ export function Messages() {
               </button>
               <button
                 onClick={() => setActiveTab('unread')}
-                className={`px-3 py-1 rounded-full transition cursor-pointer shrink-0 ${
+                className={`px-3 py-1.5 rounded-xl transition cursor-pointer shrink-0 font-semibold ${
                   activeTab === 'unread'
-                    ? isDark
-                      ? 'bg-[#00a884] text-[#111b21] font-bold'
-                      : 'bg-emerald-600 text-white font-bold'
+                    ? 'bg-indigo-600 text-white shadow-sm'
                     : isDark
-                    ? 'bg-[#202c33] text-[#8696a0] hover:text-[#e9edef]'
+                    ? 'bg-slate-950 text-slate-400 hover:text-white border border-white/5'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100'
                 }`}
               >
@@ -689,17 +678,17 @@ export function Messages() {
             {/* Chat List */}
             <div className="flex-1 overflow-y-auto divide-y divide-transparent">
               {loadingChats ? (
-                <div className="flex flex-col items-center justify-center p-10 text-xs text-[#8696a0] gap-2">
-                  <Loader2 size={24} className="animate-spin text-emerald-500" />
-                  <span>Loading WhatsApp conversations...</span>
+                <div className="flex flex-col items-center justify-center p-10 text-xs text-slate-400 gap-2">
+                  <Loader2 size={24} className="animate-spin text-indigo-500" />
+                  <span>Loading conversations...</span>
                 </div>
               ) : filteredChats.length === 0 ? (
-                <div className="p-8 text-center text-xs text-[#8696a0] space-y-3">
-                  <MessageSquare size={36} className="mx-auto text-emerald-500/50" />
-                  <p className="font-semibold">No chats found in this category.</p>
+                <div className="p-8 text-center text-xs text-slate-400 space-y-3">
+                  <MessageSquare size={36} className="mx-auto text-indigo-500/50" />
+                  <p className="font-semibold">No discussions found in this category.</p>
                   <button
                     onClick={handleOpenNewChatModal}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white font-bold text-xs hover:bg-indigo-500 transition cursor-pointer shadow-md shadow-indigo-600/20"
                   >
                     <MessageSquarePlus size={14} />
                     Start Personal Chat
@@ -723,35 +712,33 @@ export function Messages() {
                           data: chat.data,
                         })
                       }
-                      className={`w-full px-4 py-3 flex items-center gap-3 text-left transition cursor-pointer ${
+                      className={`w-full px-4 py-3 flex items-center gap-3 text-left transition cursor-pointer border-b ${
+                        isDark ? 'border-white/[0.04]' : 'border-slate-100'
+                      } ${
                         isSelected
                           ? isDark
-                            ? 'bg-[#2a3942]'
-                            : 'bg-[#f0f2f5]'
+                            ? 'bg-indigo-600/15 border-l-4 border-l-indigo-500 text-white'
+                            : 'bg-indigo-50/80 border-l-4 border-l-indigo-600 text-slate-900'
                           : isDark
-                          ? 'hover:bg-[#202c33]'
-                          : 'hover:bg-slate-50'
+                          ? 'hover:bg-white/5 text-slate-300'
+                          : 'hover:bg-slate-100/70 text-slate-700'
                       }`}
                     >
                       {/* Avatar with Online Green Dot */}
                       <div className="relative shrink-0">
-                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm ${
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm ${
                           chat.type === 'group'
-                            ? isDark
-                              ? 'bg-indigo-600 text-white'
-                              : 'bg-indigo-100 text-indigo-700'
-                            : isDark
-                            ? 'bg-emerald-700 text-white'
-                            : 'bg-emerald-100 text-emerald-800'
+                            ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white shadow-sm'
+                            : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white shadow-sm'
                         }`}>
                           {chat.type === 'group' ? (
-                            <Users size={20} />
+                            <Users size={19} />
                           ) : (
                             chat.name?.charAt(0).toUpperCase() || 'U'
                           )}
                         </div>
                         {chat.isOnline && (
-                          <span className="absolute bottom-0 right-0 w-3.5 h-3.5 bg-emerald-500 border-2 border-[#111b21] rounded-full" />
+                          <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full" />
                         )}
                       </div>
 
@@ -759,12 +746,14 @@ export function Messages() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between mb-1">
                           <span className={`font-semibold text-sm truncate ${
-                            isDark ? 'text-[#e9edef]' : 'text-slate-900'
+                            isSelected
+                              ? isDark ? 'text-white' : 'text-indigo-950'
+                              : isDark ? 'text-slate-200' : 'text-slate-900'
                           }`}>
                             {chat.name}
                           </span>
                           <span className={`text-[11px] shrink-0 ${
-                            chat.unreadCount > 0 ? 'text-emerald-500 font-bold' : isDark ? 'text-[#8696a0]' : 'text-slate-400'
+                            chat.unreadCount > 0 ? 'text-indigo-400 font-bold' : 'text-slate-400'
                           }`}>
                             {chat.lastMessage
                               ? formatMessageTime(chat.lastMessage.createdAt)
@@ -775,27 +764,27 @@ export function Messages() {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-1 text-xs truncate">
                             {isTyping ? (
-                              <span className="text-emerald-500 font-semibold italic text-xs">
+                              <span className="text-emerald-400 font-semibold italic text-xs">
                                 {typeof isTyping === 'string' ? `${isTyping} is typing...` : 'typing...'}
                               </span>
                             ) : chat.lastMessage ? (
                               <>
                                 {chat.lastMessage.sender?._id === user?._id && (
-                                  <CheckCheck size={14} className="text-[#53bdeb] shrink-0" />
+                                  <CheckCheck size={14} className="text-cyan-400 shrink-0" />
                                 )}
-                                <span className={`truncate text-xs ${isDark ? 'text-[#8696a0]' : 'text-slate-500'}`}>
+                                <span className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                                   {chat.lastMessage.content || 'Voice message'}
                                 </span>
                               </>
                             ) : (
-                              <span className={`text-xs truncate ${isDark ? 'text-[#8696a0]' : 'text-slate-400'}`}>
+                              <span className={`text-xs truncate ${isDark ? 'text-slate-400' : 'text-slate-400'}`}>
                                 {chat.subtitle}
                               </span>
                             )}
                           </div>
 
                           {chat.unreadCount > 0 && (
-                            <span className="w-5 h-5 rounded-full bg-[#25d366] text-white font-bold text-[10px] flex items-center justify-center shrink-0">
+                            <span className="w-5 h-5 rounded-full bg-indigo-600 text-white font-bold text-[10px] flex items-center justify-center shrink-0 shadow">
                               {chat.unreadCount}
                             </span>
                           )}
@@ -812,16 +801,16 @@ export function Messages() {
           {activeChat ? (
             <div className="flex-1 flex flex-col min-w-0 h-full relative">
               
-              {/* WhatsApp Chat Header */}
-              <div className={`px-4 py-3 flex items-center justify-between border-b ${
-                isDark ? 'bg-[#202c33] border-[#222e35]' : 'bg-[#f0f2f5] border-slate-200'
+              {/* Header */}
+              <div className={`px-5 py-3.5 flex items-center justify-between border-b ${
+                isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
               } shrink-0 z-20`}>
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative shrink-0">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
+                    <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                       activeChat.type === 'group'
-                        ? isDark ? 'bg-indigo-600 text-white' : 'bg-indigo-100 text-indigo-700'
-                        : isDark ? 'bg-emerald-700 text-white' : 'bg-emerald-100 text-emerald-800'
+                        ? 'bg-gradient-to-br from-indigo-500 to-purple-600 text-white'
+                        : 'bg-gradient-to-br from-indigo-500 to-cyan-400 text-white'
                     }`}>
                       {activeChat.type === 'group' ? (
                         <Users size={18} />
@@ -830,29 +819,29 @@ export function Messages() {
                       )}
                     </div>
                     {activePeerIsOnline && (
-                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-[#202c33] rounded-full" />
+                      <span className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 border-2 border-slate-950 rounded-full" />
                     )}
                   </div>
 
                   <div className="min-w-0">
-                    <h3 className={`font-bold text-sm truncate ${isDark ? 'text-[#e9edef]' : 'text-slate-900'}`}>
+                    <h3 className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
                       {activeChat.data?.name}
                     </h3>
                     <p className="text-[11px] truncate flex items-center gap-1.5">
                       {activeChatTyping ? (
-                        <span className="text-emerald-500 font-semibold italic">
+                        <span className="text-emerald-400 font-semibold italic">
                           {typeof activeChatTyping === 'string' ? `${activeChatTyping} is typing...` : 'typing...'}
                         </span>
                       ) : activeChat.type === 'direct' ? (
                         activePeerIsOnline ? (
-                          <span className="text-emerald-500 font-medium">online</span>
+                          <span className="text-emerald-400 font-medium">● Online</span>
                         ) : (
-                          <span className={isDark ? "text-[#8696a0]" : "text-slate-500"}>
+                          <span className={isDark ? "text-slate-400" : "text-slate-500"}>
                             {activeChat.data?.department || 'Student'} • {activeChat.data?.semester || 'MCA'}
                           </span>
                         )
                       ) : (
-                        <span className={isDark ? "text-[#8696a0]" : "text-slate-500"}>
+                        <span className={isDark ? "text-slate-400" : "text-slate-500"}>
                           {activeChat.data?.members?.length || 1} participants • {activeChat.data?.subject}
                         </span>
                       )}
@@ -860,73 +849,73 @@ export function Messages() {
                   </div>
                 </div>
 
-                {/* Header Call / Info Actions */}
-                <div className="flex items-center gap-1 text-[#8696a0]">
+                {/* Actions */}
+                <div className="flex items-center gap-1 text-slate-400">
                   <button
-                    onClick={() => alert(`Starting voice call with ${activeChat.data?.name}... (Audio WebRTC ready)`)}
-                    className={`p-2 rounded-full transition cursor-pointer ${
-                      isDark ? 'hover:text-white hover:bg-white/10' : 'hover:text-slate-900 hover:bg-slate-200'
+                    onClick={() => alert(`Starting audio study room with ${activeChat.data?.name}...`)}
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
                     title="Audio Call"
                   >
-                    <Phone size={18} />
+                    <Phone size={17} />
                   </button>
                   <button
                     onClick={() => alert(`Starting video study session with ${activeChat.data?.name}...`)}
-                    className={`p-2 rounded-full transition cursor-pointer ${
-                      isDark ? 'hover:text-white hover:bg-white/10' : 'hover:text-slate-900 hover:bg-slate-200'
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      isDark ? 'hover:text-white hover:bg-white/5' : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
                     title="Video Call"
                   >
-                    <Video size={18} />
+                    <Video size={17} />
                   </button>
                   <button
                     onClick={() => setInfoDrawerOpen(!infoDrawerOpen)}
-                    className={`p-2 rounded-full transition cursor-pointer ${
+                    className={`p-2 rounded-xl transition cursor-pointer ${
                       infoDrawerOpen
-                        ? 'text-emerald-500'
+                        ? 'text-indigo-400'
                         : isDark
-                        ? 'hover:text-white hover:bg-white/10'
-                        : 'hover:text-slate-900 hover:bg-slate-200'
+                        ? 'hover:text-white hover:bg-white/5'
+                        : 'hover:text-slate-900 hover:bg-slate-100'
                     }`}
-                    title="Contact Details"
+                    title="Details"
                   >
-                    <Info size={18} />
+                    <Info size={17} />
                   </button>
                 </div>
               </div>
 
-              {/* WhatsApp Wallpaper Messages Stream */}
+              {/* Messages Canvas with Website Palette */}
               <div
-                className={`flex-1 p-4 overflow-y-auto space-y-3 relative ${
-                  isDark ? 'bg-[#0b141a]' : 'bg-[#efeae2]'
+                className={`flex-1 p-5 overflow-y-auto space-y-3 relative ${
+                  isDark ? 'bg-slate-950' : 'bg-slate-50/80'
                 }`}
                 style={{
-                  backgroundImage: `radial-gradient(${isDark ? '#182229 1px' : '#e0d8cc 1px'}, transparent 1px)`,
+                  backgroundImage: `radial-gradient(${isDark ? '#1e293b 1px' : '#e2e8f0 1px'}, transparent 1px)`,
                   backgroundSize: '24px 24px',
                 }}
               >
                 {/* Date Divider Chip */}
                 <div className="flex justify-center my-2">
-                  <span className={`px-3 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm ${
-                    isDark ? 'bg-[#182229] text-[#8696a0] border border-white/5' : 'bg-white text-slate-600 border border-slate-200'
+                  <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase tracking-wider shadow-sm border ${
+                    isDark ? 'bg-slate-900 text-slate-400 border-white/5' : 'bg-white text-slate-600 border-slate-200'
                   }`}>
                     Today
                   </span>
                 </div>
 
                 {loadingMessages ? (
-                  <div className="flex justify-center items-center py-20 text-xs text-[#8696a0]">
-                    <Loader2 size={24} className="animate-spin text-emerald-500 mr-2" />
+                  <div className="flex justify-center items-center py-20 text-xs text-slate-400">
+                    <Loader2 size={24} className="animate-spin text-indigo-500 mr-2" />
                     <span>Loading message history...</span>
                   </div>
                 ) : messages.length === 0 ? (
-                  <div className="max-w-sm mx-auto my-12 text-center p-6 rounded-2xl bg-white/10 backdrop-blur text-xs space-y-2">
-                    <p className="font-semibold text-emerald-500 text-sm">
-                      🔒 End-to-End Encrypted Student Chat
+                  <div className="max-w-sm mx-auto my-14 text-center p-6 rounded-2xl border border-white/10 bg-slate-900/40 backdrop-blur text-xs space-y-2">
+                    <p className="font-semibold text-indigo-400 text-sm">
+                      🔒 StudyMate Secure Discussions
                     </p>
                     <p className={isDark ? "text-slate-400" : "text-slate-600"}>
-                      Messages and calls are private. Send a greeting to start your personalized study conversation!
+                      Direct messages and group chats are private to enrolled students. Say hello to get started!
                     </p>
                   </div>
                 ) : (
@@ -938,43 +927,41 @@ export function Messages() {
                         key={msg._id}
                         className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1`}
                       >
-                        {/* WhatsApp Message Bubble */}
+                        {/* Message Bubble */}
                         <div
-                          className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-3.5 py-2 relative shadow-sm ${
+                          className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 relative shadow-sm ${
                             isMe
-                              ? isDark
-                                ? 'bg-[#005c4b] text-white rounded-tr-sm'
-                                : 'bg-[#d9fdd3] text-slate-900 rounded-tr-sm'
+                              ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md shadow-indigo-600/15'
                               : isDark
-                              ? 'bg-[#202c33] text-white rounded-tl-sm'
-                              : 'bg-white text-slate-900 rounded-tl-sm'
+                              ? 'bg-slate-900 border border-white/5 text-slate-100 rounded-tl-sm'
+                              : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
                           }`}
                         >
                           {/* In group chats, display sender's name on received message */}
                           {!isMe && activeChat.type === 'group' && (
-                            <div className="text-[11px] font-bold text-emerald-400 mb-0.5">
+                            <div className="text-[11px] font-bold text-cyan-400 mb-0.5">
                               {msg.senderName || msg.sender?.name}
                             </div>
                           )}
 
-                          {/* Message Types: Text, Code Snippet, Voice Note */}
+                          {/* Message Content: Code Snippet, Voice Note, or Text */}
                           {msg.messageType === 'code' && msg.codeSnippet ? (
                             <div className="my-1 space-y-1.5 font-mono text-xs">
-                              <div className="flex items-center justify-between text-[11px] opacity-80 border-b border-white/10 pb-1">
+                              <div className="flex items-center justify-between text-[11px] opacity-90 border-b border-white/10 pb-1">
                                 <span className="font-bold">{msg.codeSnippet.title || 'Code Snippet'}</span>
                                 <span className="uppercase text-[9px] px-1.5 py-0.5 rounded bg-black/30 font-semibold">
                                   {msg.codeSnippet.language}
                                 </span>
                               </div>
-                              <pre className={`p-2.5 rounded-xl text-xs overflow-x-auto ${
-                                isDark ? 'bg-black/40 text-emerald-300' : 'bg-slate-900 text-emerald-400'
+                              <pre className={`p-3 rounded-xl text-xs overflow-x-auto ${
+                                isDark ? 'bg-slate-950 border border-white/10 text-cyan-300' : 'bg-slate-900 text-cyan-300'
                               }`}>
                                 {msg.codeSnippet.code}
                               </pre>
                               <div className="flex justify-end">
                                 <button
                                   onClick={() => handleCopyCode(msg._id, msg.codeSnippet.code)}
-                                  className="text-[10px] flex items-center gap-1 hover:underline text-emerald-400 cursor-pointer"
+                                  className="text-[10px] flex items-center gap-1 hover:underline text-cyan-300 cursor-pointer"
                                 >
                                   {copiedCodeId === msg._id ? <Check size={12} /> : <Copy size={12} />}
                                   <span>{copiedCodeId === msg._id ? 'Copied' : 'Copy Code'}</span>
@@ -989,8 +976,8 @@ export function Messages() {
                                 }
                                 className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
                                   isMe
-                                    ? 'bg-emerald-400 text-black hover:bg-emerald-300'
-                                    : 'bg-emerald-600 text-white hover:bg-emerald-500'
+                                    ? 'bg-white text-indigo-700 hover:bg-slate-100'
+                                    : 'bg-indigo-600 text-white hover:bg-indigo-500'
                                 }`}
                               >
                                 {playingVoiceId === msg._id ? (
@@ -1000,7 +987,7 @@ export function Messages() {
                                 )}
                               </button>
                               <div className="flex-1">
-                                {/* WhatsApp Audio Waveform Bar */}
+                                {/* Audio Waveform Bar */}
                                 <div className="h-4 flex items-center gap-0.5">
                                   {[40, 70, 90, 60, 100, 50, 80, 45, 95, 30, 85, 60, 40].map(
                                     (h, idx) => (
@@ -1009,10 +996,10 @@ export function Messages() {
                                         style={{ height: `${h}%` }}
                                         className={`w-1 rounded-full ${
                                           playingVoiceId === msg._id
-                                            ? 'bg-emerald-400 animate-pulse'
+                                            ? 'bg-cyan-400 animate-pulse'
                                             : isMe
-                                            ? isDark ? 'bg-emerald-200/60' : 'bg-emerald-800/40'
-                                            : 'bg-slate-400'
+                                            ? 'bg-white/60'
+                                            : 'bg-indigo-400/60'
                                         }`}
                                       />
                                     )
@@ -1030,13 +1017,13 @@ export function Messages() {
                             </p>
                           )}
 
-                          {/* Timestamp + WhatsApp Double Checkmark */}
-                          <div className="flex items-center justify-end gap-1 text-[10px] opacity-70 mt-1 float-right ml-3">
+                          {/* Timestamp + Double Checkmark */}
+                          <div className="flex items-center justify-end gap-1 text-[10px] opacity-75 mt-1 float-right ml-3">
                             <span>{formatMessageTime(msg.createdAt)}</span>
                             {isMe && (
                               <CheckCheck
                                 size={14}
-                                className={msg.status === 'read' ? 'text-[#53bdeb]' : 'text-slate-400'}
+                                className={msg.status === 'read' ? 'text-cyan-200' : 'text-indigo-200'}
                               />
                             )}
                           </div>
@@ -1049,13 +1036,13 @@ export function Messages() {
                 {/* Real-time Typing Bubble indicator */}
                 {activeChatTyping && (
                   <div className="flex items-center gap-2">
-                    <div className={`px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs flex items-center gap-1.5 shadow-sm ${
-                      isDark ? 'bg-[#202c33] text-[#e9edef]' : 'bg-white text-slate-800'
+                    <div className={`px-4 py-2.5 rounded-2xl rounded-tl-sm text-xs flex items-center gap-1.5 shadow-sm border ${
+                      isDark ? 'bg-slate-900 border-white/5 text-white' : 'bg-white border-slate-200 text-slate-800'
                     }`}>
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce" />
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.2s]" />
-                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce [animation-delay:0.4s]" />
-                      <span className="text-[11px] text-emerald-500 font-semibold ml-1">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce" />
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.2s]" />
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 animate-bounce [animation-delay:0.4s]" />
+                      <span className="text-[11px] text-indigo-400 font-semibold ml-1">
                         {typeof activeChatTyping === 'string' ? `${activeChatTyping} is typing...` : 'typing...'}
                       </span>
                     </div>
@@ -1068,9 +1055,9 @@ export function Messages() {
               {/* Emoji Quick Picker Bar */}
               {emojiPickerOpen && (
                 <div className={`p-2.5 border-t flex items-center gap-2 overflow-x-auto ${
-                  isDark ? 'bg-[#202c33] border-[#222e35]' : 'bg-white border-slate-200'
+                  isDark ? 'bg-slate-900 border-white/10' : 'bg-white border-slate-200'
                 }`}>
-                  <span className="text-xs text-[#8696a0] font-semibold shrink-0">Emojis:</span>
+                  <span className="text-xs text-slate-400 font-semibold shrink-0">Emojis:</span>
                   {QUICK_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
@@ -1088,8 +1075,8 @@ export function Messages() {
 
               {/* Voice Recording Active Bar */}
               {voiceRecording ? (
-                <div className={`px-4 py-3 flex items-center justify-between border-t ${
-                  isDark ? 'bg-[#202c33] border-[#222e35] text-white' : 'bg-[#f0f2f5] border-slate-200 text-slate-900'
+                <div className={`px-5 py-3 flex items-center justify-between border-t ${
+                  isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
                 }`}>
                   <div className="flex items-center gap-3">
                     <span className="w-3 h-3 rounded-full bg-rose-500 animate-ping" />
@@ -1100,13 +1087,13 @@ export function Messages() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={handleCancelVoiceRecording}
-                      className="px-3 py-1.5 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-xs font-semibold transition cursor-pointer"
+                      className="px-3.5 py-1.5 rounded-xl bg-slate-500/20 hover:bg-slate-500/30 text-xs font-semibold transition cursor-pointer"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleToggleVoiceRecording}
-                      className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer"
+                      className="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition flex items-center gap-1.5 cursor-pointer shadow-md shadow-indigo-600/30"
                     >
                       <Send size={13} />
                       <span>Send Voice Note</span>
@@ -1114,22 +1101,22 @@ export function Messages() {
                   </div>
                 </div>
               ) : (
-                /* WhatsApp Bottom Message Input Bar */
+                /* Bottom Message Input Bar */
                 <form
                   onSubmit={handleSendMessage}
-                  className={`px-4 py-2.5 flex items-center gap-2 border-t ${
-                    isDark ? 'bg-[#202c33] border-[#222e35]' : 'bg-[#f0f2f5] border-slate-200'
+                  className={`px-4 py-3 flex items-center gap-2.5 border-t ${
+                    isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
                   }`}
                 >
                   {/* Emoji toggle */}
                   <button
                     type="button"
                     onClick={() => setEmojiPickerOpen(!emojiPickerOpen)}
-                    className={`p-2 rounded-full transition cursor-pointer ${
+                    className={`p-2 rounded-xl transition cursor-pointer ${
                       emojiPickerOpen
-                        ? 'text-emerald-500 bg-emerald-500/10'
+                        ? 'text-indigo-400 bg-indigo-500/10'
                         : isDark
-                        ? 'text-[#8696a0] hover:text-white'
+                        ? 'text-slate-400 hover:text-white'
                         : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="Insert Emoji"
@@ -1141,8 +1128,8 @@ export function Messages() {
                   <button
                     type="button"
                     onClick={() => setCodeModalOpen(true)}
-                    className={`p-2 rounded-full transition cursor-pointer ${
-                      isDark ? 'text-[#8696a0] hover:text-white' : 'text-slate-600 hover:text-slate-900'
+                    className={`p-2 rounded-xl transition cursor-pointer ${
+                      isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="Send Code Snippet / Solution"
                   >
@@ -1150,16 +1137,18 @@ export function Messages() {
                   </button>
 
                   {/* Text Input Pill */}
-                  <div className={`flex-1 rounded-xl px-4 py-2.5 flex items-center ${
-                    isDark ? 'bg-[#2a3942] text-[#e9edef]' : 'bg-white text-slate-900 shadow-sm'
+                  <div className={`flex-1 rounded-xl px-4 py-2.5 flex items-center border ${
+                    isDark
+                      ? 'bg-slate-950 border-white/10 text-white focus-within:border-indigo-500'
+                      : 'bg-slate-100/90 border-slate-200 text-slate-900 focus-within:border-indigo-600'
                   }`}>
                     <input
                       ref={textareaRef}
                       type="text"
                       value={inputContent}
                       onChange={handleInputChange}
-                      placeholder="Type a message"
-                      className="w-full bg-transparent text-xs sm:text-sm outline-none placeholder-[#8696a0]"
+                      placeholder="Type a message or discuss with classmates..."
+                      className="w-full bg-transparent text-xs sm:text-sm outline-none placeholder-slate-400"
                     />
                   </div>
 
@@ -1167,7 +1156,7 @@ export function Messages() {
                   {inputContent.trim() ? (
                     <button
                       type="submit"
-                      className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-md cursor-pointer shrink-0"
+                      className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white flex items-center justify-center transition shadow-lg shadow-indigo-600/30 cursor-pointer shrink-0"
                       title="Send Message"
                     >
                       <Send size={17} className="ml-0.5" />
@@ -1176,7 +1165,7 @@ export function Messages() {
                     <button
                       type="button"
                       onClick={handleToggleVoiceRecording}
-                      className="w-10 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-md cursor-pointer shrink-0"
+                      className="w-10 h-10 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition border border-indigo-500/20 cursor-pointer shrink-0"
                       title="Record Voice Note"
                     >
                       <Mic size={18} />
@@ -1188,23 +1177,23 @@ export function Messages() {
           ) : (
             /* No Chat Selected Placeholder */
             <div className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
-              isDark ? 'bg-[#222e35]' : 'bg-[#f0f2f5]'
+              isDark ? 'bg-slate-950' : 'bg-slate-50'
             }`}>
-              <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500 mb-4">
-                <MessageSquare size={40} />
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white mb-4 shadow-xl shadow-indigo-500/20">
+                <GraduationCap size={40} />
               </div>
-              <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-[#e9edef]' : 'text-slate-900'}`}>
-                StudyMate WhatsApp Web
+              <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                StudyMate Discussions
               </h3>
-              <p className={`text-xs max-w-md ${isDark ? 'text-[#8696a0]' : 'text-slate-600'} leading-relaxed`}>
-                Send personalized direct messages to classmates, create study groups, share DSA code snippets, and collaborate in real-time.
+              <p className={`text-xs max-w-md ${isDark ? 'text-slate-400' : 'text-slate-600'} leading-relaxed`}>
+                Connect 1-on-1 with classmates, coordinate study groups, share DSA programming solutions, and collaborate in real-time.
               </p>
               <button
                 onClick={handleOpenNewChatModal}
-                className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-500 transition shadow-lg cursor-pointer"
+                className="mt-6 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 text-white font-bold text-xs hover:from-indigo-500 hover:to-cyan-400 transition shadow-lg shadow-indigo-600/30 cursor-pointer"
               >
                 <MessageSquarePlus size={16} />
-                <span>Start New Personal Chat</span>
+                <span>Start Personal Chat</span>
               </button>
             </div>
           )}
@@ -1212,39 +1201,39 @@ export function Messages() {
           {/* RIGHT CONTACT INFO DRAWER */}
           {infoDrawerOpen && activeChat && (
             <div className={`w-72 border-l ${
-              isDark ? 'border-[#222e35] bg-[#111b21]' : 'border-slate-200 bg-white'
+              isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'
             } p-5 flex flex-col space-y-4 shrink-0 overflow-y-auto`}>
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <h4 className="font-bold text-sm">Contact Info</h4>
-                <button onClick={() => setInfoDrawerOpen(false)} className="text-[#8696a0] hover:text-white">
+                <button onClick={() => setInfoDrawerOpen(false)} className="text-slate-400 hover:text-white">
                   <X size={16} />
                 </button>
               </div>
 
               <div className="text-center space-y-2">
-                <div className="w-20 h-20 mx-auto rounded-full bg-emerald-700 text-white flex items-center justify-center font-bold text-2xl shadow-lg">
+                <div className="w-20 h-20 mx-auto rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 text-white flex items-center justify-center font-bold text-2xl shadow-xl shadow-indigo-500/20">
                   {activeChat.data?.name?.charAt(0).toUpperCase() || 'U'}
                 </div>
                 <h3 className="font-bold text-base">{activeChat.data?.name}</h3>
-                <p className="text-xs text-emerald-500 font-semibold">
+                <p className="text-xs text-emerald-400 font-semibold">
                   {activePeerIsOnline ? '● Online Now' : 'Offline'}
                 </p>
               </div>
 
-              <div className={`p-3.5 rounded-xl text-xs space-y-2 ${
-                isDark ? 'bg-[#202c33]' : 'bg-slate-50'
+              <div className={`p-3.5 rounded-xl text-xs space-y-2 border ${
+                isDark ? 'bg-slate-950/70 border-white/5' : 'bg-slate-50 border-slate-200'
               }`}>
                 <div>
-                  <span className="text-[11px] text-[#8696a0] block">Department</span>
+                  <span className="text-[11px] text-slate-400 block">Department</span>
                   <span className="font-semibold">{activeChat.data?.department || 'MCA'}</span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-[#8696a0] block">Semester</span>
+                  <span className="text-[11px] text-slate-400 block">Semester</span>
                   <span className="font-semibold">{activeChat.data?.semester || '2nd Semester'}</span>
                 </div>
                 {activeChat.data?.bio && (
                   <div>
-                    <span className="text-[11px] text-[#8696a0] block">Bio</span>
+                    <span className="text-[11px] text-slate-400 block">Bio</span>
                     <p className="text-xs italic">{activeChat.data.bio}</p>
                   </div>
                 )}
@@ -1253,30 +1242,30 @@ export function Messages() {
           )}
         </div>
 
-        {/* MODAL: START NEW PERSONAL CHAT (WhatsApp Contacts) */}
+        {/* MODAL: START NEW PERSONAL CHAT (Classmate Contacts) */}
         {newChatModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
             <div className={`w-full max-w-md rounded-2xl border ${
-              isDark ? 'border-white/10 bg-[#111b21] text-[#e9edef]' : 'border-slate-200 bg-white text-slate-900'
+              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
             } shadow-2xl p-6`}>
               <div className="flex items-center justify-between pb-3 border-b border-white/10 mb-4">
                 <div className="flex items-center gap-2">
-                  <MessageSquarePlus className="text-emerald-500" size={20} />
+                  <MessageSquarePlus className="text-indigo-400" size={20} />
                   <h3 className="font-bold text-base">New Personal Chat</h3>
                 </div>
                 <button
                   onClick={() => setNewChatModalOpen(false)}
-                  className="text-[#8696a0] hover:text-white"
+                  className="text-slate-400 hover:text-white"
                 >
                   <X size={18} />
                 </button>
               </div>
 
               {/* Search peer */}
-              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-4 ${
-                isDark ? 'bg-[#202c33]' : 'bg-slate-100'
+              <div className={`flex items-center gap-2 px-3 py-2 rounded-xl mb-4 border ${
+                isDark ? 'bg-slate-950 border-white/10' : 'bg-slate-100 border-slate-200'
               }`}>
-                <Search size={15} className="text-[#8696a0]" />
+                <Search size={15} className="text-slate-400" />
                 <input
                   type="text"
                   value={peerSearchQuery}
@@ -1289,27 +1278,27 @@ export function Messages() {
               {/* Peer List */}
               <div className="max-h-72 overflow-y-auto space-y-2">
                 {loadingPeers ? (
-                  <div className="py-8 text-center text-xs text-[#8696a0]">
-                    <Loader2 size={20} className="animate-spin mx-auto text-emerald-500 mb-2" />
+                  <div className="py-8 text-center text-xs text-slate-400">
+                    <Loader2 size={20} className="animate-spin mx-auto text-indigo-500 mb-2" />
                     <span>Finding classmates...</span>
                   </div>
                 ) : availablePeers.length === 0 ? (
-                  <p className="text-center py-6 text-xs text-[#8696a0]">No classmates found.</p>
+                  <p className="text-center py-6 text-xs text-slate-400">No classmates found.</p>
                 ) : (
                   availablePeers.map((peer) => (
                     <button
                       key={peer._id}
                       onClick={() => handleSelectPeerForNewChat(peer)}
                       className={`w-full p-2.5 rounded-xl flex items-center gap-3 transition text-left cursor-pointer ${
-                        isDark ? 'hover:bg-[#202c33]' : 'hover:bg-slate-50'
+                        isDark ? 'hover:bg-white/5' : 'hover:bg-slate-100'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-xs">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 text-white font-bold flex items-center justify-center text-xs shadow-sm">
                         {peer.name?.charAt(0).toUpperCase()}
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="font-semibold text-xs truncate">{peer.name}</div>
-                        <div className="text-[11px] text-[#8696a0] truncate">
+                        <div className="text-[11px] text-slate-400 truncate">
                           {peer.department} • {peer.semester}
                         </div>
                       </div>
@@ -1328,26 +1317,26 @@ export function Messages() {
         {codeModalOpen && (
           <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
             <div className={`w-full max-w-lg rounded-2xl border ${
-              isDark ? 'border-white/10 bg-[#111b21] text-[#e9edef]' : 'border-slate-200 bg-white text-slate-900'
+              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
             } shadow-2xl p-6 space-y-4`}>
               <div className="flex items-center justify-between pb-3 border-b border-white/10">
                 <div className="flex items-center gap-2">
-                  <Code2 className="text-emerald-500" size={20} />
-                  <h3 className="font-bold text-base">Share Code Snippet in Chat</h3>
+                  <Code2 className="text-indigo-400" size={20} />
+                  <h3 className="font-bold text-base">Share Code Snippet</h3>
                 </div>
-                <button onClick={() => setCodeModalOpen(false)} className="text-[#8696a0] hover:text-white">
+                <button onClick={() => setCodeModalOpen(false)} className="text-slate-400 hover:text-white">
                   <X size={18} />
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-[11px] text-[#8696a0] font-semibold block mb-1">Language</label>
+                  <label className="text-[11px] text-slate-400 font-semibold block mb-1">Language</label>
                   <select
                     value={codeSnippet.language}
                     onChange={(e) => setCodeSnippet({ ...codeSnippet, language: e.target.value })}
                     className={`w-full rounded-xl px-3 py-2 text-xs border outline-none ${
-                      isDark ? 'bg-[#202c33] border-white/10' : 'bg-slate-50 border-slate-200'
+                      isDark ? 'bg-slate-950 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   >
                     <option value="javascript">JavaScript</option>
@@ -1360,28 +1349,28 @@ export function Messages() {
                   </select>
                 </div>
                 <div>
-                  <label className="text-[11px] text-[#8696a0] font-semibold block mb-1">Snippet Title</label>
+                  <label className="text-[11px] text-slate-400 font-semibold block mb-1">Snippet Title</label>
                   <input
                     type="text"
                     value={codeSnippet.title}
                     onChange={(e) => setCodeSnippet({ ...codeSnippet, title: e.target.value })}
                     placeholder="e.g. Binary Search Function"
                     className={`w-full rounded-xl px-3 py-2 text-xs border outline-none ${
-                      isDark ? 'bg-[#202c33] border-white/10' : 'bg-slate-50 border-slate-200'
+                      isDark ? 'bg-slate-950 border-white/10 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
                     }`}
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-[11px] text-[#8696a0] font-semibold block mb-1">Code</label>
+                <label className="text-[11px] text-slate-400 font-semibold block mb-1">Code</label>
                 <textarea
                   value={codeSnippet.code}
                   onChange={(e) => setCodeSnippet({ ...codeSnippet, code: e.target.value })}
                   placeholder="Paste or write solution code here..."
                   rows={8}
                   className={`w-full rounded-xl p-3 font-mono text-xs border outline-none resize-none ${
-                    isDark ? 'bg-[#0b141a] border-white/10 text-emerald-300' : 'bg-slate-900 border-slate-200 text-emerald-400'
+                    isDark ? 'bg-slate-950 border-white/10 text-cyan-300' : 'bg-slate-900 border-slate-200 text-cyan-300'
                   }`}
                 />
               </div>
@@ -1390,7 +1379,7 @@ export function Messages() {
                 <button
                   type="button"
                   onClick={() => setCodeModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs text-[#8696a0] hover:text-white"
+                  className="px-4 py-2 rounded-xl text-xs text-slate-400 hover:text-white"
                 >
                   Cancel
                 </button>
@@ -1398,7 +1387,7 @@ export function Messages() {
                   type="button"
                   onClick={handleSendCodeSnippet}
                   disabled={!codeSnippet.code.trim()}
-                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition disabled:opacity-50 cursor-pointer"
+                  className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-600/30"
                 >
                   Share to Chat
                 </button>
