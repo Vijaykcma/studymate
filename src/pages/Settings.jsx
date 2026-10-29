@@ -142,7 +142,7 @@ function Settings() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Account Settings</h1>
           <p className="text-sm text-slate-400 mt-1">

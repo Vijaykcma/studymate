@@ -85,7 +85,7 @@ function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
         {/* Administrator Quick Switch Banner */}
         {user?.role === 'admin' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/70 via-indigo-950/50 to-slate-900 border border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl shadow-rose-950/25">
