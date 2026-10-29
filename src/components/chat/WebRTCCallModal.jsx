@@ -11,6 +11,7 @@ import {
   Minimize2,
   Monitor,
   MonitorOff,
+  MessageSquare,
 } from 'lucide-react';
 
 const ICE_SERVERS = {
@@ -78,7 +79,7 @@ function createToneGenerator() {
       pulse();
       interval = setInterval(pulse, 4000);
     } catch {
-      // ignore audio context restrictions
+      // ignore
     }
   };
 
@@ -125,6 +126,8 @@ export function WebRTCCallModal({
   onConnected,
   socket,
   currentUser,
+  embedded = false,
+  onMinimize,
 }) {
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoDisabled, setIsVideoDisabled] = useState(callState.callType === 'audio');
@@ -132,7 +135,7 @@ export function WebRTCCallModal({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
 
-  const modalContainerRef = useRef(null);
+  const containerRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
@@ -146,7 +149,7 @@ export function WebRTCCallModal({
   const toneGenRef = useRef(null);
   const hasStartedRef = useRef(false);
 
-  // Initialize Audio Tone Generator on Mount
+  // Audio tone generator
   useEffect(() => {
     toneGenRef.current = createToneGenerator();
     if (callState.status === 'outgoing') {
@@ -160,7 +163,7 @@ export function WebRTCCallModal({
     };
   }, []);
 
-  // When call status transitions to connected, stop audio tones
+  // Connected state stops ringing & starts timer
   useEffect(() => {
     if (callState.status === 'connected') {
       toneGenRef.current?.stop();
@@ -168,7 +171,6 @@ export function WebRTCCallModal({
     }
   }, [callState.status]);
 
-  // Timer for connected call
   const startCallTimer = () => {
     if (timerRef.current) return;
     setCallDuration(0);
@@ -177,7 +179,6 @@ export function WebRTCCallModal({
     }, 1000);
   };
 
-  // Helper to get local user media
   const getLocalMedia = async () => {
     if (localStreamRef.current) return localStreamRef.current;
     try {
@@ -205,21 +206,18 @@ export function WebRTCCallModal({
     }
   };
 
-  // Helper to create RTCPeerConnection and attach tracks & event handlers
   const createPeerConnection = (stream) => {
     if (pcRef.current) return pcRef.current;
 
     const pc = new RTCPeerConnection(ICE_SERVERS);
     pcRef.current = pc;
 
-    // Attach local stream tracks
     if (stream) {
       stream.getTracks().forEach((track) => {
         pc.addTrack(track, stream);
       });
     }
 
-    // Attach remote stream to audio/video elements
     pc.ontrack = (event) => {
       const [remoteStream] = event.streams;
       if (remoteStream) {
@@ -236,7 +234,6 @@ export function WebRTCCallModal({
       }
     };
 
-    // Forward local ICE candidates to remote peer via Socket.IO
     pc.onicecandidate = (event) => {
       if (event.candidate && socket && callState.peer?._id) {
         socket.emit('webrtc_ice_candidate', {
@@ -256,7 +253,6 @@ export function WebRTCCallModal({
     return pc;
   };
 
-  // Flush any queued ICE candidates once remoteDescription is set
   const flushCandidateQueue = async (pc) => {
     while (candidateQueueRef.current.length > 0) {
       const candidate = candidateQueueRef.current.shift();
@@ -268,11 +264,10 @@ export function WebRTCCallModal({
     }
   };
 
-  // Socket signaling listener for incoming call answers & candidates
+  // Socket signaling listener
   useEffect(() => {
     if (!socket) return;
 
-    // Caller receives callee's Answer
     const handleCallAnswered = async ({ answer }) => {
       toneGenRef.current?.stop();
       try {
@@ -287,7 +282,6 @@ export function WebRTCCallModal({
       }
     };
 
-    // Either peer receives an ICE candidate
     const handleIceCandidate = async ({ candidate }) => {
       if (!candidate) return;
       const pc = pcRef.current;
@@ -298,7 +292,6 @@ export function WebRTCCallModal({
           console.warn('[WebRTC] Error adding received ICE candidate:', err);
         }
       } else {
-        // Buffer until setRemoteDescription is called
         candidateQueueRef.current.push(candidate);
       }
     };
@@ -312,7 +305,7 @@ export function WebRTCCallModal({
     };
   }, [socket, onConnected]);
 
-  // Initiate Outgoing Call (Caller side)
+  // Initiate Outgoing Call
   useEffect(() => {
     if (callState.status === 'outgoing' && !hasStartedRef.current) {
       hasStartedRef.current = true;
@@ -477,7 +470,7 @@ export function WebRTCCallModal({
   // Toggle Fullscreen
   const handleToggleFullscreen = () => {
     if (!document.fullscreenElement) {
-      modalContainerRef.current?.requestFullscreen?.();
+      containerRef.current?.requestFullscreen?.();
       setIsFullscreen(true);
     } else {
       document.exitFullscreen?.();
@@ -491,208 +484,252 @@ export function WebRTCCallModal({
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  return (
-    <div className="fixed inset-0 z-[99999] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
-      {/* Permanent background audio element for remote stream */}
-      <audio ref={remoteAudioRef} autoPlay playsInline />
-
-      {/* Main Call Modal - Locked to Max Viewport Height */}
-      <div
-        ref={modalContainerRef}
-        className={`w-full ${
-          callState.callType === 'video' ? 'max-w-4xl h-[92vh] max-h-[850px]' : 'max-w-lg h-auto max-h-[90vh]'
-        } bg-slate-900 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative text-white`}
-      >
-        {/* Top Header - Always Static & Visible */}
-        <div className="px-4 py-3 sm:px-6 sm:py-3.5 flex items-center justify-between border-b border-white/10 shrink-0 z-30 bg-slate-900/95 backdrop-blur">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <span
-              className={`w-3 h-3 rounded-full shrink-0 ${
-                callState.status === 'connected'
-                  ? 'bg-emerald-500 animate-pulse'
-                  : 'bg-amber-400 animate-ping'
-              }`}
-            />
-            <div className="min-w-0">
-              <span className="text-xs font-semibold uppercase tracking-wider text-slate-300 block truncate">
-                {callState.status === 'connected'
-                  ? `In Call • ${formatDuration(callDuration)}`
-                  : callState.status === 'incoming'
-                  ? 'Incoming Call...'
-                  : 'Ringing...'}
-              </span>
-              <p className="text-[11px] text-slate-400 truncate">{callState.peer?.name}</p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {callState.callType === 'video' && (
-              <button
-                type="button"
-                onClick={handleToggleFullscreen}
-                className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
-                title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-              >
-                {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-              </button>
-            )}
-            <span className="px-2.5 py-1 rounded-xl bg-white/10 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-300">
-              {callState.callType === 'video' ? 'Video Call' : 'Voice Call'}
+  // The Call Frame Content (Internal UI)
+  const renderFrameContent = () => (
+    <div
+      ref={containerRef}
+      className="w-full h-full flex-1 min-h-0 bg-slate-950 flex flex-col relative overflow-hidden text-white"
+    >
+      {/* Top Frame Header - Static & Always Visible */}
+      <div className="px-4 py-3 sm:px-5 sm:py-3.5 flex items-center justify-between border-b border-white/10 shrink-0 z-30 bg-slate-900/95 backdrop-blur">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <span
+            className={`w-3 h-3 rounded-full shrink-0 ${
+              callState.status === 'connected'
+                ? 'bg-emerald-500 animate-pulse'
+                : 'bg-amber-400 animate-ping'
+            }`}
+          />
+          <div className="min-w-0">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-300 block truncate">
+              {callState.status === 'connected'
+                ? `In Call • ${formatDuration(callDuration)}`
+                : callState.status === 'incoming'
+                ? 'Incoming Call...'
+                : 'Connecting Call...'}
             </span>
+            <p className="text-[11px] text-slate-400 truncate">{callState.peer?.name}</p>
           </div>
         </div>
 
-        {/* Center Canvas */}
-        <div className="flex-1 min-h-0 relative w-full h-full overflow-hidden flex flex-col items-center justify-center bg-black">
-          {callState.callType === 'video' && callState.status === 'connected' ? (
-            <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
-              {/* Remote Video - object-contain ensures portrait & landscape fit without vertical overflow */}
-              <video
-                ref={remoteVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-contain bg-black"
-              />
+        <div className="flex items-center gap-1.5 shrink-0">
+          {onMinimize && (
+            <button
+              type="button"
+              onClick={onMinimize}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              title="View Messages / Chat"
+            >
+              <MessageSquare size={16} />
+            </button>
+          )}
 
-              {/* Local PiP Video Floating in Corner */}
-              <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-28 h-36 sm:w-40 sm:h-52 rounded-2xl overflow-hidden border-2 border-indigo-500 bg-slate-900 shadow-2xl z-30 transition-all">
-                <video
-                  ref={localVideoRef}
-                  autoPlay
-                  playsInline
-                  muted
-                  className={`w-full h-full object-cover ${isVideoDisabled ? 'hidden' : 'block'}`}
-                />
-                {isVideoDisabled && (
-                  <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 gap-1 p-2 text-center">
-                    <VideoOff size={20} className="text-rose-400" />
-                    <span className="text-[10px] font-semibold text-slate-400">Camera Off</span>
+          {callState.callType === 'video' && (
+            <button
+              type="button"
+              onClick={handleToggleFullscreen}
+              className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
+            </button>
+          )}
+
+          <span className="px-2.5 py-1 rounded-xl bg-white/10 text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-cyan-300">
+            {callState.callType === 'video' ? 'Video Frame' : 'Voice Frame'}
+          </span>
+        </div>
+      </div>
+
+      {/* Center Video / Audio Canvas */}
+      <div className="flex-1 min-h-0 relative w-full h-full overflow-hidden flex flex-col items-center justify-center bg-black">
+        {callState.callType === 'video' ? (
+          <div className="w-full h-full relative overflow-hidden bg-black flex items-center justify-center">
+            {/* Remote Video - object-contain ensures clean letterboxing without clipping */}
+            <video
+              ref={remoteVideoRef}
+              autoPlay
+              playsInline
+              className={`w-full h-full object-contain bg-black ${callState.status === 'connected' ? 'block' : 'hidden'}`}
+            />
+
+            {/* Connecting / Ringing Overlay */}
+            {callState.status !== 'connected' && (
+              <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/85 backdrop-blur-sm p-6 text-center">
+                <div className="relative mb-3">
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-3xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-3xl sm:text-4xl text-white shadow-2xl animate-pulse">
+                    {callState.peer?.name?.charAt(0).toUpperCase() || 'U'}
                   </div>
-                )}
-                {isMuted && (
-                  <span className="absolute bottom-2 left-2 p-1 rounded-md bg-rose-600 text-white shadow">
-                    <MicOff size={11} />
-                  </span>
-                )}
-              </div>
-            </div>
-          ) : (
-            /* Audio Avatar Pulse Screen or Pre-Connect Calling Screen */
-            <div className="flex flex-col items-center text-center space-y-4 p-6 sm:p-8">
-              <div className="relative">
-                <div
-                  className={`w-28 h-28 sm:w-32 sm:h-32 rounded-3xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-4xl sm:text-5xl shadow-2xl ${
-                    callState.status === 'incoming' || callState.status === 'outgoing'
-                      ? 'animate-bounce'
-                      : ''
-                  }`}
-                >
-                  {callState.peer?.name?.charAt(0).toUpperCase() || 'U'}
+                  <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-amber-400 animate-ping" />
                 </div>
-                {callState.status === 'connected' && (
-                  <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-slate-900" />
-                )}
-              </div>
-              <div>
-                <h3 className="font-bold text-xl sm:text-2xl">{callState.peer?.name}</h3>
-                <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                <h3 className="font-bold text-lg sm:text-xl text-white">{callState.peer?.name}</h3>
+                <p className="text-xs text-slate-400 mt-1">
                   {callState.peer?.department ? `${callState.peer.department} Student` : 'StudyMate Classmate'}
                 </p>
                 <p className="text-xs font-semibold text-indigo-400 mt-2">
-                  {callState.status === 'connected'
-                    ? formatDuration(callDuration)
-                    : callState.status === 'incoming'
-                    ? 'Incoming StudyMate Call...'
-                    : 'Calling...'}
+                  {callState.status === 'incoming' ? 'Incoming Video Call...' : 'Connecting Video Call...'}
                 </p>
               </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Bottom Call Controls Toolbar - Always Pinned & Visible */}
-        <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/95 backdrop-blur z-30 shrink-0 flex items-center justify-center gap-3 sm:gap-6">
-          {callState.status === 'incoming' ? (
-            /* Incoming Call Controls: Decline or Accept */
-            <div className="flex items-center gap-6 sm:gap-10 py-1">
-              <button
-                type="button"
-                onClick={onReject}
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30 cursor-pointer"
-                title="Decline Call"
-              >
-                <PhoneOff size={24} />
-              </button>
-              <button
-                type="button"
-                onClick={handleInternalAccept}
-                className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-lg shadow-emerald-600/30 cursor-pointer animate-pulse"
-                title="Answer Call"
-              >
-                {callState.callType === 'video' ? <Video size={24} /> : <Phone size={24} />}
-              </button>
+            {/* Local PiP Video Floating in Corner */}
+            <div className="absolute top-3 right-3 sm:top-4 sm:right-4 w-28 h-36 sm:w-36 sm:h-48 rounded-2xl overflow-hidden border-2 border-indigo-500 bg-slate-900 shadow-2xl z-30 transition-all">
+              <video
+                ref={localVideoRef}
+                autoPlay
+                playsInline
+                muted
+                className={`w-full h-full object-cover -scale-x-100 ${isVideoDisabled ? 'hidden' : 'block'}`}
+              />
+              {isVideoDisabled && (
+                <div className="w-full h-full flex flex-col items-center justify-center bg-slate-900 text-slate-400 gap-1 p-2 text-center">
+                  <VideoOff size={18} className="text-rose-400" />
+                  <span className="text-[10px] font-semibold text-slate-400">Camera Off</span>
+                </div>
+              )}
+              {isMuted && (
+                <span className="absolute bottom-2 left-2 p-1 rounded-md bg-rose-600 text-white shadow">
+                  <MicOff size={11} />
+                </span>
+              )}
             </div>
-          ) : (
-            /* Active / Outgoing Call Controls */
-            <div className="flex items-center gap-3 sm:gap-5 py-1">
-              {/* Mute Button */}
+          </div>
+        ) : (
+          /* Audio Avatar Calling Screen */
+          <div className="flex flex-col items-center text-center space-y-4 p-6 sm:p-8">
+            <div className="relative">
+              <div
+                className={`w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-3xl sm:text-4xl shadow-2xl ${
+                  callState.status === 'incoming' || callState.status === 'outgoing'
+                    ? 'animate-bounce'
+                    : ''
+                }`}
+              >
+                {callState.peer?.name?.charAt(0).toUpperCase() || 'U'}
+              </div>
+              {callState.status === 'connected' && (
+                <span className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-emerald-500 border-4 border-slate-900" />
+              )}
+            </div>
+            <div>
+              <h3 className="font-bold text-lg sm:text-xl">{callState.peer?.name}</h3>
+              <p className="text-xs text-slate-400 mt-1">
+                {callState.peer?.department ? `${callState.peer.department} Student` : 'StudyMate Classmate'}
+              </p>
+              <p className="text-xs font-semibold text-indigo-400 mt-2">
+                {callState.status === 'connected'
+                  ? formatDuration(callDuration)
+                  : callState.status === 'incoming'
+                  ? 'Incoming StudyMate Call...'
+                  : 'Ringing...'}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Bottom Frame Controls Bar - Always Pinned & Accessible */}
+      <div className="p-3 sm:p-4 border-t border-white/10 bg-slate-900/95 backdrop-blur z-30 shrink-0 flex items-center justify-center gap-3 sm:gap-5">
+        {callState.status === 'incoming' ? (
+          /* Incoming Call Controls: Decline or Accept */
+          <div className="flex items-center gap-6 sm:gap-8 py-1">
+            <button
+              type="button"
+              onClick={onReject}
+              className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/30 cursor-pointer"
+              title="Decline Call"
+            >
+              <PhoneOff size={22} />
+            </button>
+            <button
+              type="button"
+              onClick={handleInternalAccept}
+              className="w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white flex items-center justify-center transition shadow-lg shadow-emerald-600/30 cursor-pointer animate-pulse"
+              title="Answer Call"
+            >
+              {callState.callType === 'video' ? <Video size={22} /> : <Phone size={22} />}
+            </button>
+          </div>
+        ) : (
+          /* Active / Outgoing Call Controls */
+          <div className="flex items-center gap-3 sm:gap-4 py-1">
+            {/* Mute Button */}
+            <button
+              type="button"
+              onClick={handleToggleMute}
+              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer ${
+                isMuted
+                  ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
+                  : 'bg-white/10 text-white hover:bg-white/20'
+              }`}
+              title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+            >
+              {isMuted ? <MicOff size={19} /> : <Mic size={19} />}
+            </button>
+
+            {/* Video Camera Toggle */}
+            {callState.callType === 'video' && (
               <button
                 type="button"
-                onClick={handleToggleMute}
-                className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition cursor-pointer ${
-                  isMuted
+                onClick={handleToggleVideo}
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center transition cursor-pointer ${
+                  isVideoDisabled
                     ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
                     : 'bg-white/10 text-white hover:bg-white/20'
                 }`}
-                title={isMuted ? 'Unmute Microphone' : 'Mute Microphone'}
+                title={isVideoDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
               >
-                {isMuted ? <MicOff size={20} /> : <Mic size={20} />}
+                {isVideoDisabled ? <VideoOff size={19} /> : <Video size={19} />}
               </button>
+            )}
 
-              {/* Video Camera Toggle */}
-              {callState.callType === 'video' && (
-                <button
-                  type="button"
-                  onClick={handleToggleVideo}
-                  className={`w-12 h-12 sm:w-13 sm:h-13 rounded-2xl flex items-center justify-center transition cursor-pointer ${
-                    isVideoDisabled
-                      ? 'bg-rose-600 text-white shadow-lg shadow-rose-600/30'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                  title={isVideoDisabled ? 'Turn Camera On' : 'Turn Camera Off'}
-                >
-                  {isVideoDisabled ? <VideoOff size={20} /> : <Video size={20} />}
-                </button>
-              )}
-
-              {/* Screen Share (Desktop Video Call) */}
-              {callState.callType === 'video' && callState.status === 'connected' && (
-                <button
-                  type="button"
-                  onClick={handleToggleScreenShare}
-                  className={`hidden sm:flex w-12 h-12 sm:w-13 sm:h-13 rounded-2xl items-center justify-center transition cursor-pointer ${
-                    isScreenSharing
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-                      : 'bg-white/10 text-white hover:bg-white/20'
-                  }`}
-                  title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
-                >
-                  {isScreenSharing ? <MonitorOff size={20} /> : <Monitor size={20} />}
-                </button>
-              )}
-
-              {/* Red Hang Up / End Call Button */}
+            {/* Screen Share (Desktop) */}
+            {callState.callType === 'video' && callState.status === 'connected' && (
               <button
                 type="button"
-                onClick={() => onEndCall(callDuration)}
-                className="w-14 h-12 sm:w-16 sm:h-13 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/40 cursor-pointer"
-                title="End Call"
+                onClick={handleToggleScreenShare}
+                className={`hidden sm:flex w-11 h-11 sm:w-12 sm:h-12 rounded-2xl items-center justify-center transition cursor-pointer ${
+                  isScreenSharing
+                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                    : 'bg-white/10 text-white hover:bg-white/20'
+                }`}
+                title={isScreenSharing ? 'Stop Screen Share' : 'Share Screen'}
               >
-                <PhoneOff size={22} />
+                {isScreenSharing ? <MonitorOff size={19} /> : <Monitor size={19} />}
               </button>
-            </div>
-          )}
-        </div>
+            )}
+
+            {/* Red End Call Hang Up Button */}
+            <button
+              type="button"
+              onClick={() => onEndCall(callDuration)}
+              className="w-14 h-11 sm:w-16 sm:h-12 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white flex items-center justify-center transition shadow-lg shadow-rose-600/40 cursor-pointer"
+              title="End Call"
+            >
+              <PhoneOff size={20} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // If rendered embedded directly in the chat frame
+  if (embedded) {
+    return (
+      <div className="w-full h-full flex-1 min-h-0 flex flex-col relative overflow-hidden rounded-2xl border border-white/10 shadow-2xl">
+        <audio ref={remoteAudioRef} autoPlay playsInline />
+        {renderFrameContent()}
+      </div>
+    );
+  }
+
+  // Standalone floating modal with strict viewport boundaries
+  return (
+    <div className="fixed inset-0 z-[99999] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 md:p-6 overflow-hidden">
+      <audio ref={remoteAudioRef} autoPlay playsInline />
+      <div className="w-full max-w-4xl h-[90vh] max-h-[820px] bg-slate-950 border border-white/10 rounded-3xl overflow-hidden shadow-2xl flex flex-col relative text-white">
+        {renderFrameContent()}
       </div>
     </div>
   );

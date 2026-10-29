@@ -48,6 +48,7 @@ import {
   Image as ImageIcon,
   CheckCircle2,
   ShieldAlert,
+  Maximize2,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, messagesAPI } from '../services/api';
@@ -133,6 +134,7 @@ export function Messages() {
 
   // WebRTC Calling State
   const [callState, setCallState] = useState(null); // { status: 'incoming'|'outgoing'|'connected', callType: 'audio'|'video', peer, offer }
+  const [callMinimized, setCallMinimized] = useState(false);
 
   // Stories (24h Statuses)
   const [statusModalOpen, setStatusModalOpen] = useState(false);
@@ -348,6 +350,13 @@ export function Messages() {
         callType,
         offer,
       });
+      setCallMinimized(false);
+      setActiveChat((prev) => {
+        if (!prev || prev.id !== fromUser._id) {
+          return { type: 'direct', id: fromUser._id, data: fromUser };
+        }
+        return prev;
+      });
     };
     socket.on('webrtc_incoming_call', handleIncomingCall);
 
@@ -358,11 +367,13 @@ export function Messages() {
 
     const handleCallRejected = () => {
       setCallState(null);
+      setCallMinimized(false);
     };
     socket.on('webrtc_call_rejected', handleCallRejected);
 
     const handleCallEnded = () => {
       setCallState(null);
+      setCallMinimized(false);
     };
     socket.on('webrtc_call_ended', handleCallEnded);
 
@@ -815,6 +826,7 @@ export function Messages() {
       alert('1-on-1 audio and video calling is available in personal discussions.');
       return;
     }
+    setCallMinimized(false);
     setCallState({
       status: 'outgoing',
       callType,
@@ -824,6 +836,7 @@ export function Messages() {
 
   const handleAcceptCall = () => {
     if (!callState) return;
+    setCallMinimized(false);
     setCallState((prev) => ({
       ...prev,
       status: 'connected',
@@ -836,6 +849,7 @@ export function Messages() {
       socket.emit('webrtc_reject_call', { toUserId: callState.peer._id });
     }
     setCallState(null);
+    setCallMinimized(false);
   };
 
   const handleEndCall = (duration, status) => {
@@ -849,6 +863,7 @@ export function Messages() {
       });
     }
     setCallState(null);
+    setCallMinimized(false);
   };
 
   // Chat Personalization Actions: Pin, Mute, Block, Clear
@@ -1062,6 +1077,35 @@ export function Messages() {
   return (
     <DashboardLayout fullHeight>
       <div className="flex-1 flex flex-col h-full w-full overflow-hidden overflow-x-hidden">
+        {/* INCOMING CALL TOP NOTIFICATION BANNER */}
+        {callState?.status === 'incoming' && (
+          <div className="w-full bg-gradient-to-r from-indigo-700 via-indigo-600 to-cyan-600 text-white px-4 py-2.5 flex items-center justify-between shadow-xl z-50 shrink-0 border-b border-white/20 animate-fadeIn">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping shrink-0" />
+              <p className="text-xs font-semibold truncate">
+                Incoming {callState.callType === 'video' ? 'Video' : 'Voice'} Call from{' '}
+                <span className="font-bold underline">{callState.peer?.name}</span>
+              </p>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={handleRejectCall}
+                className="px-3 py-1 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow cursor-pointer"
+              >
+                Decline
+              </button>
+              <button
+                type="button"
+                onClick={handleAcceptCall}
+                className="px-3 py-1 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-white text-xs font-bold transition shadow cursor-pointer animate-pulse"
+              >
+                Answer
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
         <div
           className={`flex-1 flex overflow-hidden overflow-x-hidden w-full h-full ${
@@ -1540,11 +1584,60 @@ export function Messages() {
                 </div>
               )}
 
-              {/* Messages Canvas with Website Palette */}
-              <div
-                className={`flex-1 p-3 sm:p-5 overflow-y-auto overflow-x-hidden overscroll-contain space-y-3 relative ${
-                  isDark ? 'bg-slate-950' : 'bg-slate-50/80'
-                }`}
+              {/* WEBRTC CALL IN DEDICATED CHAT FRAME */}
+              {callState && (callState.peer?._id === activeChat.id || callState.status === 'connected') && !callMinimized ? (
+                <div className="flex-1 min-h-0 w-full h-full relative flex flex-col bg-slate-950 overflow-hidden">
+                  <WebRTCCallModal
+                    embedded={true}
+                    callState={callState}
+                    onAccept={handleAcceptCall}
+                    onReject={handleRejectCall}
+                    onEndCall={handleEndCall}
+                    onConnected={() => setCallState((prev) => (prev ? { ...prev, status: 'connected' } : null))}
+                    onMinimize={() => setCallMinimized(true)}
+                    socket={getSocket()}
+                    currentUser={user}
+                  />
+                </div>
+              ) : (
+                <>
+                  {/* Floating Mini PiP Call Frame when Minimized */}
+                  {callState && callMinimized && (
+                    <div className="mx-4 mt-2 z-40 rounded-2xl bg-slate-900/95 border border-indigo-500/40 shadow-2xl overflow-hidden backdrop-blur p-2.5 sm:p-3 text-white flex items-center justify-between gap-3 shrink-0 animate-fadeIn">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+                        <div className="min-w-0">
+                          <span className="text-xs font-bold truncate block">{callState.peer?.name}</span>
+                          <span className="text-[10px] text-cyan-300 font-semibold">
+                            {callState.callType === 'video' ? '📹 Video Call' : '📞 Voice Call'} active in background
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setCallMinimized(false)}
+                          className="px-3 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-[11px] font-bold text-white transition cursor-pointer flex items-center gap-1 shadow"
+                          title="Expand Call Frame"
+                        >
+                          <Maximize2 size={12} /> Expand Frame
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEndCall(0)}
+                          className="px-3 py-1 rounded-lg bg-rose-600 hover:bg-rose-500 text-[11px] font-bold text-white transition shadow"
+                        >
+                          End Call
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Messages Canvas with Website Palette */}
+                  <div
+                    className={`flex-1 p-3 sm:p-5 overflow-y-auto overflow-x-hidden overscroll-contain space-y-3 relative ${
+                      isDark ? 'bg-slate-950' : 'bg-slate-50/80'
+                    }`}
                 style={{
                   backgroundImage: `radial-gradient(${isDark ? '#1e293b 1px' : '#e2e8f0 1px'}, transparent 1px)`,
                   backgroundSize: '24px 24px',
@@ -2208,8 +2301,10 @@ export function Messages() {
                   )}
                 </form>
               )}
-            </div>
-          ) : (
+            </>
+          )}
+        </div>
+      ) : (
             /* No Chat Selected Placeholder (Desktop only) */
             <div
               className={`hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center ${
@@ -2366,18 +2461,7 @@ export function Messages() {
           </div>
         )}
 
-        {/* MODAL: WEBRTC AUDIO & VIDEO CALL */}
-        {callState && (
-          <WebRTCCallModal
-            callState={callState}
-            onAccept={handleAcceptCall}
-            onReject={handleRejectCall}
-            onEndCall={handleEndCall}
-            onConnected={() => setCallState((prev) => (prev ? { ...prev, status: 'connected' } : null))}
-            socket={getSocket()}
-            currentUser={user}
-          />
-        )}
+
 
         {/* MODAL: 24-HOUR STATUS STORIES */}
         <StatusStoriesModal
