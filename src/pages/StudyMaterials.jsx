@@ -156,8 +156,8 @@ function StudyMaterials() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Study Materials</h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Study Materials</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Upload, share, and access lecture notes, PDFs, and exam solutions.
             </p>
           </div>
@@ -170,7 +170,7 @@ function StudyMaterials() {
               }
               setShowModal(true);
             }}
-            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center gap-2 self-start md:self-auto cursor-pointer"
+            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
           >
             <Upload size={16} /> Upload Notes
           </button>
@@ -247,11 +247,11 @@ function StudyMaterials() {
               return (
                 <div
                   key={mat._id}
-                  className="p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
+                  className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between">
-                      <div className="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xs">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-xs shrink-0">
                         {mat.fileType || 'PDF'}
                       </div>
 
@@ -271,22 +271,22 @@ function StudyMaterials() {
                       </div>
                     </div>
 
-                    <h3 className="text-lg font-bold text-white mt-4 truncate">
+                    <h3 className="text-base sm:text-lg font-bold text-white mt-4 break-words">
                       {mat.title}
                     </h3>
 
-                    <p className="text-xs text-indigo-400 font-medium mt-1 truncate">
+                    <p className="text-xs text-indigo-400 font-medium mt-1 break-words">
                       {mat.group?.name || 'Study Group'}
                     </p>
 
                     {mat.description && (
-                      <p className="text-xs text-slate-400 mt-2 line-clamp-2">
+                      <p className="text-xs text-slate-400 mt-2 line-clamp-2 break-words">
                         {mat.description}
                       </p>
                     )}
 
                     <div className="mt-5 space-y-1.5 text-xs text-slate-400 border-t border-white/5 pt-4">
-                      <p className="truncate">File: {mat.originalFilename}</p>
+                      <p className="break-all">File: {mat.originalFilename}</p>
                       <p>Uploaded by: {mat.uploader?.name || 'Peer'}</p>
                     </div>
                   </div>

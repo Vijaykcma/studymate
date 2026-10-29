@@ -110,8 +110,8 @@ function Profile() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Student Profile</h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Student Profile</h1>
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               Manage your academic credentials and study preferences.
             </p>
           </div>
@@ -120,7 +120,7 @@ function Profile() {
             {!editing ? (
               <button
                 onClick={() => setEditing(true)}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center gap-2 cursor-pointer text-white"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer text-white"
               >
                 <Edit3 size={15} /> Edit Profile
               </button>
@@ -177,7 +177,7 @@ function Profile() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Left Card: Summary */}
             <div className="space-y-6">
-              <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-6 text-center space-y-4">
+              <div className="rounded-2xl border border-white/10 bg-slate-900/80 p-4 sm:p-6 text-center space-y-4">
                 <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center mx-auto text-2xl font-bold shadow-xl shadow-indigo-500/20 text-white">
                   {formData.name ? formData.name[0].toUpperCase() : 'S'}
                 </div>
@@ -245,7 +245,7 @@ function Profile() {
 
             {/* Right Card: Details / Form */}
             <div className="lg:col-span-2 space-y-6">
-              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 space-y-5">
                 <h3 className="text-base font-semibold text-white">
                   Personal & Academic Information
                 </h3>

@@ -123,36 +123,36 @@ function Dashboard() {
               <Sparkles size={13} />
               Academic Workspace
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
               Welcome back, {user?.name || 'Student'} 👋
             </h1>
-            <p className="text-sm text-slate-400 mt-1">
+            <p className="text-xs sm:text-sm text-slate-400 mt-1">
               {user?.department || 'MCA'} • {user?.semester || '2nd Semester'} • Ready for collaborative learning.
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3">
             {user?.role === 'admin' && (
               <Link
                 to="/admin/dashboard"
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-sm font-semibold transition shadow-lg shadow-rose-600/20 flex items-center gap-2 border border-rose-400/30"
+                className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-gradient-to-r from-rose-600 to-indigo-600 hover:from-rose-500 hover:to-indigo-500 text-xs sm:text-sm font-semibold transition shadow-lg shadow-rose-600/20 flex items-center justify-center gap-1.5 sm:gap-2 border border-rose-400/30 text-center"
               >
-                <Shield size={16} />
+                <Shield size={15} />
                 Admin Console
               </Link>
             )}
             <Link
               to="/groups/create"
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition shadow-lg shadow-indigo-600/20 flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-semibold transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-1.5 sm:gap-2 text-center"
             >
-              <Plus size={16} />
+              <Plus size={15} />
               Create Study Group
             </Link>
             <Link
               to="/groups"
-              className="px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-sm font-semibold transition flex items-center gap-2"
+              className="flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 text-center"
             >
-              <Search size={16} />
+              <Search size={15} />
               Explore Groups
             </Link>
           </div>
@@ -181,49 +181,49 @@ function Dashboard() {
         ) : (
           <>
             {/* Quick Stat Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+              <div className="p-3.5 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium">Groups Joined</span>
-                  <div className="w-8 h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
-                    <Users size={17} />
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Groups Joined</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+                    <Users size={16} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold mt-3">{stats.groupsJoined}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Active communities</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-2 sm:mt-3">{stats.groupsJoined}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 sm:mt-1">Active communities</p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
+              <div className="p-3.5 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium">Groups Created</span>
-                  <div className="w-8 h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
-                    <GraduationCap size={17} />
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Groups Created</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+                    <GraduationCap size={16} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold mt-3">{stats.groupsCreated}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Administered by you</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-2 sm:mt-3">{stats.groupsCreated}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 sm:mt-1">Administered by you</p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
+              <div className="p-3.5 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium">Study Sessions</span>
-                  <div className="w-8 h-8 rounded-lg bg-violet-500/10 text-violet-400 flex items-center justify-center">
-                    <CalendarDays size={17} />
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Study Sessions</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-violet-500/10 text-violet-400 flex items-center justify-center">
+                    <CalendarDays size={16} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold mt-3">{upcomingSessions.length}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Scheduled events</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-2 sm:mt-3">{upcomingSessions.length}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 sm:mt-1">Scheduled events</p>
               </div>
 
-              <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
+              <div className="p-3.5 sm:p-5 rounded-2xl bg-white/[0.03] border border-white/10 hover:bg-white/[0.05] transition">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs text-slate-400 font-medium">Study Materials</span>
-                  <div className="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                    <BookOpen size={17} />
+                  <span className="text-[11px] sm:text-xs text-slate-400 font-medium">Study Materials</span>
+                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
+                    <BookOpen size={16} />
                   </div>
                 </div>
-                <p className="text-3xl font-bold mt-3">{recentMaterials.length}</p>
-                <p className="text-[11px] text-slate-500 mt-1">Shared files</p>
+                <p className="text-2xl sm:text-3xl font-bold mt-2 sm:mt-3">{recentMaterials.length}</p>
+                <p className="text-[10px] sm:text-[11px] text-slate-500 mt-0.5 sm:mt-1">Shared files</p>
               </div>
             </div>
 

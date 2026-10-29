@@ -243,49 +243,50 @@ function GroupDetails() {
         )}
 
         {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-gradient-to-br from-indigo-900/30 via-slate-900 to-cyan-900/20 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="flex gap-5">
-              <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <GraduationCap size={36} />
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-400/20 bg-gradient-to-br from-indigo-900/30 via-slate-900 to-cyan-900/20 p-4 sm:p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-5 sm:gap-6">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-5 min-w-0">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <GraduationCap size={28} className="sm:hidden text-white" />
+                <GraduationCap size={36} className="hidden sm:block text-white" />
               </div>
 
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-400/20">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-400/20">
                     {group.subject}
                   </span>
-                  <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-medium border border-cyan-400/20">
+                  <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-medium border border-cyan-400/20">
                     {group.skillLevel}
                   </span>
                   {group.visibility === 'private' && (
-                    <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-400/20">
+                    <span className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-400/20">
                       Private
                     </span>
                   )}
                 </div>
 
-                <h1 className="text-2xl md:text-3xl font-bold text-white mt-3">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mt-2.5 sm:mt-3 break-words">
                   {group.name}
                 </h1>
 
-                <p className="text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed break-words">
                   {group.description}
                 </p>
 
-                <p className="text-xs text-slate-400 mt-4">
+                <p className="text-xs text-slate-400 mt-3 sm:mt-4">
                   Created by <span className="text-white font-medium">{group.creator?.name || 'Peer'}</span> ({group.creator?.department || 'MCA'})
                 </p>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+            <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 sm:gap-3 shrink-0 w-full sm:w-auto">
               {isMember ? (
                 <>
                   <Link
                     to="/messages"
-                    className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs sm:text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
                   >
                     <MessageCircle size={16} /> Open Discussions
                   </Link>
@@ -293,7 +294,7 @@ function GroupDetails() {
                   {(isCreator || user?.role === 'admin') && (
                     <Link
                       to={`/groups/${group._id}/edit`}
-                      className="px-5 py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 font-semibold text-xs text-indigo-300 transition flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 font-semibold text-xs sm:text-sm text-indigo-300 transition flex items-center justify-center gap-2"
                     >
                       <Edit3 size={16} /> Edit Group Details
                     </Link>
@@ -303,21 +304,21 @@ function GroupDetails() {
                     <button
                       onClick={handleLeave}
                       disabled={actionLoading}
-                      className="px-5 py-3 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs text-rose-400 transition flex items-center justify-center gap-2"
+                      className="w-full sm:w-auto px-5 py-3 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs sm:text-sm text-rose-400 transition flex items-center justify-center gap-2 cursor-pointer"
                     >
                       <UserMinus size={16} /> Leave Group
                     </button>
                   )}
                 </>
               ) : isPending ? (
-                <div className="px-5 py-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
+                <div className="w-full sm:w-auto px-5 py-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
                   <Clock size={16} /> Awaiting Creator Approval
                 </div>
               ) : (
                 <button
                   onClick={handleJoin}
                   disabled={actionLoading || (group.members?.length || 0) >= group.maxMembers}
-                  className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full sm:w-auto px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-xs sm:text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {actionLoading ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -335,28 +336,28 @@ function GroupDetails() {
           </div>
 
           {/* Quick info row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-            <div>
-              <p className="text-xs text-slate-400">Members</p>
-              <p className="text-sm font-semibold text-white mt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/10">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400">Members</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-1 break-words">
                 {group.members?.length || 0} / {group.maxMembers}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Meeting Days</p>
-              <p className="text-sm font-semibold text-white mt-1">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400">Meeting Days</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-1 break-words leading-tight">
                 {group.meetingDays?.join(', ') || 'Flexible'}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Preferred Time</p>
-              <p className="text-sm font-semibold text-white mt-1">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400">Preferred Time</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-1 break-words">
                 {group.meetingTime}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Location</p>
-              <p className="text-sm font-semibold text-white mt-1 truncate">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400">Location</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-1 break-words">
                 {group.location}
               </p>
             </div>
@@ -365,23 +366,23 @@ function GroupDetails() {
 
         {/* Creator Notification Banner */}
         {isCreator && pendingRequests.length > 0 && (
-          <div className="p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5">
+          <div className="p-3.5 sm:p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-r from-amber-500/10 via-amber-500/5 to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-lg shadow-amber-500/5">
             <div className="flex items-center gap-3">
               <div className="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
                 <Clock size={18} />
               </div>
               <div>
-                <p className="text-sm font-bold text-white">
+                <p className="text-xs sm:text-sm font-bold text-white">
                   {pendingRequests.length} Pending Join Request{pendingRequests.length === 1 ? '' : 's'}
                 </p>
-                <p className="text-xs text-slate-400">
+                <p className="text-[11px] sm:text-xs text-slate-400">
                   Studymates are waiting for your approval to join this study group.
                 </p>
               </div>
             </div>
             <button
               onClick={() => setActiveTab('requests')}
-              className="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shrink-0 cursor-pointer"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shrink-0 cursor-pointer text-center"
             >
               Review Requests ({pendingRequests.length})
             </button>
@@ -389,10 +390,10 @@ function GroupDetails() {
         )}
 
         {/* Tab Controls */}
-        <div className="flex border-b border-white/10 gap-6 overflow-x-auto scrollbar-none">
+        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full -mx-4 px-4 sm:mx-0 sm:px-0">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === 'overview'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -402,7 +403,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === 'sessions'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -412,7 +413,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('materials')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
               activeTab === 'materials'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -423,7 +424,7 @@ function GroupDetails() {
           {isCreator && (
             <button
               onClick={() => setActiveTab('requests')}
-              className={`pb-3 text-sm font-semibold transition border-b-2 flex items-center gap-2 whitespace-nowrap ${
+              className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer ${
                 activeTab === 'requests'
                   ? 'border-amber-500 text-amber-400'
                   : 'border-transparent text-slate-400 hover:text-white'
@@ -580,20 +581,20 @@ function GroupDetails() {
         {/* Join Requests Tab (Creator Only) */}
         {activeTab === 'requests' && isCreator && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
               <div>
-                <h3 className="text-base font-bold text-white">Pending Membership Requests</h3>
+                <h3 className="text-sm sm:text-base font-bold text-white">Pending Membership Requests</h3>
                 <p className="text-xs text-slate-400 mt-0.5">
                   As the group creator, you have full authority to approve or decline studymates wishing to join.
                 </p>
               </div>
-              <span className="text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium">
+              <span className="self-start sm:self-auto text-xs px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 font-medium shrink-0">
                 Capacity: {group.members?.length || 0} / {group.maxMembers}
               </span>
             </div>
 
             {pendingRequests.length === 0 ? (
-              <div className="p-12 rounded-3xl border border-dashed border-white/10 bg-white/[0.01] text-center space-y-2">
+              <div className="p-8 sm:p-12 rounded-3xl border border-dashed border-white/10 bg-white/[0.01] text-center space-y-2">
                 <CheckCircle2 size={36} className="text-emerald-400/50 mx-auto mb-1" />
                 <p className="text-sm font-semibold text-white">All caught up!</p>
                 <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
@@ -607,14 +608,14 @@ function GroupDetails() {
                   return (
                     <div
                       key={applicant._id || req._id}
-                      className="p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.04] to-slate-900 flex flex-col justify-between gap-4 shadow-lg shadow-black/20"
+                      className="p-4 sm:p-5 rounded-2xl border border-amber-500/20 bg-gradient-to-br from-amber-500/[0.04] to-slate-900 flex flex-col justify-between gap-4 shadow-lg shadow-black/20"
                     >
-                      <div className="flex items-start gap-3.5">
-                        <div className="w-12 h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-bold text-base text-white shrink-0 shadow-md shadow-amber-500/20">
+                      <div className="flex items-start gap-3 sm:gap-3.5">
+                        <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center font-bold text-sm sm:text-base text-white shrink-0 shadow-md shadow-amber-500/20">
                           {applicant.name ? applicant.name[0].toUpperCase() : 'S'}
                         </div>
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
                             <h4 className="text-sm font-bold text-white truncate">
                               {applicant.name || 'Studymate'}
                             </h4>
@@ -625,7 +626,7 @@ function GroupDetails() {
                           <p className="text-xs text-slate-400 truncate mt-0.5">
                             {applicant.email}
                           </p>
-                          <div className="flex flex-wrap items-center gap-2 mt-2 text-[11px] text-slate-300">
+                          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mt-2 text-[11px] text-slate-300">
                             <span className="px-2 py-0.5 rounded-md bg-white/5 border border-white/5">
                               {applicant.department || 'MCA'}
                             </span>
@@ -639,7 +640,7 @@ function GroupDetails() {
                             )}
                           </div>
                           {req.message && (
-                            <p className="text-xs text-slate-400 italic mt-2.5 bg-black/30 p-2.5 rounded-lg border border-white/5">
+                            <p className="text-xs text-slate-400 italic mt-2.5 bg-black/30 p-2.5 rounded-lg border border-white/5 break-words">
                               "{req.message}"
                             </p>
                           )}
@@ -653,14 +654,14 @@ function GroupDetails() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2.5 pt-3 border-t border-white/5">
+                      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5 pt-3 border-t border-white/5">
                         <button
                           type="button"
                           onClick={() => handleApproveApplicant(applicant._id)}
                           disabled={
                             actionLoading || (group.members?.length || 0) >= group.maxMembers
                           }
-                          className="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="flex-1 py-2 sm:py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 text-white font-semibold text-xs transition shadow-md shadow-emerald-600/20 flex items-center justify-center gap-1.5 cursor-pointer text-center"
                         >
                           <Check size={14} /> Approve & Admit
                         </button>
@@ -668,7 +669,7 @@ function GroupDetails() {
                           type="button"
                           onClick={() => handleRejectApplicant(applicant._id)}
                           disabled={actionLoading}
-                          className="px-4 py-2 rounded-xl border border-white/10 hover:bg-white/5 text-rose-400 hover:text-rose-300 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                          className="px-4 py-2 sm:py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-rose-400 hover:text-rose-300 font-semibold text-xs transition flex items-center justify-center gap-1.5 cursor-pointer text-center"
                         >
                           <X size={14} /> Decline
                         </button>
