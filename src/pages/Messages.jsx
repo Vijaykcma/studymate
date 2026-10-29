@@ -33,6 +33,12 @@ import {
   Layers,
   GraduationCap,
   ArrowLeft,
+  Reply,
+  Edit2,
+  Trash2,
+  Star,
+  Pin,
+  CornerDownRight,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, messagesAPI } from '../services/api';
@@ -85,6 +91,12 @@ export function Messages() {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [infoDrawerOpen, setInfoDrawerOpen] = useState(false);
   const [copiedCodeId, setCopiedCodeId] = useState(null);
+
+  // WhatsApp Advanced States: Reply, Edit, Delete, Reactions
+  const [replyingTo, setReplyingTo] = useState(null);
+  const [editingMessage, setEditingMessage] = useState(null);
+  const [deleteModalMsg, setDeleteModalMsg] = useState(null);
+  const [activeActionMessageId, setActiveActionMessageId] = useState(null);
 
   const messagesEndRef = useRef(null);
   const textareaRef = useRef(null);
@@ -222,6 +234,43 @@ export function Messages() {
     };
     socket.on('user_typing_group', handleGroupTyping);
 
+    // WhatsApp Real-Time Listeners: Reactions, Edits, Deletions, Read Receipts
+    const handleReactionUpdated = ({ messageId, reactions }) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === messageId ? { ...m, reactions } : m))
+      );
+    };
+    socket.on('message_reaction_updated', handleReactionUpdated);
+
+    const handleMessageEdited = (editedMsg) => {
+      setMessages((prev) =>
+        prev.map((m) => (m._id === editedMsg._id ? editedMsg : m))
+      );
+    };
+    socket.on('message_edited', handleMessageEdited);
+
+    const handleMessageDeletedEveryone = ({ messageId, content, isDeletedForEveryone }) => {
+      setMessages((prev) =>
+        prev.map((m) =>
+          m._id === messageId
+            ? { ...m, content, isDeletedForEveryone, codeSnippet: undefined, attachments: [] }
+            : m
+        )
+      );
+    };
+    socket.on('message_deleted_everyone', handleMessageDeletedEveryone);
+
+    const handleReadReceipt = ({ readBy }) => {
+      if (activeChat?.type === 'direct' && activeChat.id === readBy) {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.sender?._id === user?._id ? { ...m, status: 'read' } : m
+          )
+        );
+      }
+    };
+    socket.on('messages_read_receipt', handleReadReceipt);
+
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
@@ -230,6 +279,10 @@ export function Messages() {
       socket.off('new_message', handleNewGroupMessage);
       socket.off('user_typing_direct', handleDirectTyping);
       socket.off('user_typing_group', handleGroupTyping);
+      socket.off('message_reaction_updated', handleReactionUpdated);
+      socket.off('message_edited', handleMessageEdited);
+      socket.off('message_deleted_everyone', handleMessageDeletedEveryone);
+      socket.off('messages_read_receipt', handleReadReceipt);
     };
   }, [activeChat, user]);
 
@@ -256,6 +309,7 @@ export function Messages() {
           const res = await messagesAPI.getDirect(activeChat.id);
           if (res.success) {
             setMessages(res.messages || []);
+            socket.emit('mark_as_read', { peerId: activeChat.id });
             // Clear unread indicator locally
             setDirectConversations((prev) =>
               prev.map((c) =>
@@ -309,14 +363,34 @@ export function Messages() {
     }, 1500);
   };
 
-  // 6. Send Message (Text / Code / Voice)
+  // 6. Send Message (Text / Code / Voice / Reply / Edit)
   const handleSendMessage = async (e) => {
     if (e) e.preventDefault();
     if (!activeChat) return;
     const textToSend = inputContent.trim();
     if (!textToSend) return;
 
+    // Handle Edit Mode
+    if (editingMessage) {
+      try {
+        const res = await messagesAPI.edit(editingMessage._id, textToSend);
+        if (res.success && res.message) {
+          setMessages((prev) =>
+            prev.map((m) => (m._id === editingMessage._id ? res.message : m))
+          );
+        }
+        setEditingMessage(null);
+        setInputContent('');
+        return;
+      } catch (err) {
+        setError(err.userMessage || 'Failed to edit message.');
+        return;
+      }
+    }
+
+    const currentReplyTo = replyingTo?._id;
     setInputContent('');
+    setReplyingTo(null);
     const socket = getSocket();
 
     // Clear typing
@@ -333,10 +407,14 @@ export function Messages() {
             recipientId: activeChat.id,
             content: textToSend,
             messageType: 'text',
+            replyTo: currentReplyTo,
           });
         } else {
           // REST Fallback
-          const res = await messagesAPI.sendDirect(activeChat.id, { content: textToSend });
+          const res = await messagesAPI.sendDirect(activeChat.id, {
+            content: textToSend,
+            replyTo: currentReplyTo,
+          });
           if (res.success && res.message) {
             setMessages((prev) => [...prev, res.message]);
           }
@@ -347,9 +425,12 @@ export function Messages() {
             groupId: activeChat.id,
             content: textToSend,
             messageType: 'text',
+            replyTo: currentReplyTo,
           });
         } else {
-          const res = await messagesAPI.send(activeChat.id, textToSend);
+          const res = await messagesAPI.send(activeChat.id, textToSend, {
+            replyTo: currentReplyTo,
+          });
           if (res.success && res.message) {
             setMessages((prev) => [...prev, res.message]);
           }
@@ -357,6 +438,90 @@ export function Messages() {
       }
     } catch (err) {
       setError(err.userMessage || 'Failed to send message.');
+    }
+  };
+
+  // WhatsApp Actions: Reactions, Reply, Edit, Delete, Star
+  const handleToggleReaction = async (messageId, emoji) => {
+    try {
+      const socket = getSocket();
+      if (socket.connected) {
+        socket.emit('send_reaction', { messageId, emoji });
+      } else {
+        const res = await messagesAPI.react(messageId, emoji);
+        if (res.success) {
+          setMessages((prev) =>
+            prev.map((m) => (m._id === messageId ? { ...m, reactions: res.reactions } : m))
+          );
+        }
+      }
+      setActiveActionMessageId(null);
+    } catch (err) {
+      // ignore
+    }
+  };
+
+  const handleStartReply = (msg) => {
+    setReplyingTo(msg);
+    setEditingMessage(null);
+    setActiveActionMessageId(null);
+    textareaRef.current?.focus();
+  };
+
+  const handleStartEdit = (msg) => {
+    setEditingMessage(msg);
+    setReplyingTo(null);
+    setInputContent(msg.content || '');
+    setActiveActionMessageId(null);
+    textareaRef.current?.focus();
+  };
+
+  const handleConfirmDelete = async (deleteType) => {
+    if (!deleteModalMsg) return;
+    const msgId = deleteModalMsg._id;
+    setDeleteModalMsg(null);
+
+    try {
+      const socket = getSocket();
+      if (socket.connected) {
+        socket.emit('delete_message', { messageId: msgId, deleteType });
+      } else {
+        await messagesAPI.delete(msgId, deleteType);
+      }
+
+      if (deleteType === 'for_everyone') {
+        setMessages((prev) =>
+          prev.map((m) =>
+            m._id === msgId
+              ? { ...m, content: '🚫 This message was deleted', isDeletedForEveryone: true, codeSnippet: undefined, attachments: [] }
+              : m
+          )
+        );
+      } else {
+        setMessages((prev) => prev.filter((m) => m._id !== msgId));
+      }
+    } catch (err) {
+      setError('Could not delete message.');
+    }
+  };
+
+  const handleToggleStar = async (msgId) => {
+    try {
+      const res = await messagesAPI.toggleStar(msgId);
+      if (res.success) {
+        setMessages((prev) =>
+          prev.map((m) => {
+            if (m._id !== msgId) return m;
+            const starred = new Set(m.starredBy || []);
+            if (res.isStarred) starred.add(user._id);
+            else starred.delete(user._id);
+            return { ...m, starredBy: Array.from(starred) };
+          })
+        );
+      }
+      setActiveActionMessageId(null);
+    } catch (err) {
+      // ignore
     }
   };
 
@@ -943,11 +1108,77 @@ export function Messages() {
                     return (
                       <div
                         key={msg._id}
-                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1`}
+                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 relative group`}
                       >
+                        {/* Floating WhatsApp Action Toolbar */}
+                        <div
+                          className={`opacity-0 group-hover:opacity-100 ${
+                            activeActionMessageId === msg._id ? 'opacity-100' : ''
+                          } transition-opacity absolute ${
+                            isMe ? 'right-0 sm:right-full sm:mr-2' : 'left-0 sm:left-full sm:ml-2'
+                          } -top-7 sm:top-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl shadow-xl border backdrop-blur z-20 ${
+                            isDark ? 'bg-slate-900/95 border-white/15' : 'bg-white/95 border-slate-200'
+                          }`}
+                        >
+                          {/* Quick Reactions */}
+                          {['👍', '❤️', '😂', '😮', '😢', '🔥'].map((emoji) => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              onClick={() => handleToggleReaction(msg._id, emoji)}
+                              className="hover:scale-125 transition-transform text-xs p-1 cursor-pointer"
+                              title={`React ${emoji}`}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                          <div className={`w-[1px] h-3.5 ${isDark ? 'bg-white/10' : 'bg-slate-200'} mx-0.5`} />
+                          <button
+                            type="button"
+                            onClick={() => handleStartReply(msg)}
+                            className={`p-1 rounded-lg ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                            title="Reply"
+                          >
+                            <Reply size={12} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStar(msg._id)}
+                            className={`p-1 rounded-lg ${
+                              msg.starredBy?.includes(user?._id)
+                                ? 'text-amber-400'
+                                : isDark
+                                ? 'text-slate-400 hover:text-amber-400 hover:bg-white/10'
+                                : 'text-slate-600 hover:text-amber-500 hover:bg-slate-100'
+                            }`}
+                            title="Star"
+                          >
+                            <Star size={12} className={msg.starredBy?.includes(user?._id) ? 'fill-amber-400' : ''} />
+                          </button>
+                          {isMe && !msg.isDeletedForEveryone && (
+                            <button
+                              type="button"
+                              onClick={() => handleStartEdit(msg)}
+                              className={`p-1 rounded-lg ${isDark ? 'text-slate-400 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'}`}
+                              title="Edit"
+                            >
+                              <Edit2 size={12} />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => setDeleteModalMsg({ _id: msg._id, isMe })}
+                            className="p-1 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10"
+                            title="Delete"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+
                         {/* Message Bubble */}
                         <div
-                          className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 relative shadow-sm ${
+                          onClick={() => setActiveActionMessageId(activeActionMessageId === msg._id ? null : msg._id)}
+                          className={`max-w-[85%] md:max-w-[70%] rounded-2xl px-4 py-2.5 relative shadow-sm cursor-pointer sm:cursor-default ${
                             isMe
                               ? 'bg-indigo-600 text-white rounded-tr-sm shadow-md shadow-indigo-600/15'
                               : isDark
@@ -959,6 +1190,18 @@ export function Messages() {
                           {!isMe && activeChat.type === 'group' && (
                             <div className="text-[11px] font-bold text-cyan-400 mb-0.5">
                               {msg.senderName || msg.sender?.name}
+                            </div>
+                          )}
+
+                          {/* Quoted Reply Preview */}
+                          {msg.replyTo && (
+                            <div className="mb-2 p-2 rounded-xl bg-black/20 border-l-4 border-cyan-400 text-xs">
+                              <div className="font-bold text-[11px] text-cyan-300">
+                                {msg.replyTo.senderName || msg.replyTo.sender?.name || 'Classmate'}
+                              </div>
+                              <div className="truncate text-[11px] opacity-80">
+                                {msg.replyTo.content || (msg.replyTo.messageType === 'code' ? 'Code Snippet' : 'Voice message')}
+                              </div>
                             </div>
                           )}
 
@@ -978,7 +1221,10 @@ export function Messages() {
                               </pre>
                               <div className="flex justify-end">
                                 <button
-                                  onClick={() => handleCopyCode(msg._id, msg.codeSnippet.code)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleCopyCode(msg._id, msg.codeSnippet.code);
+                                  }}
                                   className="text-[10px] flex items-center gap-1 hover:underline text-cyan-300 cursor-pointer"
                                 >
                                   {copiedCodeId === msg._id ? <Check size={12} /> : <Copy size={12} />}
@@ -989,9 +1235,10 @@ export function Messages() {
                           ) : msg.messageType === 'voice' ? (
                             <div className="flex items-center gap-3 py-1 min-w-[200px]">
                               <button
-                                onClick={() =>
-                                  setPlayingVoiceId(playingVoiceId === msg._id ? null : msg._id)
-                                }
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setPlayingVoiceId(playingVoiceId === msg._id ? null : msg._id);
+                                }}
                                 className={`w-9 h-9 rounded-full flex items-center justify-center transition cursor-pointer ${
                                   isMe
                                     ? 'bg-white text-indigo-700 hover:bg-slate-100'
@@ -1035,17 +1282,44 @@ export function Messages() {
                             </p>
                           )}
 
-                          {/* Timestamp + Double Checkmark */}
+                          {/* Timestamp + WhatsApp Ticks + Star Indicator */}
                           <div className="flex items-center justify-end gap-1 text-[10px] opacity-75 mt-1 float-right ml-3">
+                            {msg.starredBy?.includes(user?._id) && (
+                              <Star size={11} className="fill-amber-400 text-amber-400 mr-0.5" />
+                            )}
+                            {msg.isEdited && (
+                              <span className="italic opacity-80 text-[9px] mr-0.5">edited</span>
+                            )}
                             <span>{formatMessageTime(msg.createdAt)}</span>
                             {isMe && (
-                              <CheckCheck
-                                size={14}
-                                className={msg.status === 'read' ? 'text-cyan-200' : 'text-indigo-200'}
-                              />
+                              msg.status === 'read' ? (
+                                <CheckCheck size={14} className="text-cyan-300" title="Read" />
+                              ) : msg.status === 'delivered' ? (
+                                <CheckCheck size={14} className="text-slate-300" title="Delivered" />
+                              ) : (
+                                <Check size={14} className="text-slate-300" title="Sent" />
+                              )
                             )}
                           </div>
                         </div>
+
+                        {/* Reactions Badge Pill Beneath Bubble */}
+                        {msg.reactions && msg.reactions.length > 0 && (
+                          <div className={`flex items-center gap-1 -mt-2.5 ${isMe ? 'self-end mr-2' : 'self-start ml-2'} z-10`}>
+                            <button
+                              type="button"
+                              onClick={() => handleToggleReaction(msg._id, msg.reactions[0]?.emoji || '👍')}
+                              className={`px-2 py-0.5 rounded-full text-[11px] flex items-center gap-1 border shadow-sm cursor-pointer hover:scale-105 transition ${
+                                isDark ? 'bg-slate-900 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-800'
+                              }`}
+                            >
+                              {Array.from(new Set(msg.reactions.map((r) => r.emoji))).slice(0, 3).map((e, i) => (
+                                <span key={i}>{e}</span>
+                              ))}
+                              <span className="text-[10px] font-bold text-slate-400">{msg.reactions.length}</span>
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })
@@ -1088,6 +1362,65 @@ export function Messages() {
                       {emoji}
                     </button>
                   ))}
+                </div>
+              )}
+
+              {/* Quoted Reply Banner */}
+              {replyingTo && (
+                <div className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
+                  isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="w-1 h-8 rounded-full bg-indigo-500 shrink-0" />
+                    <div className="text-xs min-w-0">
+                      <div className="font-bold text-indigo-400 flex items-center gap-1.5">
+                        <Reply size={12} />
+                        <span>Replying to {replyingTo.senderName || replyingTo.sender?.name || 'Classmate'}</span>
+                      </div>
+                      <p className={`truncate text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {replyingTo.content || (replyingTo.messageType === 'code' ? 'Code Snippet' : 'Voice Note')}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setReplyingTo(null)}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                    title="Cancel Reply"
+                  >
+                    <X size={15} />
+                  </button>
+                </div>
+              )}
+
+              {/* Editing Message Banner */}
+              {editingMessage && (
+                <div className={`px-4 py-2 border-t flex items-center justify-between transition-all ${
+                  isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
+                }`}>
+                  <div className="flex items-center gap-2.5 overflow-hidden">
+                    <div className="w-1 h-8 rounded-full bg-amber-500 shrink-0" />
+                    <div className="text-xs min-w-0">
+                      <div className="font-bold text-amber-400 flex items-center gap-1.5">
+                        <Edit2 size={12} />
+                        <span>Editing Message</span>
+                      </div>
+                      <p className={`truncate text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
+                        {editingMessage.content}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingMessage(null);
+                      setInputContent('');
+                    }}
+                    className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 cursor-pointer"
+                    title="Cancel Edit"
+                  >
+                    <X size={15} />
+                  </button>
                 </div>
               )}
 
@@ -1408,6 +1741,58 @@ export function Messages() {
                   className="px-5 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white font-bold text-xs transition disabled:opacity-50 cursor-pointer shadow-lg shadow-indigo-600/30"
                 >
                   Share to Chat
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MODAL: DELETE MESSAGE (Delete for Me vs Delete for Everyone) */}
+        {deleteModalMsg && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+            <div className={`w-full max-w-sm rounded-2xl border ${
+              isDark ? 'border-white/10 bg-slate-900 text-white' : 'border-slate-200 bg-white text-slate-900'
+            } shadow-2xl p-6 space-y-4`}>
+              <div className="flex items-center justify-between pb-2 border-b border-white/10">
+                <h3 className="font-bold text-sm">Delete message?</h3>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalMsg(null)}
+                  className="text-slate-400 hover:text-white cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+                Choose how you would like to delete this message.
+              </p>
+
+              <div className="space-y-2 pt-1">
+                {deleteModalMsg.isMe && (
+                  <button
+                    type="button"
+                    onClick={() => handleConfirmDelete('for_everyone')}
+                    className="w-full py-2.5 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition cursor-pointer shadow-md shadow-rose-600/20 text-center"
+                  >
+                    Delete for Everyone
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => handleConfirmDelete('for_me')}
+                  className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs transition cursor-pointer text-center ${
+                    isDark ? 'bg-white/10 hover:bg-white/15 text-white' : 'bg-slate-100 hover:bg-slate-200 text-slate-900'
+                  }`}
+                >
+                  Delete for Me
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeleteModalMsg(null)}
+                  className="w-full py-2 px-4 rounded-xl text-xs text-slate-400 hover:text-slate-200 transition cursor-pointer text-center"
+                >
+                  Cancel
                 </button>
               </div>
             </div>

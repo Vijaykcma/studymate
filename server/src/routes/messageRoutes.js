@@ -6,6 +6,10 @@ import {
   sendDirectMessage,
   getConversations,
   getAvailablePeers,
+  reactToMessage,
+  editMessage,
+  deleteMessage,
+  toggleStarMessage,
 } from '../controllers/messageController.js';
 import { protect } from '../middleware/authMiddleware.js';
 
@@ -23,5 +27,10 @@ router.get('/peers', getAvailablePeers);
 router.get('/direct/:userId', getDirectMessages);
 router.post('/direct/:userId', sendDirectMessage);
 
-export default router;
+// WhatsApp Message Actions: Reactions, Edit, Delete, Star
+router.post('/:messageId/reactions', reactToMessage);
+router.put('/:messageId', editMessage);
+router.post('/:messageId/delete', deleteMessage);
+router.post('/:messageId/star', toggleStarMessage);
 
+export default router;

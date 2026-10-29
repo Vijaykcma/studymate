@@ -100,6 +100,10 @@ export const messagesAPI = {
   getDirect: (userId) => apiClient.get(`/messages/direct/${userId}`).then((res) => res.data),
   sendDirect: (userId, data) => apiClient.post(`/messages/direct/${userId}`, data).then((res) => res.data),
   getPeers: (params) => apiClient.get('/messages/peers', { params }).then((res) => res.data),
+  react: (messageId, emoji) => apiClient.post(`/messages/${messageId}/reactions`, { emoji }).then((res) => res.data),
+  edit: (messageId, content) => apiClient.put(`/messages/${messageId}`, { content }).then((res) => res.data),
+  delete: (messageId, deleteType = 'for_me') => apiClient.post(`/messages/${messageId}/delete`, { deleteType }).then((res) => res.data),
+  toggleStar: (messageId) => apiClient.post(`/messages/${messageId}/star`).then((res) => res.data),
 };
 
 // Users / Settings

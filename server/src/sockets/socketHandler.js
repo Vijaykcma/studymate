@@ -44,7 +44,6 @@ export const setupSocket = (io) => {
 
   io.on('connection', (socket) => {
     const userId = socket.user._id.toString();
-    console.log(`[Socket] User connected: ${socket.user.name} (${userId})`);
 
     // Join personal user room for 1-on-1 direct messages & notifications
     socket.join(`user:${userId}`);
@@ -55,8 +54,6 @@ export const setupSocket = (io) => {
 
     // Broadcast updated online users list
     io.emit('online_users', Array.from(onlineUsers.keys()));
-
-    // Send initial list of online users to this socket
     socket.emit('online_users', Array.from(onlineUsers.keys()));
 
     // Join group room with authorization check
@@ -90,9 +87,9 @@ export const setupSocket = (io) => {
     });
 
     // Send group message
-    socket.on('send_message', async ({ groupId, content, messageType = 'text', voiceDuration = 0, codeSnippet }, callback) => {
+    socket.on('send_message', async ({ groupId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [] }, callback) => {
       try {
-        if ((!content || !content.trim()) && messageType !== 'voice') {
+        if ((!content || !content.trim()) && messageType !== 'voice' && attachments.length === 0) {
           if (callback) callback({ success: false, message: 'Message content cannot be empty' });
           return;
         }
@@ -120,14 +117,20 @@ export const setupSocket = (io) => {
           content: (content || '').trim(),
           messageType,
           voiceDuration,
+          audioUrl,
           codeSnippet: codeSnippet || undefined,
+          replyTo: replyTo || undefined,
+          attachments: attachments || [],
           status: 'read',
         });
 
-        const populated = await Message.findById(savedMsg._id).populate(
-          'sender',
-          'name email department semester avatar'
-        );
+        const populated = await Message.findById(savedMsg._id)
+          .populate('sender', 'name email department semester avatar')
+          .populate({
+            path: 'replyTo',
+            select: 'content sender senderName messageType codeSnippet',
+          })
+          .populate('reactions.user', 'name avatar');
 
         io.to(`group:${groupId}`).emit('new_message', populated);
 
@@ -138,9 +141,9 @@ export const setupSocket = (io) => {
     });
 
     // Send direct 1-on-1 personalized message (WhatsApp Style)
-    socket.on('send_direct_message', async ({ recipientId, content, messageType = 'text', voiceDuration = 0, codeSnippet }, callback) => {
+    socket.on('send_direct_message', async ({ recipientId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [] }, callback) => {
       try {
-        if ((!content || !content.trim()) && messageType !== 'voice') {
+        if ((!content || !content.trim()) && messageType !== 'voice' && attachments.length === 0) {
           if (callback) callback({ success: false, message: 'Message content cannot be empty' });
           return;
         }
@@ -151,6 +154,8 @@ export const setupSocket = (io) => {
           return;
         }
 
+        const isRecipientOnline = onlineUsers.has(recipientId.toString());
+
         const savedMsg = await Message.create({
           chatType: 'direct',
           recipient: recipientId,
@@ -159,21 +164,158 @@ export const setupSocket = (io) => {
           content: (content || '').trim(),
           messageType,
           voiceDuration,
+          audioUrl,
           codeSnippet: codeSnippet || undefined,
-          status: 'read',
+          replyTo: replyTo || undefined,
+          attachments: attachments || [],
+          status: isRecipientOnline ? 'delivered' : 'sent',
         });
 
         const populated = await Message.findById(savedMsg._id)
           .populate('sender', 'name email department semester avatar')
-          .populate('recipient', 'name email department semester avatar');
+          .populate('recipient', 'name email department semester avatar')
+          .populate({
+            path: 'replyTo',
+            select: 'content sender senderName messageType codeSnippet',
+          })
+          .populate('reactions.user', 'name avatar');
 
-        // Emit to both recipient and sender personal rooms
+        // Emit to recipient & sender rooms
         io.to(`user:${recipientId}`).emit('new_direct_message', populated);
         io.to(`user:${userId}`).emit('new_direct_message', populated);
 
         if (callback) callback({ success: true, message: populated });
       } catch (error) {
         if (callback) callback({ success: false, message: error.message });
+      }
+    });
+
+    // Mark messages as read (turns checks to blue double ticks ✓✓)
+    socket.on('mark_as_read', async ({ peerId, groupId }) => {
+      try {
+        if (peerId) {
+          await Message.updateMany(
+            {
+              chatType: 'direct',
+              sender: peerId,
+              recipient: socket.user._id,
+              status: { $ne: 'read' },
+            },
+            {
+              $set: { status: 'read' },
+              $push: { readBy: { user: socket.user._id, readAt: new Date() } },
+            }
+          );
+
+          io.to(`user:${peerId}`).emit('messages_read_receipt', {
+            readBy: socket.user._id,
+            peerId,
+            chatType: 'direct',
+          });
+        }
+      } catch (err) {
+        console.error('[Socket] mark_as_read error:', err.message);
+      }
+    });
+
+    // Toggle emoji reaction
+    socket.on('send_reaction', async ({ messageId, emoji }, callback) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) {
+          if (callback) callback({ success: false, message: 'Message not found' });
+          return;
+        }
+
+        const existingIndex = message.reactions.findIndex(
+          (r) => r.user.toString() === socket.user._id.toString()
+        );
+
+        if (existingIndex > -1) {
+          if (message.reactions[existingIndex].emoji === emoji) {
+            message.reactions.splice(existingIndex, 1);
+          } else {
+            message.reactions[existingIndex].emoji = emoji;
+            message.reactions[existingIndex].createdAt = new Date();
+          }
+        } else {
+          message.reactions.push({
+            user: socket.user._id,
+            emoji,
+            createdAt: new Date(),
+          });
+        }
+
+        await message.save();
+
+        const populated = await Message.findById(message._id).populate('reactions.user', 'name avatar');
+
+        const payload = {
+          messageId: message._id,
+          reactions: populated.reactions,
+        };
+
+        if (message.chatType === 'group') {
+          io.to(`group:${message.group}`).emit('message_reaction_updated', payload);
+        } else {
+          io.to(`user:${message.sender}`).emit('message_reaction_updated', payload);
+          io.to(`user:${message.recipient}`).emit('message_reaction_updated', payload);
+        }
+
+        if (callback) callback({ success: true, reactions: populated.reactions });
+      } catch (err) {
+        if (callback) callback({ success: false, message: err.message });
+      }
+    });
+
+    // Delete message (everyone vs me)
+    socket.on('delete_message', async ({ messageId, deleteType = 'for_me' }, callback) => {
+      try {
+        const message = await Message.findById(messageId);
+        if (!message) {
+          if (callback) callback({ success: false, message: 'Message not found' });
+          return;
+        }
+
+        if (deleteType === 'for_everyone') {
+          const isSender = message.sender.toString() === socket.user._id.toString();
+          if (!isSender && socket.user.role !== 'admin') {
+            if (callback) callback({ success: false, message: 'Not allowed to delete for everyone' });
+            return;
+          }
+
+          message.isDeletedForEveryone = true;
+          message.content = '🚫 This message was deleted';
+          message.codeSnippet = undefined;
+          message.attachments = [];
+          await message.save();
+
+          const payload = {
+            messageId: message._id,
+            isDeletedForEveryone: true,
+            content: '🚫 This message was deleted',
+          };
+
+          if (message.chatType === 'group') {
+            io.to(`group:${message.group}`).emit('message_deleted_everyone', payload);
+          } else {
+            io.to(`user:${message.sender}`).emit('message_deleted_everyone', payload);
+            io.to(`user:${message.recipient}`).emit('message_deleted_everyone', payload);
+          }
+
+          if (callback) callback({ success: true, deleteType: 'for_everyone' });
+          return;
+        }
+
+        // Delete for me
+        if (!message.deletedFor.includes(socket.user._id)) {
+          message.deletedFor.push(socket.user._id);
+          await message.save();
+        }
+
+        if (callback) callback({ success: true, deleteType: 'for_me' });
+      } catch (err) {
+        if (callback) callback({ success: false, message: err.message });
       }
     });
 
@@ -206,4 +348,3 @@ export const setupSocket = (io) => {
     });
   });
 };
-
