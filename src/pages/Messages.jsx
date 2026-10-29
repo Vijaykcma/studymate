@@ -351,6 +351,11 @@ export function Messages() {
     };
     socket.on('webrtc_incoming_call', handleIncomingCall);
 
+    const handleCallAnswered = ({ answer }) => {
+      setCallState((prev) => (prev ? { ...prev, status: 'connected', answer } : null));
+    };
+    socket.on('webrtc_call_answered', handleCallAnswered);
+
     const handleCallRejected = () => {
       setCallState(null);
     };
@@ -375,6 +380,7 @@ export function Messages() {
       socket.off('messages_read_receipt', handleReadReceipt);
       socket.off('poll_voted', handlePollVoted);
       socket.off('webrtc_incoming_call', handleIncomingCall);
+      socket.off('webrtc_call_answered', handleCallAnswered);
       socket.off('webrtc_call_rejected', handleCallRejected);
       socket.off('webrtc_call_ended', handleCallEnded);
     };
@@ -1055,10 +1061,10 @@ export function Messages() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 flex flex-col h-[calc(100dvh-4rem)] lg:h-screen w-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-[calc(100dvh-4rem)] lg:h-[calc(100vh-0rem)] w-full overflow-hidden overflow-x-hidden">
         {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
         <div
-          className={`flex-1 flex overflow-hidden w-full h-full ${
+          className={`flex-1 flex overflow-hidden overflow-x-hidden w-full h-full ${
             isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
           } transition-colors relative`}
         >
@@ -1372,7 +1378,7 @@ export function Messages() {
             <div
               className={`${
                 activeChat ? 'flex' : 'hidden md:flex'
-              } flex-1 flex-col min-w-0 h-full relative`}
+              } flex-1 flex-col min-w-0 h-full relative overflow-x-hidden`}
             >
               {/* Header */}
               <div
@@ -1536,7 +1542,7 @@ export function Messages() {
 
               {/* Messages Canvas with Website Palette */}
               <div
-                className={`flex-1 p-5 overflow-y-auto space-y-3 relative ${
+                className={`flex-1 p-3 sm:p-5 overflow-y-auto overflow-x-hidden space-y-3 relative ${
                   isDark ? 'bg-slate-950' : 'bg-slate-50/80'
                 }`}
                 style={{
@@ -1578,15 +1584,15 @@ export function Messages() {
                     return (
                       <div
                         key={msg._id}
-                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 relative group`}
+                        className={`flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1 relative group max-w-full`}
                       >
                         {/* Floating WhatsApp Action Toolbar */}
                         <div
                           className={`opacity-0 group-hover:opacity-100 ${
                             activeActionMessageId === msg._id ? 'opacity-100' : ''
                           } transition-opacity absolute ${
-                            isMe ? 'right-0 sm:right-full sm:mr-2' : 'left-0 sm:left-full sm:ml-2'
-                          } -top-7 sm:top-1 flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl shadow-xl border backdrop-blur z-20 ${
+                            isMe ? 'right-2' : 'left-2'
+                          } -top-7 flex items-center gap-0.5 px-1.5 py-0.5 rounded-xl shadow-xl border backdrop-blur z-20 ${
                             isDark ? 'bg-slate-900/95 border-white/15' : 'bg-white/95 border-slate-200'
                           }`}
                         >
@@ -2367,6 +2373,7 @@ export function Messages() {
             onAccept={handleAcceptCall}
             onReject={handleRejectCall}
             onEndCall={handleEndCall}
+            onConnected={() => setCallState((prev) => (prev ? { ...prev, status: 'connected' } : null))}
             socket={getSocket()}
             currentUser={user}
           />
