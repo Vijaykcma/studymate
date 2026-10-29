@@ -1259,7 +1259,7 @@ function RealTimeExecutor() {
 
               {/* In-Place Dropdown (Right There, Above Code Editor Card) */}
               {langSearchOpen && (
-                <div className={`absolute top-full left-0 mt-2 w-80 sm:w-96 rounded-2xl border ${
+                <div className={`absolute top-full left-0 mt-2 w-[calc(100vw-2.5rem)] max-w-sm sm:w-96 rounded-2xl border ${
                   isDark
                     ? 'border-white/15 bg-slate-900 shadow-black/90 text-white'
                     : 'border-slate-200 bg-white shadow-slate-300/60 text-slate-900'
@@ -1601,7 +1601,7 @@ function RealTimeExecutor() {
               </div>
 
               {/* Code Textarea with Line Numbers */}
-              <div className={`relative flex-1 flex overflow-hidden min-h-[420px] ${
+              <div className={`relative flex-1 flex overflow-hidden min-h-[280px] sm:min-h-[420px] ${
                 isDark ? 'bg-slate-950' : 'bg-white'
               } font-mono text-sm leading-6 transition-colors`}>
                 <div className={`w-12 py-4 ${
@@ -1722,7 +1722,7 @@ function RealTimeExecutor() {
             </div>
 
             {/* Tab Contents */}
-            <div className={`flex-1 p-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/60'} flex flex-col min-h-[460px] overflow-hidden transition-colors`}>
+            <div className={`flex-1 p-4 ${isDark ? 'bg-slate-950' : 'bg-slate-50/60'} flex flex-col min-h-[260px] sm:min-h-[460px] overflow-hidden transition-colors`}>
               {/* Output Terminal Tab */}
               {activeTab === 'output' && (
                 <div className="flex-1 flex flex-col font-mono text-xs overflow-y-auto">

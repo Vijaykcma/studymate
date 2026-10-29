@@ -4,7 +4,13 @@ let socket = null;
 
 export const initSocket = () => {
   if (!socket) {
+    let token = null;
+    try {
+      token = localStorage.getItem('studymate_token');
+    } catch {}
+
     socket = io(window.location.origin, {
+      auth: { token },
       withCredentials: true,
       autoConnect: true,
       reconnection: true,

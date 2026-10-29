@@ -19,6 +19,9 @@ export const AuthProvider = ({ children }) => {
       } catch (err) {
         // Not authenticated
         setUser(null);
+        try {
+          localStorage.removeItem('studymate_token');
+        } catch {}
       } finally {
         setLoading(false);
       }
@@ -30,6 +33,11 @@ export const AuthProvider = ({ children }) => {
   const login = async (credentials) => {
     const data = await authAPI.login(credentials);
     if (data.success && data.user) {
+      if (data.token) {
+        try {
+          localStorage.setItem('studymate_token', data.token);
+        } catch {}
+      }
       setUser(data.user);
       initSocket();
     }
@@ -39,6 +47,11 @@ export const AuthProvider = ({ children }) => {
   const adminLogin = async (credentials) => {
     const data = await adminAPI.login(credentials);
     if (data.success && data.user) {
+      if (data.token) {
+        try {
+          localStorage.setItem('studymate_token', data.token);
+        } catch {}
+      }
       setUser(data.user);
       initSocket();
     }
@@ -48,6 +61,11 @@ export const AuthProvider = ({ children }) => {
   const register = async (userData) => {
     const data = await authAPI.register(userData);
     if (data.success && data.user) {
+      if (data.token) {
+        try {
+          localStorage.setItem('studymate_token', data.token);
+        } catch {}
+      }
       setUser(data.user);
       initSocket();
     }
@@ -57,6 +75,11 @@ export const AuthProvider = ({ children }) => {
   const verifyEmail = async (verificationData) => {
     const data = await authAPI.verifyEmail(verificationData);
     if (data.success && data.user) {
+      if (data.token) {
+        try {
+          localStorage.setItem('studymate_token', data.token);
+        } catch {}
+      }
       setUser(data.user);
       initSocket();
     }
@@ -72,6 +95,9 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {
       // Continue client cleanup even if network fails
     }
+    try {
+      localStorage.removeItem('studymate_token');
+    } catch {}
     setUser(null);
     disconnectSocket();
   };

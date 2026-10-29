@@ -55,6 +55,28 @@ export const DashboardLayout = ({ children }) => {
     };
   }, [user, location.pathname]);
 
+  // Auto-close mobile sidebar when user navigates
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
+
+  // Lock body scroll and handle Escape key when mobile sidebar is open
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+      const handleKeyDown = (e) => {
+        if (e.key === 'Escape') setSidebarOpen(false);
+      };
+      window.addEventListener('keydown', handleKeyDown);
+      return () => {
+        document.body.style.overflow = '';
+        window.removeEventListener('keydown', handleKeyDown);
+      };
+    } else {
+      document.body.style.overflow = '';
+    }
+  }, [sidebarOpen]);
+
   const handleLogout = async () => {
     await logout();
     navigate('/login');
@@ -91,8 +113,9 @@ export const DashboardLayout = ({ children }) => {
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden backdrop-blur-sm"
+          className="fixed inset-0 bg-black/70 z-40 lg:hidden backdrop-blur-sm transition-opacity"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -100,15 +123,15 @@ export const DashboardLayout = ({ children }) => {
       <aside
         className={`fixed lg:sticky top-0 z-50 h-screen w-64 border-r ${
           isDark ? 'border-white/10 bg-slate-950 text-white' : 'border-slate-200 bg-white text-slate-800'
-        } transition-transform duration-300 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        } transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } lg:translate-x-0 shrink-0`}
       >
-        <div className="h-full flex flex-col justify-between">
+        <div className="h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden">
           <div>
             {/* Logo */}
             <div className={`h-20 flex items-center justify-between px-6 border-b ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
-              <Link to="/dashboard" className="flex items-center gap-3">
+              <Link to="/dashboard" onClick={() => setSidebarOpen(false)} className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
                   <GraduationCap size={22} className="text-white" />
                 </div>
@@ -276,8 +299,12 @@ export const DashboardLayout = ({ children }) => {
         } backdrop-blur px-4 flex items-center justify-between`}>
           <button
             onClick={() => setSidebarOpen(true)}
-            className={`p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-            aria-label="Open Sidebar"
+            className={`p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center transition cursor-pointer ${
+              isDark
+                ? 'text-slate-300 hover:text-white hover:bg-white/10 active:bg-white/15'
+                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200'
+            }`}
+            aria-label="Open Sidebar Navigation Menu"
           >
             <Menu size={22} />
           </button>

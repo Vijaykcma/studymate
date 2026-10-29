@@ -32,6 +32,7 @@ import {
   Calendar,
   Layers,
   GraduationCap,
+  ArrowLeft,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { groupsAPI, messagesAPI } from '../services/api';
@@ -112,8 +113,8 @@ export function Messages() {
         setDirectConversations(loadedDirect);
       }
 
-      // Default active chat if none selected
-      if (!activeChat) {
+      // Default active chat if none selected (desktop viewports only)
+      if (!activeChat && typeof window !== 'undefined' && window.innerWidth >= 768) {
         if (loadedDirect.length > 0) {
           setActiveChat({
             type: 'direct',
@@ -545,14 +546,16 @@ export function Messages() {
 
   return (
     <DashboardLayout>
-      <div className="flex-1 flex flex-col h-full min-h-screen lg:h-screen w-full overflow-hidden">
+      <div className="flex-1 flex flex-col h-[calc(100dvh-4rem)] lg:h-screen w-full overflow-hidden">
         {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
         <div className={`flex-1 flex overflow-hidden w-full h-full ${
           isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'
         } transition-colors relative`}>
 
           {/* LEFT SIDEBAR: Chats & Contacts List */}
-          <div className={`w-full md:w-[380px] lg:w-[400px] flex flex-col border-r ${
+          <div className={`${
+            activeChat ? 'hidden md:flex' : 'flex'
+          } w-full md:w-[380px] lg:w-[400px] flex-col border-r ${
             isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white'
           } shrink-0`}>
             
@@ -799,13 +802,28 @@ export function Messages() {
 
           {/* MAIN CHAT CONVERSATION WINDOW */}
           {activeChat ? (
-            <div className="flex-1 flex flex-col min-w-0 h-full relative">
+            <div className={`${
+              activeChat ? 'flex' : 'hidden md:flex'
+            } flex-1 flex-col min-w-0 h-full relative`}>
               
               {/* Header */}
-              <div className={`px-5 py-3.5 flex items-center justify-between border-b ${
+              <div className={`px-3 sm:px-5 py-3.5 flex items-center justify-between border-b ${
                 isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
               } shrink-0 z-20`}>
-                <div className="flex items-center gap-3 min-w-0">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  {/* Mobile Back Button to return to contact list */}
+                  <button
+                    type="button"
+                    onClick={() => setActiveChat(null)}
+                    className={`md:hidden p-2 -ml-1 rounded-xl transition cursor-pointer shrink-0 ${
+                      isDark ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                    }`}
+                    title="Back to conversations"
+                    aria-label="Back to conversations"
+                  >
+                    <ArrowLeft size={19} />
+                  </button>
+
                   <div className="relative shrink-0">
                     <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm ${
                       activeChat.type === 'group'
@@ -1175,8 +1193,8 @@ export function Messages() {
               )}
             </div>
           ) : (
-            /* No Chat Selected Placeholder */
-            <div className={`flex-1 flex flex-col items-center justify-center p-8 text-center ${
+            /* No Chat Selected Placeholder (Desktop only) */
+            <div className={`hidden md:flex flex-1 flex-col items-center justify-center p-8 text-center ${
               isDark ? 'bg-slate-950' : 'bg-slate-50'
             }`}>
               <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center text-white mb-4 shadow-xl shadow-indigo-500/20">
@@ -1200,7 +1218,7 @@ export function Messages() {
 
           {/* RIGHT CONTACT INFO DRAWER */}
           {infoDrawerOpen && activeChat && (
-            <div className={`w-72 border-l ${
+            <div className={`fixed inset-y-0 right-0 z-40 md:static w-72 max-w-[85vw] border-l shadow-2xl md:shadow-none ${
               isDark ? 'border-white/10 bg-slate-900' : 'border-slate-200 bg-white'
             } p-5 flex flex-col space-y-4 shrink-0 overflow-y-auto`}>
               <div className="flex items-center justify-between pb-3 border-b border-white/10">

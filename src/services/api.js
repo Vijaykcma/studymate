@@ -10,6 +10,22 @@ export const apiClient = axios.create({
   },
 });
 
+// Request interceptor to automatically attach JWT token for cross-origin & mobile compatibility
+apiClient.interceptors.request.use(
+  (config) => {
+    try {
+      const token = localStorage.getItem('studymate_token');
+      if (token && !config.headers.Authorization) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    } catch {
+      // Ignore localStorage restrictions
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Interceptor to extract clean error messages
 apiClient.interceptors.response.use(
   (response) => response,
