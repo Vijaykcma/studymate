@@ -102,10 +102,10 @@ function MyGroups() {
         )}
 
         {/* Tab Filters */}
-        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full">
           <button
             onClick={() => setActiveTab('all')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'all'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -115,7 +115,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('created')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'created'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -125,7 +125,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('joined')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'joined'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -135,7 +135,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('pending')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 flex items-center gap-1.5 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
               activeTab === 'pending'
                 ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-white'

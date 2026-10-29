@@ -187,10 +187,10 @@ function StudySessions() {
         )}
 
         {/* Filter Tabs */}
-        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full -mx-4 px-4 sm:mx-0 sm:px-0">
+        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full">
           <button
             onClick={() => setActiveFilter('upcoming')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeFilter === 'upcoming'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -200,7 +200,7 @@ function StudySessions() {
           </button>
           <button
             onClick={() => setActiveFilter('past')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeFilter === 'past'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -210,7 +210,7 @@ function StudySessions() {
           </button>
           <button
             onClick={() => setActiveFilter('all')}
-            className={`pb-2.5 sm:pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 cursor-pointer ${
+            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeFilter === 'all'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
