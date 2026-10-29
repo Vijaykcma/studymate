@@ -72,22 +72,22 @@ function MyGroups() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">My Study Groups</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">My Study Groups</h1>
+            <p className="text-sm text-slate-400 mt-1">
               Manage the study groups you participate in or administer.
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full sm:w-auto">
+          <div className="flex gap-3">
             <Link
               to="/groups/create"
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center gap-2"
             >
               <Plus size={16} /> Create Group
             </Link>
             <Link
               to="/groups"
-              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs transition flex items-center justify-center gap-2"
+              className="px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs transition flex items-center gap-2"
             >
               Explore More
             </Link>
@@ -102,10 +102,10 @@ function MyGroups() {
         )}
 
         {/* Tab Filters */}
-        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full">
+        <div className="flex border-b border-white/10 gap-6 overflow-x-auto pb-px">
           <button
             onClick={() => setActiveTab('all')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'all'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -115,7 +115,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('created')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'created'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -125,7 +125,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('joined')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
               activeTab === 'joined'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -135,7 +135,7 @@ function MyGroups() {
           </button>
           <button
             onClick={() => setActiveTab('pending')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 flex items-center gap-1.5 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap flex items-center gap-1.5 ${
               activeTab === 'pending'
                 ? 'border-amber-500 text-amber-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -192,17 +192,17 @@ function MyGroups() {
               return (
                 <div
                   key={group._id}
-                  className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
+                  className="p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between gap-2">
-                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center flex-shrink-0">
                         <BookOpen size={20} />
                       </div>
 
                       <div className="flex flex-col items-end gap-1.5">
                         <span
-                          className={`px-2.5 py-0.5 rounded-full text-[11px] sm:text-xs font-semibold ${
+                          className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${
                             isAdmin
                               ? 'bg-indigo-500/10 text-indigo-400 border border-indigo-400/20'
                               : isPending
@@ -220,26 +220,26 @@ function MyGroups() {
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-400 mt-4 sm:mt-5">{group.subject}</p>
-                    <h3 className="text-base sm:text-lg font-bold text-white mt-1 break-words">{group.name}</h3>
-                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed break-words">
+                    <p className="text-xs text-slate-400 mt-5">{group.subject}</p>
+                    <h3 className="text-lg font-bold text-white mt-1">{group.name}</h3>
+                    <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
                       {group.description}
                     </p>
 
                     <div className="mt-5 space-y-2 text-xs text-slate-400 border-t border-white/5 pt-4">
                       <div className="flex items-center gap-2">
-                        <Users size={14} className="text-indigo-400 shrink-0" />
+                        <Users size={14} className="text-indigo-400" />
                         <span>{group.members?.length || 0} / {group.maxMembers} members</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <CalendarDays size={14} className="text-cyan-400 shrink-0" />
-                        <span className="break-words">
+                        <CalendarDays size={14} className="text-cyan-400" />
+                        <span className="truncate">
                           {group.meetingDays?.join(', ') || 'Flexible'} • {group.meetingTime}
                         </span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <MapPin size={14} className="text-emerald-400 shrink-0" />
-                        <span className="break-words">{group.location}</span>
+                        <MapPin size={14} className="text-emerald-400" />
+                        <span className="truncate">{group.location}</span>
                       </div>
                     </div>
                   </div>

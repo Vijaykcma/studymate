@@ -294,7 +294,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
     </aside>
 
       {/* Main Content Area */}
-      <div className={`flex-1 min-w-0 max-w-full w-full flex flex-col ${isFullHeight ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
+      <div className={`flex-1 min-w-0 flex flex-col ${isFullHeight ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
         {/* Mobile top bar */}
         <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 ${
           isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
@@ -343,7 +343,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           </div>
         </header>
 
-        <main className={`flex-1 min-w-0 max-w-full w-full overflow-x-hidden flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : ''}`}>
+        <main className={`flex-1 overflow-x-hidden flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : ''}`}>
           {user && !user.isEmailVerified && (
             <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200 shrink-0">
               <div className="flex items-center gap-2">

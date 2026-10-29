@@ -114,19 +114,19 @@ function FindGroups() {
     <DashboardLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6">
         {/* Top Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">
               Find Study Groups
             </h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-0.5 sm:mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Explore {totalGroups} active study groups and connect with student peers.
             </p>
           </div>
 
           <Link
             to="/groups/create"
-            className="w-full sm:w-auto px-4 sm:px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs sm:text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 self-stretch sm:self-auto"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-sm transition shadow-lg shadow-indigo-600/20 flex items-center gap-2 self-start md:self-auto"
           >
             <Plus size={16} />
             Create Study Group
@@ -154,45 +154,43 @@ function FindGroups() {
         )}
 
         {/* Search & Filter Toolbar */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-3.5 sm:p-4 space-y-3.5 sm:space-y-4">
-          <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 space-y-4">
+          <form onSubmit={handleSearchSubmit} className="flex gap-3">
             <div className="relative flex-1">
               <Search
-                size={16}
-                className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500"
+                size={18}
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
               />
               <input
                 type="text"
                 placeholder="Search by group title, subject, or keywords..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full rounded-xl border border-white/10 bg-slate-900 pl-10 pr-3.5 py-2.5 sm:py-3 outline-none focus:border-indigo-500 transition text-xs sm:text-sm placeholder:text-slate-600 text-white"
+                className="w-full rounded-xl border border-white/10 bg-slate-900 px-11 py-3 outline-none focus:border-indigo-500 transition text-sm placeholder:text-slate-600 text-white"
               />
             </div>
 
-            <div className="flex items-center gap-2">
-              <button
-                type="submit"
-                className="flex-1 sm:flex-initial px-5 py-2.5 sm:py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs sm:text-sm font-semibold transition shrink-0 text-center"
-              >
-                Search
-              </button>
+            <button
+              type="submit"
+              className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-sm font-semibold transition shrink-0"
+            >
+              Search
+            </button>
 
-              <button
-                type="button"
-                onClick={() => setShowFilters(!showFilters)}
-                className={`px-3.5 sm:px-4 py-2.5 sm:py-3 rounded-xl border border-white/10 text-xs sm:text-sm font-medium transition flex items-center justify-center gap-1.5 shrink-0 ${
-                  showFilters ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5'
-                }`}
-              >
-                <Filter size={15} />
-                <span>Filters</span>
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`px-4 py-3 rounded-xl border border-white/10 text-sm font-medium transition flex items-center gap-2 shrink-0 ${
+                showFilters ? 'bg-white/10 text-white' : 'text-slate-400 hover:bg-white/5'
+              }`}
+            >
+              <Filter size={16} />
+              <span className="hidden sm:inline">Filters</span>
+            </button>
           </form>
 
           {/* Quick Subject Pills */}
-          <div className="flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 scrollbar-none max-w-full">
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {subjects.map((sub) => (
               <button
                 key={sub}
@@ -200,7 +198,7 @@ function FindGroups() {
                   setSubject(sub);
                   setPage(1);
                 }}
-                className={`px-3 sm:px-3.5 py-1 sm:py-1.5 rounded-full text-xs font-medium whitespace-nowrap shrink-0 transition ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition ${
                   subject === sub
                     ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
                     : 'bg-white/5 text-slate-400 hover:text-white hover:bg-white/10'
@@ -326,7 +324,7 @@ function FindGroups() {
                 return (
                   <div
                     key={group._id}
-                    className="rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 p-4 sm:p-6 flex flex-col justify-between transition duration-200"
+                    className="rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 p-6 flex flex-col justify-between transition duration-200"
                   >
                     <div>
                       {/* Card Header */}

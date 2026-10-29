@@ -147,8 +147,8 @@ function StudySessions() {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Study Sessions</h1>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Study Sessions</h1>
+            <p className="text-sm text-slate-400 mt-1">
               Plan and view collaborative learning meetings for your study groups.
             </p>
           </div>
@@ -161,7 +161,7 @@ function StudySessions() {
               }
               setShowModal(true);
             }}
-            className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
+            className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center gap-2 self-start md:self-auto cursor-pointer"
           >
             <Plus size={16} /> Schedule Session
           </button>
@@ -187,10 +187,10 @@ function StudySessions() {
         )}
 
         {/* Filter Tabs */}
-        <div className="flex border-b border-white/10 gap-3 sm:gap-6 overflow-x-auto scrollbar-none pb-0.5 max-w-full">
+        <div className="flex border-b border-white/10 gap-6">
           <button
             onClick={() => setActiveFilter('upcoming')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 ${
               activeFilter === 'upcoming'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -200,7 +200,7 @@ function StudySessions() {
           </button>
           <button
             onClick={() => setActiveFilter('past')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 ${
               activeFilter === 'past'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -210,7 +210,7 @@ function StudySessions() {
           </button>
           <button
             onClick={() => setActiveFilter('all')}
-            className={`pb-3 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
+            className={`pb-3 text-sm font-semibold transition border-b-2 ${
               activeFilter === 'all'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -245,7 +245,7 @@ function StudySessions() {
               return (
                 <div
                   key={session._id}
-                  className="p-4 sm:p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
+                  className="p-6 rounded-2xl border border-white/10 bg-slate-900/80 hover:border-indigo-400/30 transition flex flex-col justify-between"
                 >
                   <div>
                     <div className="flex items-start justify-between">
@@ -369,7 +369,7 @@ function StudySessions() {
                   </select>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3">
                   <div>
                     <label className="text-xs text-slate-300 font-medium block mb-1">
                       Date *
@@ -413,7 +413,7 @@ function StudySessions() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="text-xs text-slate-300 font-medium block mb-1">
                       Meeting Type

@@ -125,24 +125,24 @@ export default function Notifications() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
+      <div className="max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white tracking-tight">Notifications</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Notifications</h1>
               {unreadCount > 0 && (
                 <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-500 text-white shadow-md shadow-indigo-500/25">
                   {unreadCount} new
                 </span>
               )}
             </div>
-            <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Stay up-to-date with your study groups, session schedules, and invites.
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
