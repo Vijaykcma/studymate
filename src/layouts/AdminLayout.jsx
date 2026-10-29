@@ -175,10 +175,10 @@ export const AdminLayout = ({ children, title = 'Administration Desk' }) => {
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+      <div className="flex-1 min-w-0 max-w-full w-full flex flex-col min-h-screen">
         {/* Top Header Bar */}
-        <header className="sticky top-0 z-30 h-20 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl px-6 flex items-center justify-between">
-          <div className="flex items-center gap-4">
+        <header className="sticky top-0 z-30 h-20 border-b border-white/10 bg-slate-950/90 backdrop-blur-xl px-4 sm:px-6 flex items-center justify-between">
+          <div className="flex items-center gap-3 sm:gap-4">
             <button
               onClick={() => setSidebarOpen(true)}
               className="lg:hidden p-2 text-slate-300 hover:text-white rounded-lg hover:bg-white/5"
@@ -188,17 +188,17 @@ export const AdminLayout = ({ children, title = 'Administration Desk' }) => {
             </button>
 
             <div>
-              <h2 className="text-lg font-bold tracking-tight text-white">{title}</h2>
+              <h2 className="text-base sm:text-lg font-bold tracking-tight text-white">{title}</h2>
               <p className="text-xs text-slate-400 hidden sm:block">
                 Secure Platform Administration & Community Governance
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               to="/dashboard"
-              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition shadow-sm"
+              className="flex items-center gap-2 px-3 py-1.5 sm:px-3.5 sm:py-1.5 rounded-xl bg-indigo-600/15 hover:bg-indigo-600/25 text-indigo-300 hover:text-white border border-indigo-500/30 text-xs font-semibold transition shadow-sm"
               title="Open Student Portal"
             >
               <GraduationCap size={16} className="text-indigo-400" />
@@ -210,7 +210,7 @@ export const AdminLayout = ({ children, title = 'Administration Desk' }) => {
               <span>Platform Live</span>
             </div>
 
-            <div className="flex items-center gap-2 pl-3 border-l border-white/10 text-xs text-slate-400">
+            <div className="flex items-center gap-2 pl-2 sm:pl-3 border-l border-white/10 text-xs text-slate-400">
               <Clock size={14} className="text-rose-400" />
               <span className="hidden sm:inline">
                 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -220,7 +220,7 @@ export const AdminLayout = ({ children, title = 'Administration Desk' }) => {
         </header>
 
         {/* Dynamic Page Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-hidden bg-slate-950">
+        <main className="flex-1 min-w-0 max-w-full w-full p-4 sm:p-6 lg:p-8 overflow-x-hidden bg-slate-950">
           <div className="max-w-7xl mx-auto space-y-6">
             {children}
           </div>

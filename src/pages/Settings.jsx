@@ -144,17 +144,17 @@ function Settings() {
     <DashboardLayout>
       <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-8">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold tracking-tight">Account Settings</h1>
-          <p className="text-sm text-slate-400 mt-1">
+          <h1 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight">Account Settings</h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Configure system notifications, security credentials, and preferences.
           </p>
         </div>
 
         {/* Preferences Section */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 space-y-5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center shrink-0">
                 <Bell size={20} />
               </div>
               <div>
@@ -168,7 +168,7 @@ function Settings() {
             <button
               onClick={handleSaveSettings}
               disabled={savingSettings}
-              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold transition flex items-center gap-1.5 cursor-pointer text-white"
+              className="w-full sm:w-auto px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-xs font-semibold transition flex items-center justify-center gap-1.5 cursor-pointer text-white"
             >
               {savingSettings ? (
                 <Loader2 size={14} className="animate-spin" />
@@ -244,9 +244,9 @@ function Settings() {
         </div>
 
         {/* Change Password Section */}
-        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 space-y-5">
+        <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-4 sm:p-6 space-y-5">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center">
+            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center shrink-0">
               <Lock size={20} />
             </div>
             <div>
