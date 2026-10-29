@@ -1060,8 +1060,8 @@ export function Messages() {
   };
 
   return (
-    <DashboardLayout>
-      <div className="flex-1 flex flex-col h-[calc(100dvh-4rem)] lg:h-[calc(100vh-0rem)] w-full overflow-hidden overflow-x-hidden">
+    <DashboardLayout fullHeight>
+      <div className="flex-1 flex flex-col h-full w-full overflow-hidden overflow-x-hidden">
         {/* Full-Bleed Edge-to-Edge Container Using StudyMate Website Default Theme */}
         <div
           className={`flex-1 flex overflow-hidden overflow-x-hidden w-full h-full ${
@@ -1074,11 +1074,11 @@ export function Messages() {
               activeChat ? 'hidden md:flex' : 'flex'
             } w-full md:w-[380px] lg:w-[400px] flex-col border-r ${
               isDark ? 'border-white/10 bg-slate-900/60' : 'border-slate-200 bg-white'
-            } shrink-0`}
+            } shrink-0 h-full overflow-hidden`}
           >
             {/* Sidebar Header */}
             <div
-              className={`px-4 py-3.5 flex items-center justify-between border-b ${
+              className={`px-4 py-3.5 flex items-center justify-between border-b shrink-0 ${
                 isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
               }`}
             >
@@ -1157,7 +1157,7 @@ export function Messages() {
             </div>
 
             {/* Search Bar */}
-            <div className={`px-3 py-2 border-b ${isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
+            <div className={`px-3 py-2 border-b shrink-0 ${isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50'}`}>
               <div
                 className={`flex items-center gap-2.5 px-3 py-1.5 rounded-xl border ${
                   isDark ? 'bg-slate-950/80 border-white/10 text-white' : 'bg-white border-slate-200 text-slate-900'
@@ -1181,7 +1181,7 @@ export function Messages() {
 
             {/* Filter Tabs: All, Personal, Groups, Unread */}
             <div
-              className={`flex items-center gap-1.5 px-3 py-2 border-b ${
+              className={`flex items-center gap-1.5 px-3 py-2 border-b shrink-0 ${
                 isDark ? 'border-white/10 bg-slate-900/40' : 'border-slate-200 bg-slate-50/60'
               } text-xs font-medium overflow-x-auto`}
             >
@@ -1238,7 +1238,7 @@ export function Messages() {
             </div>
 
             {/* Chat List */}
-            <div className="flex-1 overflow-y-auto divide-y divide-transparent">
+            <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-transparent">
               {loadingChats ? (
                 <div className="flex flex-col items-center justify-center p-10 text-xs text-slate-400 gap-2">
                   <Loader2 size={24} className="animate-spin text-indigo-500" />
@@ -1378,13 +1378,13 @@ export function Messages() {
             <div
               className={`${
                 activeChat ? 'flex' : 'hidden md:flex'
-              } flex-1 flex-col min-w-0 h-full relative overflow-x-hidden`}
+              } flex-1 flex-col min-w-0 h-full relative overflow-hidden`}
             >
               {/* Header */}
               <div
-                className={`px-3 sm:px-5 py-3.5 flex items-center justify-between border-b ${
+                className={`px-3 sm:px-5 py-3.5 flex items-center justify-between border-b shrink-0 ${
                   isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
-                } shrink-0 z-20`}
+                } z-20`}
               >
                 <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                   {/* Mobile Back Button to return to contact list */}
@@ -1509,7 +1509,7 @@ export function Messages() {
               {/* In-Chat Search Filter Bar */}
               {inChatSearchOpen && (
                 <div
-                  className={`px-4 py-2 border-b flex items-center justify-between gap-3 ${
+                  className={`px-4 py-2 border-b shrink-0 flex items-center justify-between gap-3 ${
                     isDark ? 'bg-slate-900 border-white/10' : 'bg-slate-100 border-slate-200'
                   }`}
                 >
@@ -1542,7 +1542,7 @@ export function Messages() {
 
               {/* Messages Canvas with Website Palette */}
               <div
-                className={`flex-1 p-3 sm:p-5 overflow-y-auto overflow-x-hidden space-y-3 relative ${
+                className={`flex-1 p-3 sm:p-5 overflow-y-auto overflow-x-hidden overscroll-contain space-y-3 relative ${
                   isDark ? 'bg-slate-950' : 'bg-slate-50/80'
                 }`}
                 style={{
@@ -2102,7 +2102,7 @@ export function Messages() {
                 /* Bottom Message Input Bar */
                 <form
                   onSubmit={handleSendMessage}
-                  className={`px-4 py-3 flex items-center gap-2 border-t ${
+                  className={`px-4 py-3 flex items-center gap-2 border-t shrink-0 ${
                     isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
                   }`}
                 >

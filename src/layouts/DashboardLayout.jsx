@@ -25,13 +25,15 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import notificationService from '../services/notificationService';
 
-export const DashboardLayout = ({ children }) => {
+export const DashboardLayout = ({ children, fullHeight = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
+
+  const isFullHeight = fullHeight || location.pathname === '/messages';
 
   useEffect(() => {
     let isMounted = true;
@@ -109,7 +111,7 @@ export const DashboardLayout = ({ children }) => {
   };
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} flex transition-colors duration-200`}>
+    <div className={`${isFullHeight ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'} ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} flex transition-colors duration-200`}>
       {/* Mobile Overlay */}
       {sidebarOpen && (
         <div
@@ -292,9 +294,9 @@ export const DashboardLayout = ({ children }) => {
     </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 min-w-0 flex flex-col min-h-screen">
+      <div className={`flex-1 min-w-0 flex flex-col ${isFullHeight ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
         {/* Mobile top bar */}
-        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b ${
+        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 ${
           isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
         } backdrop-blur px-4 flex items-center justify-between`}>
           <button
@@ -341,9 +343,9 @@ export const DashboardLayout = ({ children }) => {
           </div>
         </header>
 
-        <main className="flex-1 overflow-x-hidden flex flex-col">
+        <main className={`flex-1 overflow-x-hidden flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : ''}`}>
           {user && !user.isEmailVerified && (
-            <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200">
+            <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200 shrink-0">
               <div className="flex items-center gap-2">
                 <AlertTriangle size={16} className="text-amber-400 shrink-0" />
                 <span>
