@@ -312,7 +312,7 @@ export const StudyMateAIBot = () => {
           {!isMinimized && (
             <>
               <div
-                className={`flex-1 p-3.5 sm:p-4 overflow-y-auto overflow-x-hidden space-y-4 text-xs ${
+                className={`flex-1 p-3.5 sm:p-4 overflow-y-auto overflow-x-hidden space-y-4 text-xs ai-transparent-scroll ${
                   isDark ? 'bg-slate-950/70' : 'bg-slate-50'
                 }`}
                 style={{
@@ -580,3 +580,4 @@ export const StudyMateAIBot = () => {
 };
 
 export default StudyMateAIBot;
+

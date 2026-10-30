@@ -419,3 +419,4 @@ Always be supportive, concise, use clean markdown with bullet points and bolding
   const data = await res.json();
   return data.candidates?.[0]?.content?.parts?.[0]?.text;
 };
+
