@@ -28,7 +28,7 @@ const MOTIVATION_QUOTES = [
   "“It always seems impossible until it’s done.” Take a deep breath, grab a coffee or water, and let's tackle this step by step. ✨",
 ];
 
-export const processAIChat = async ({ prompt, user, conversationHistory = [] }) => {
+export const processAIChat = async ({ prompt, user, conversationHistory = [], customApiKey }) => {
   const cleanPrompt = (prompt || '').trim();
   const lowerPrompt = cleanPrompt.toLowerCase();
 
@@ -151,7 +151,7 @@ export const processAIChat = async ({ prompt, user, conversationHistory = [] }) 
   }
 
   // 3. CHECK FOR GEMINI FREE-TIER API KEY (Optional Enhancement)
-  const geminiKey = process.env.GEMINI_API_KEY;
+  const geminiKey = customApiKey || process.env.GEMINI_API_KEY;
   if (geminiKey) {
     try {
       const geminiResponse = await callGeminiFreeTier({
@@ -174,6 +174,7 @@ export const processAIChat = async ({ prompt, user, conversationHistory = [] }) 
           peers: foundPeers.map(formatPeerCard),
           suggestions: generateFollowupSuggestions(lowerPrompt),
           isFreeTier: true,
+          poweredBy: 'Gemini',
         };
       }
     } catch (err) {
@@ -422,10 +423,10 @@ const buildAIFriendResponse = ({
   // GREETINGS & CASUAL HELLOS
   if (/^(hi|hello|hey|yo|sup|hola|what's up|good morning|good afternoon|good evening)\b/i.test(lowerPrompt)) {
     return {
-      reply: `Hey **${studentFirstName}**! Great to see you! How’s your day going in **${studentDept}**?\n\nI’m your 24/7 college study buddy. We can:\n* 🔍 Find high-impact **study groups for ${studentSem}**\n* 👥 Connect with classmates for project collaboration\n* 📅 Track scheduled revision sessions\n* 💻 Crack DSA & coding challenges together\n\nWhat are you working on right now?`,
+      reply: `Hey ${studentFirstName}! Great to see you. How's your day going in ${studentDept}?\n\nWhat are you working on or studying today?`,
       suggestions: [
         'Find study groups for my semester',
-        'Recommend study partners',
+        'Recommend classmates to study with',
         'Tell me a programmer joke! 😂',
         'Help me plan my study schedule',
       ],
@@ -637,18 +638,13 @@ const buildAIFriendResponse = ({
 
   // DEFAULT WARM FRIENDLY CONVERSATIONAL FALLBACK (NEVER DRY!)
   return {
-    reply: `I hear you, **${studentFirstName}**! As your study buddy, I can help you with anything on StudyMate:\n\n* 💬 **Quick Navigation**: Just say *"open messages"*, *"show groups"*, *"create group"*, or *"code runner"*\n* 👥 **Peer Discovery**: Say *"recommend classmates"* or *"find MCA study groups"*\n* 💡 **Study Prep**: Ask me to explain any DSA or CS concept, or tell you a joke to take a study break!\n\nWhat would you like to explore together right now?`,
+    reply: `I'm with you, ${studentFirstName}! Whether you want to find study groups, connect with classmates, practice coding, or just need study advice, I'm here for you.\n\nTell me what you'd like to work on, or try one of the suggestions below!`,
     suggestions: [
-      'Open Messages & Discussions',
       'Find study groups for my semester',
-      'Recommend classmates & study partners',
+      'Recommend classmates to study with',
+      'Show upcoming study sessions',
       'Tell me a programmer joke! 😂',
     ],
-    action: {
-      type: 'navigate',
-      path: '/messages',
-      label: '🚀 Open Messages & Discussions',
-    },
   };
 };
 

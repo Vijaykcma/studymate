@@ -11,7 +11,7 @@ const router = express.Router();
  */
 router.post('/chat', protect, async (req, res) => {
   try {
-    const { prompt, conversationHistory } = req.body;
+    const { prompt, conversationHistory, apiKey } = req.body;
 
     if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
       return res.status(400).json({
@@ -20,10 +20,13 @@ router.post('/chat', protect, async (req, res) => {
       });
     }
 
+    const clientKey = apiKey || req.headers['x-gemini-key'];
+
     const aiResult = await processAIChat({
       prompt,
       user: req.user,
       conversationHistory: conversationHistory || [],
+      customApiKey: clientKey,
     });
 
     res.status(200).json({
