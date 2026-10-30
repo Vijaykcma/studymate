@@ -66,7 +66,7 @@ const renderFormattedText = (text, isDark, isUser) => {
 
     if (trimmed.startsWith('> ')) {
       return (
-        <blockquote key={idx} className="border-l-2 border-indigo-400 pl-2.5 my-1.5 italic text-slate-300">
+        <blockquote key={idx} className={`border-l-2 border-indigo-500 pl-2.5 my-1.5 italic ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
           {parseInlineMarkdown(trimmed.substring(2), isUser, isDark)}
         </blockquote>
       );
@@ -99,12 +99,14 @@ const parseInlineMarkdown = (text, isUser, isDark) => {
       );
     } else if (token.startsWith('`') && token.endsWith('`')) {
       tokens.push(
-        <code key={match.index} className="px-1.5 py-0.5 rounded bg-black/40 text-cyan-300 font-mono text-[11px] border border-white/5">
+        <code key={match.index} className={`px-1.5 py-0.5 rounded font-mono text-[11px] ${
+          isDark ? 'bg-black/40 text-cyan-300 border border-white/5' : 'bg-slate-100 text-indigo-700 border border-slate-200'
+        }`}>
           {token.slice(1, -1)}
         </code>
       );
     } else if (token.startsWith('*') && token.endsWith('*')) {
-      tokens.push(<em key={match.index} className="italic text-slate-200">{token.slice(1, -1)}</em>);
+      tokens.push(<em key={match.index} className={`italic ${isUser ? 'text-white' : isDark ? 'text-slate-200' : 'text-slate-700'}`}>{token.slice(1, -1)}</em>);
     }
     lastIndex = regex.lastIndex;
   }
@@ -360,13 +362,17 @@ export const StudyMateAIBot = () => {
             </div>
 
             {/* Header Control Icons */}
-            <div className="flex items-center gap-1 text-slate-400">
+            <div className={`flex items-center gap-1 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {/* Settings / API Key */}
               <button
                 type="button"
                 onClick={() => setSettingsOpen(!settingsOpen)}
-                className={`p-1.5 rounded-lg transition hover:text-white ${
-                  settingsOpen ? 'text-indigo-400 bg-white/10' : isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'
+                className={`p-1.5 rounded-lg transition ${
+                  settingsOpen
+                    ? 'text-indigo-400 bg-white/10'
+                    : isDark
+                    ? 'hover:bg-white/10 hover:text-white'
+                    : 'hover:bg-slate-200 hover:text-slate-900'
                 }`}
                 title="AI Settings & Free Gemini Key"
               >
@@ -377,7 +383,9 @@ export const StudyMateAIBot = () => {
               <button
                 type="button"
                 onClick={handleResetChat}
-                className={`p-1.5 rounded-lg transition hover:text-white ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`}
+                className={`p-1.5 rounded-lg transition ${
+                  isDark ? 'hover:bg-white/10 hover:text-white' : 'hover:bg-slate-200 hover:text-slate-900'
+                }`}
                 title="Restart Conversation"
               >
                 <RotateCcw size={15} />
@@ -388,7 +396,9 @@ export const StudyMateAIBot = () => {
                 <button
                   type="button"
                   onClick={() => setIsExpanded(!isExpanded)}
-                  className={`p-1.5 rounded-lg transition hover:text-white ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`}
+                  className={`p-1.5 rounded-lg transition ${
+                    isDark ? 'hover:bg-white/10 hover:text-white' : 'hover:bg-slate-200 hover:text-slate-900'
+                  }`}
                   title={isExpanded ? 'Restore Normal Size' : 'Expand Fullscreen'}
                 >
                   {isExpanded ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
@@ -399,7 +409,9 @@ export const StudyMateAIBot = () => {
               <button
                 type="button"
                 onClick={() => setIsMinimized(!isMinimized)}
-                className={`p-1.5 rounded-lg transition hover:text-white ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`}
+                className={`p-1.5 rounded-lg transition ${
+                  isDark ? 'hover:bg-white/10 hover:text-white' : 'hover:bg-slate-200 hover:text-slate-900'
+                }`}
                 title={isMinimized ? 'Expand' : 'Minimize'}
               >
                 <ChevronDown size={17} className={`transition-transform ${isMinimized ? 'rotate-180' : ''}`} />
@@ -414,7 +426,9 @@ export const StudyMateAIBot = () => {
                   setIsExpanded(false);
                   setSettingsOpen(false);
                 }}
-                className={`p-1.5 rounded-lg transition hover:text-rose-400 ${isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'}`}
+                className={`p-1.5 rounded-lg transition hover:text-rose-400 ${
+                  isDark ? 'hover:bg-white/10' : 'hover:bg-slate-200'
+                }`}
                 title="Close"
               >
                 <X size={17} />
@@ -613,12 +627,16 @@ export const StudyMateAIBot = () => {
 
                         {/* Message Action Bar (Thumbs Up / Down Feedback from Screenshot) */}
                         {isAi && (
-                          <div className="flex items-center gap-2 mt-1 px-1 text-slate-400">
+                          <div className={`flex items-center gap-2 mt-1 px-1 ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
                             <button
                               type="button"
                               onClick={() => handleFeedback(msg.id, 'like', msg.text)}
-                              className={`p-1 rounded hover:text-white transition cursor-pointer ${
-                                feedback === 'like' ? 'text-indigo-400' : ''
+                              className={`p-1 rounded transition cursor-pointer ${
+                                feedback === 'like'
+                                  ? 'text-indigo-400'
+                                  : isDark
+                                  ? 'hover:text-white'
+                                  : 'hover:text-slate-900'
                               }`}
                               title="Helpful response"
                             >
@@ -628,8 +646,12 @@ export const StudyMateAIBot = () => {
                             <button
                               type="button"
                               onClick={() => handleFeedback(msg.id, 'dislike', msg.text)}
-                              className={`p-1 rounded hover:text-white transition cursor-pointer ${
-                                feedback === 'dislike' ? 'text-rose-400' : ''
+                              className={`p-1 rounded transition cursor-pointer ${
+                                feedback === 'dislike'
+                                  ? 'text-rose-400'
+                                  : isDark
+                                  ? 'hover:text-white'
+                                  : 'hover:text-slate-900'
                               }`}
                               title="Not helpful"
                             >
@@ -639,13 +661,15 @@ export const StudyMateAIBot = () => {
                             <button
                               type="button"
                               onClick={() => handleCopy(msg.id, msg.text)}
-                              className="p-1 rounded hover:text-white transition cursor-pointer"
+                              className={`p-1 rounded transition cursor-pointer ${
+                                isDark ? 'hover:text-white' : 'hover:text-slate-900'
+                              }`}
                               title="Copy response"
                             >
                               {copiedId === msg.id ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
                             </button>
 
-                            <span className="text-[10px] text-slate-500 ml-1">{msg.timestamp}</span>
+                            <span className={`text-[10px] ml-1 ${isDark ? 'text-slate-500' : 'text-slate-400'}`}>{msg.timestamp}</span>
                           </div>
                         )}
                       </div>
@@ -723,7 +747,9 @@ export const StudyMateAIBot = () => {
                       onChange={(e) => setInputMessage(e.target.value)}
                       placeholder="Ask StudyMate AI anything..."
                       disabled={loading}
-                      className="w-full bg-transparent text-xs sm:text-sm outline-none placeholder-slate-400"
+                      className={`w-full bg-transparent text-xs sm:text-sm outline-none placeholder-slate-400 ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}
                     />
                   </div>
 
