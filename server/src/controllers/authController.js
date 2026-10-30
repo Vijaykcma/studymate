@@ -252,8 +252,8 @@ export const resendVerificationOtp = async (req, res, next) => {
       return res.status(502).json({
         success: false,
         message: emailResult?.error
-          ? `Email delivery failed (${emailResult.error}). Please verify your Gmail API credentials in your Render Environment.`
-          : 'Email delivery failed. Please ensure your Gmail API credentials are configured in the Render Dashboard.',
+          ? `Email delivery failed (${emailResult.error}). Please check EMAIL_USER & EMAIL_PASS (or Gmail API) in your Render Environment.`
+          : 'Email delivery failed. Please ensure your EMAIL_USER & EMAIL_PASS (or Gmail API) credentials are configured in the Render Dashboard.',
       });
     }
 
@@ -342,8 +342,8 @@ export const forgotPassword = async (req, res, next) => {
       return res.status(502).json({
         success: false,
         message: emailResult?.error
-          ? `Email delivery failed (${emailResult.error}). Please verify your Gmail API credentials in your Render Environment.`
-          : 'Email delivery failed. Please ensure your Gmail API credentials are configured in the Render Dashboard.',
+          ? `Email delivery failed (${emailResult.error}). Please check EMAIL_USER & EMAIL_PASS (or Gmail API) in your Render Environment.`
+          : 'Email delivery failed. Please ensure your EMAIL_USER & EMAIL_PASS (or Gmail API) credentials are configured in the Render Dashboard.',
       });
     }
 

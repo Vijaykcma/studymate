@@ -2,6 +2,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
+import nodemailer from 'nodemailer';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -187,6 +188,121 @@ export const sendViaGmailApi = async ({ to, name, subject, text, html }) => {
 };
 
 /**
+ * Sends an email via standard SMTP using Nodemailer (supports Gmail App Passwords, Custom SMTP, etc.)
+ */
+export const sendViaSmtp = async ({ to, name, subject, text, html }) => {
+  const user = cleanEnv(process.env.EMAIL_USER || process.env.SMTP_USER);
+  const pass = cleanEnv(process.env.EMAIL_PASS || process.env.SMTP_PASS).replace(/\s+/g, '');
+  const host = cleanEnv(process.env.EMAIL_HOST || process.env.SMTP_HOST);
+  const port = parseInt(process.env.EMAIL_PORT || process.env.SMTP_PORT || '587', 10);
+  const secure = process.env.EMAIL_SECURE === 'true' || port === 465;
+
+  if (!user || !pass) {
+    return {
+      success: false,
+      emailDelivered: false,
+      error: 'SMTP credentials (EMAIL_USER and EMAIL_PASS) are not configured.',
+    };
+  }
+
+  try {
+    const transporter = host
+      ? nodemailer.createTransport({ host, port, secure, auth: { user, pass } })
+      : nodemailer.createTransport({ service: 'gmail', auth: { user, pass } });
+
+    const senderName = cleanEnv(process.env.GMAIL_SENDER_NAME || process.env.EMAIL_FROM_NAME || 'StudyMate Platform');
+    const from = `"${senderName}" <${user}>`;
+
+    const info = await transporter.sendMail({
+      from,
+      to: name ? `"${name.replace(/"/g, '')}" <${to}>` : to,
+      subject,
+      text,
+      html,
+    });
+
+    console.log(`[SMTP Service] Email delivered to ${to}. Message ID: ${info.messageId}`);
+    return {
+      success: true,
+      emailDelivered: true,
+      messageId: info.messageId,
+      isLive: true,
+      serviceName: host ? `Custom SMTP (${host})` : 'Gmail SMTP (Nodemailer)',
+    };
+  } catch (error) {
+    console.error(`[SMTP Service Error] Failed dispatching to ${to}:`, error.message);
+    return {
+      success: false,
+      emailDelivered: false,
+      error: error.message,
+    };
+  }
+};
+
+/**
+ * Unified email dispatcher: tries Gmail API first if OAuth credentials exist,
+ * and automatically falls back to SMTP (Nodemailer) with configured EMAIL_USER and EMAIL_PASS.
+ */
+export const dispatchEmail = async ({ to, name, subject, text, html }) => {
+  // Automated Test Mock (Fast CI & avoids real quota usage during Jest tests)
+  if (process.env.NODE_ENV === 'test' && process.env.TEST_REAL_EMAIL !== 'true') {
+    return {
+      success: true,
+      emailDelivered: true,
+      messageId: `test-email-${Date.now()}`,
+      isLive: true,
+      serviceName: 'Mock Delivery (Test Mode)',
+    };
+  }
+
+  const errors = [];
+
+  // 1. Try Gmail API if OAuth2 client is available
+  const oauth2Client = getOAuth2Client();
+  if (oauth2Client) {
+    try {
+      const gmailResult = await sendViaGmailApi({ to, name, subject, text, html });
+      if (gmailResult.success) {
+        return gmailResult;
+      }
+      errors.push(`Gmail API: ${gmailResult.error}`);
+      console.warn(`[Email Dispatcher] Gmail API attempt failed (${gmailResult.error}). Attempting SMTP fallback...`);
+    } catch (err) {
+      errors.push(`Gmail API: ${err.message}`);
+      console.warn(`[Email Dispatcher] Gmail API exception (${err.message}). Attempting SMTP fallback...`);
+    }
+  }
+
+  // 2. Try SMTP via Nodemailer (e.g. Gmail App Password or custom SMTP)
+  const hasSmtp = Boolean(
+    cleanEnv(process.env.EMAIL_USER || process.env.SMTP_USER) &&
+    cleanEnv(process.env.EMAIL_PASS || process.env.SMTP_PASS)
+  );
+
+  if (hasSmtp) {
+    try {
+      const smtpResult = await sendViaSmtp({ to, name, subject, text, html });
+      if (smtpResult.success) {
+        return smtpResult;
+      }
+      errors.push(`SMTP: ${smtpResult.error}`);
+      console.warn(`[Email Dispatcher] SMTP attempt failed (${smtpResult.error}).`);
+    } catch (err) {
+      errors.push(`SMTP: ${err.message}`);
+      console.warn(`[Email Dispatcher] SMTP exception:`, err);
+    }
+  }
+
+  return {
+    success: false,
+    emailDelivered: false,
+    error: errors.length > 0
+      ? errors.join('; ')
+      : 'No email service configured. Please provide EMAIL_USER and EMAIL_PASS or Gmail API OAuth credentials.',
+  };
+};
+
+/**
  * Sends a 6-digit OTP verification email for account registration.
  */
 export const sendVerificationEmail = async ({ to, name, otp }) => {
@@ -247,7 +363,7 @@ export const sendVerificationEmail = async ({ to, name, otp }) => {
 
   const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate verification code is: ${otp}\n\nVerify online: ${verifyLink}\n\nThis 6-digit code expires in 15 minutes.\n\nBest regards,\nThe StudyMate Team`;
 
-  const result = await sendViaGmailApi({
+  const result = await dispatchEmail({
     to,
     name,
     subject,
@@ -319,7 +435,7 @@ export const sendPasswordResetEmail = async ({ to, name, otp }) => {
 
   const textContent = `Hi ${name || 'Student'},\n\nYour StudyMate password reset code is: ${otp}\n\nReset online: ${resetLink}\n\nThis 6-digit code expires in 15 minutes.\n\nIf you did not request this, you can safely ignore this email.\n\nBest regards,\nThe StudyMate Team`;
 
-  const result = await sendViaGmailApi({
+  const result = await dispatchEmail({
     to,
     name,
     subject,

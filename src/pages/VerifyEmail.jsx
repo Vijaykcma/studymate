@@ -13,16 +13,23 @@ import {
   KeyRound,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { authAPI } from '../services/api';
 
 function VerifyEmail() {
   const { user, verifyEmail } = useAuth();
+  const { isDark } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Retrieve email and potential dev OTP from state or current user
-  const initialEmail = location.state?.email || user?.email || '';
-  const initialDevOtp = location.state?.devOtp || '';
+  // Extract potential query parameters from email link (e.g. /verify-email?email=abc@xyz.com&code=123456)
+  const searchParams = new URLSearchParams(location.search);
+  const queryEmail = searchParams.get('email') || '';
+  const queryCode = searchParams.get('code') || searchParams.get('otp') || '';
+
+  // Retrieve email and potential dev OTP from URL query, state, or current user
+  const initialEmail = queryEmail || location.state?.email || user?.email || '';
+  const initialDevOtp = queryCode || location.state?.devOtp || '';
   const justRegistered = Boolean(location.state?.justRegistered);
 
   const [email, setEmail] = useState(initialEmail);
@@ -34,19 +41,60 @@ function VerifyEmail() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState(
-    initialDevOtp ? 'Verification code received! Click "Verify & Confirm" below.' : ''
+    initialDevOtp && initialDevOtp.length === 6
+      ? 'Verification code loaded! Verifying...'
+      : ''
   );
   const [cooldown, setCooldown] = useState(justRegistered ? 60 : 0);
   const [isVerified, setIsVerified] = useState(user?.isEmailVerified || false);
 
   const inputRefs = useRef([]);
+  const autoVerifiedRef = useRef(false);
 
-  // Auto-focus first digit on load
+  // Auto-focus first digit on load if empty
   useEffect(() => {
-    if (inputRefs.current[0]) {
+    if (!initialDevOtp && inputRefs.current[0]) {
       inputRefs.current[0].focus();
     }
-  }, []);
+  }, [initialDevOtp]);
+
+  // Instant Auto-Verification when coming directly from Email Link
+  useEffect(() => {
+    if (
+      queryEmail &&
+      queryCode &&
+      queryCode.length === 6 &&
+      !isVerified &&
+      !autoVerifiedRef.current
+    ) {
+      autoVerifiedRef.current = true;
+      const executeInstantVerification = async () => {
+        try {
+          setSubmitting(true);
+          setError('');
+          setSuccessMessage('Verifying your email link...');
+
+          const res = await verifyEmail({
+            email: queryEmail.trim(),
+            otp: queryCode.trim(),
+          });
+
+          if (res.success) {
+            setIsVerified(true);
+            setSuccessMessage('Email verified successfully! Welcome to StudyMate.');
+            setTimeout(() => {
+              navigate('/dashboard', { replace: true });
+            }, 1500);
+          }
+        } catch (err) {
+          setError(err.userMessage || 'Verification link expired or invalid. Please request a new code.');
+        } finally {
+          setSubmitting(false);
+        }
+      };
+      executeInstantVerification();
+    }
+  }, [queryEmail, queryCode]);
 
   // Cooldown countdown timer
   useEffect(() => {
@@ -164,20 +212,22 @@ function VerifyEmail() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white flex items-center justify-center px-6 py-12 selection:bg-indigo-500 selection:text-white">
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-white' : 'bg-slate-50 text-slate-900'} flex items-center justify-center px-6 py-12 selection:bg-indigo-500 selection:text-white transition-colors duration-200`}>
       <div className="w-full max-w-lg">
         <Link
           to="/login"
-          className="inline-flex items-center gap-2 text-sm text-slate-400 hover:text-white mb-8 transition"
+          className={`inline-flex items-center gap-2 text-sm mb-8 transition ${isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
         >
           <ArrowLeft size={16} />
           Back to login
         </Link>
 
-        <div className="rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 md:p-10 shadow-2xl relative overflow-hidden">
+        <div className={`rounded-3xl border p-8 md:p-10 shadow-2xl relative overflow-hidden transition-colors ${
+          isDark ? 'border-white/10 bg-slate-900/90 text-white shadow-indigo-950/40' : 'border-slate-200 bg-white text-slate-900 shadow-xl'
+        }`}>
           {/* Subtle Ambient Glow */}
-          <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none" />
 
           {/* Top Icon Badge */}
           <div className="flex justify-center">
@@ -194,13 +244,13 @@ function VerifyEmail() {
             <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight">
               {isVerified ? 'Account Verified!' : 'Verify Your Email Address'}
             </h1>
-            <p className="text-slate-400 mt-2 text-sm leading-relaxed max-w-sm mx-auto">
+            <p className={`mt-2 text-sm leading-relaxed max-w-sm mx-auto ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
               {isVerified ? (
                 'Your email has been authenticated. Redirecting to your dashboard...'
               ) : (
                 <>
                   We sent a 6-digit verification code to{' '}
-                  <span className="font-semibold text-slate-200">{email || 'your email'}</span>. Enter it below to verify your authorized status.
+                  <span className={`font-semibold ${isDark ? 'text-slate-200' : 'text-slate-900'}`}>{email || 'your email'}</span>. Enter it below to verify your authorized status.
                 </>
               )}
             </p>
@@ -208,14 +258,14 @@ function VerifyEmail() {
 
           {/* Alert Messages */}
           {error && (
-            <div className="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-sm flex items-start gap-3">
+            <div className="mt-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-500 text-sm flex items-start gap-3">
               <AlertCircle size={18} className="shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-300 text-sm flex items-start gap-3">
+            <div className="mt-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-600 dark:text-emerald-300 text-sm flex items-start gap-3">
               <CheckCircle2 size={18} className="shrink-0 mt-0.5" />
               <span>{successMessage}</span>
             </div>
@@ -223,12 +273,12 @@ function VerifyEmail() {
 
           {/* OTP Banner Helper */}
           {devOtp && !isVerified && (
-            <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-cyan-500/15 border border-indigo-500/40 text-indigo-200 text-xs flex items-center justify-between gap-3 shadow-lg shadow-indigo-500/10">
+            <div className="mt-5 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/15 via-purple-500/15 to-cyan-500/15 border border-indigo-500/40 text-indigo-300 text-xs flex items-center justify-between gap-3 shadow-lg shadow-indigo-500/10">
               <div className="flex items-center gap-2.5 truncate">
-                <KeyRound size={18} className="shrink-0 text-cyan-400" />
+                <KeyRound size={18} className="shrink-0 text-cyan-500" />
                 <div className="truncate">
-                  <p className="text-[11px] text-slate-400">Verification Passcode:</p>
-                  <p className="text-white tracking-widest font-mono text-base font-bold">{devOtp}</p>
+                  <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>Verification Passcode:</p>
+                  <p className={`tracking-widest font-mono text-base font-bold ${isDark ? 'text-white' : 'text-slate-900'}`}>{devOtp}</p>
                 </div>
               </div>
               <button
@@ -243,15 +293,15 @@ function VerifyEmail() {
 
           {!isVerified && (
             <form onSubmit={handleSubmit} className="mt-8 space-y-6">
-              {/* Optional Email change if needed */}
+              {/* Recipient Email */}
               <div>
-                <label className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-2">
+                <label className={`text-xs uppercase tracking-wider font-semibold block mb-2 ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Recipient Email
                 </label>
                 <div className="relative">
                   <Mail
                     size={18}
-                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
                   />
                   <input
                     type="email"
@@ -259,14 +309,16 @@ function VerifyEmail() {
                     onChange={(e) => setEmail(e.target.value)}
                     required
                     placeholder="student@example.com"
-                    className="w-full rounded-xl border border-white/10 bg-slate-900 px-11 py-3 text-sm outline-none focus:border-indigo-500 transition text-slate-200"
+                    className={`w-full rounded-xl border px-11 py-3 text-sm outline-none focus:border-indigo-500 transition ${
+                      isDark ? 'border-white/10 bg-slate-950 text-slate-100' : 'border-slate-300 bg-white text-slate-900'
+                    }`}
                   />
                 </div>
               </div>
 
               {/* 6 Digit OTP Inputs */}
               <div>
-                <label className="text-xs uppercase tracking-wider text-slate-400 font-semibold block mb-3 text-center">
+                <label className={`text-xs uppercase tracking-wider font-semibold block mb-3 text-center ${isDark ? 'text-slate-400' : 'text-slate-600'}`}>
                   Enter 6-Digit Verification Code
                 </label>
                 <div
@@ -285,8 +337,10 @@ function VerifyEmail() {
                       onKeyDown={(e) => handleKeyDown(idx, e)}
                       className={`w-12 h-14 sm:w-14 sm:h-16 rounded-2xl border text-center font-mono text-xl sm:text-2xl font-bold transition outline-none ${
                         digit
-                          ? 'border-indigo-500 bg-indigo-500/10 text-white shadow-lg shadow-indigo-500/10'
-                          : 'border-white/15 bg-slate-900 text-slate-200 focus:border-indigo-500'
+                          ? 'border-indigo-500 bg-indigo-500/10 text-indigo-600 dark:text-white shadow-lg shadow-indigo-500/10'
+                          : isDark
+                          ? 'border-white/15 bg-slate-950 text-slate-200 focus:border-indigo-500'
+                          : 'border-slate-300 bg-white text-slate-900 focus:border-indigo-500'
                       }`}
                     />
                   ))}
@@ -297,7 +351,7 @@ function VerifyEmail() {
               <button
                 type="submit"
                 disabled={submitting || digits.join('').length !== 6}
-                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 py-3.5 font-semibold transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
+                className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 py-3.5 font-semibold text-white transition shadow-lg shadow-indigo-600/25 flex items-center justify-center gap-2 text-sm disabled:opacity-50 cursor-pointer"
               >
                 {submitting ? (
                   <>
@@ -313,13 +367,15 @@ function VerifyEmail() {
               </button>
 
               {/* Resend Code Section */}
-              <div className="flex flex-col sm:flex-row items-center justify-between text-xs text-slate-400 pt-3 border-t border-white/10 gap-2">
+              <div className={`flex flex-col sm:flex-row items-center justify-between text-xs pt-3 border-t gap-2 ${
+                isDark ? 'border-white/10 text-slate-400' : 'border-slate-200 text-slate-600'
+              }`}>
                 <span>Didn't receive the email? Check spam or:</span>
                 <button
                   type="button"
                   onClick={handleResend}
                   disabled={cooldown > 0 || resending}
-                  className="inline-flex items-center gap-1.5 font-semibold text-indigo-400 hover:text-indigo-300 disabled:text-slate-500 transition cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 disabled:bg-transparent"
+                  className="inline-flex items-center gap-1.5 font-semibold text-indigo-500 hover:text-indigo-600 dark:text-indigo-400 dark:hover:text-indigo-300 disabled:text-slate-400 transition cursor-pointer px-3 py-1.5 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 disabled:bg-transparent"
                 >
                   {resending ? (
                     <Loader2 size={13} className="animate-spin" />
@@ -331,10 +387,12 @@ function VerifyEmail() {
               </div>
 
               {/* Skip for now & continue directly to dashboard */}
-              <div className="pt-2 text-center border-t border-white/5">
+              <div className={`pt-2 text-center border-t ${isDark ? 'border-white/5' : 'border-slate-200'}`}>
                 <Link
                   to="/dashboard"
-                  className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition py-2 px-3 rounded-xl hover:bg-white/5"
+                  className={`inline-flex items-center gap-1.5 text-xs transition py-2 px-3 rounded-xl ${
+                    isDark ? 'text-slate-400 hover:text-white hover:bg-white/5' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
                 >
                   <span>Skip for now & explore study groups (verify later)</span>
                   <ArrowRight size={14} />
@@ -345,7 +403,7 @@ function VerifyEmail() {
 
           {isVerified && (
             <div className="mt-8 text-center space-y-4">
-              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
+              <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-300 text-xs font-semibold">
                 <CheckCircle2 size={14} />
                 <span>Authorized Real Student Status Confirmed</span>
               </div>
@@ -363,8 +421,8 @@ function VerifyEmail() {
         </div>
 
         {/* Security Assurance */}
-        <div className="mt-6 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
-          <ShieldCheck size={14} className="text-emerald-400" />
+        <div className={`mt-6 text-center text-xs flex items-center justify-center gap-2 ${isDark ? 'text-slate-500' : 'text-slate-600'}`}>
+          <ShieldCheck size={14} className="text-emerald-500" />
           <span>Real-user authentication safeguards the academic integrity of study groups.</span>
         </div>
       </div>
