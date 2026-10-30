@@ -208,4 +208,10 @@ export const executorAPI = {
   share: (data) => apiClient.post('/executor/share', data).then((res) => res.data),
 };
 
+// StudyMate AI Assistant API
+export const aiAPI = {
+  chat: (data) => apiClient.post('/ai/chat', data).then((res) => res.data),
+  feedback: (data) => apiClient.post('/ai/feedback', data).then((res) => res.data),
+};
+
 export default apiClient;

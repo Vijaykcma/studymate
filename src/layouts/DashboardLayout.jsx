@@ -24,6 +24,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import notificationService from '../services/notificationService';
+import { StudyMateAIBot } from '../components/ai/StudyMateAIBot';
 
 export const DashboardLayout = ({ children, fullHeight = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -363,6 +364,9 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           )}
           {children}
         </main>
+
+        {/* Floating StudyMate AI Assistant Widget (100% Free) */}
+        <StudyMateAIBot />
       </div>
     </div>
   );

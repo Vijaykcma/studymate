@@ -21,6 +21,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import reportRoutes from './routes/reportRoutes.js';
 import executorRoutes from './routes/executorRoutes.js';
 import notificationRoutes from './routes/notificationRoutes.js';
+import aiRoutes from './routes/aiRoutes.js';
 import { PlatformSettings } from './models/PlatformSettings.js';
 import { errorHandler } from './middleware/errorMiddleware.js';
 
@@ -123,6 +124,7 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/stats', statsRoutes);
 app.use('/api/v1/executor', executorRoutes);
 app.use('/api/v1/notifications', notificationRoutes);
+app.use('/api/v1/ai', aiRoutes);
 
 // Also alias under /api for clean REST compatibility
 app.use('/api/auth', authLimiter, authRoutes);
@@ -133,6 +135,7 @@ app.use('/api/groups', messageRoutes);
 app.use('/api/messages', messageRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/ai', aiRoutes);
 
 // Serve static client build assets in production
 if (process.env.NODE_ENV === 'production') {
