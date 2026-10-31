@@ -339,23 +339,11 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
         <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 ${
           isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
         } backdrop-blur px-4 flex items-center justify-between`}>
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className={`p-2.5 rounded-xl min-w-[44px] min-h-[44px] flex items-center justify-center transition cursor-pointer ${
-              isDark
-                ? 'text-slate-300 hover:text-white hover:bg-white/10 active:bg-white/15'
-                : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100 active:bg-slate-200'
-            }`}
-            aria-label="Open Sidebar Navigation Menu"
-          >
-            <Menu size={22} />
-          </button>
-
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center">
-              <GraduationCap size={18} />
+          <Link to="/dashboard" className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-md">
+              <GraduationCap size={18} className="text-white" />
             </div>
-            <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>StudyMate</span>
+            <span className={`font-bold text-base tracking-tight ${isDark ? 'text-white' : 'text-slate-900'}`}>StudyMate</span>
           </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2">

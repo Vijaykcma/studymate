@@ -301,9 +301,9 @@ export const StudyMateAIBot = () => {
 
   return (
     <>
-      {/* FLOATING LAUNCHER ROBOT BUTTON (BOTTOM RIGHT) */}
+      {/* FLOATING LAUNCHER ROBOT BUTTON (DESKTOP ONLY - HIDDEN ON MOBILE WHERE AI MATE IS IN BOTTOM NAV) */}
       {!isOpen && (
-        <div className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-[9990] flex items-center gap-3">
+        <div className="hidden lg:flex fixed bottom-6 right-6 z-[9990] items-center gap-3">
           <div
             onClick={() => setIsOpen(true)}
             className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xl border cursor-pointer hover:scale-105 transition-all ${
@@ -319,35 +319,40 @@ export const StudyMateAIBot = () => {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-[2px] shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            className="group relative w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-[2px] shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
             title="Ask StudyMate AI (100% Free)"
           >
             <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-300 flex items-center justify-center text-white shadow-inner">
-                <Bot size={22} className="group-hover:rotate-12 transition-transform duration-300" />
+              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-300 flex items-center justify-center text-white shadow-inner">
+                <Bot size={24} className="group-hover:rotate-12 transition-transform duration-300" />
               </div>
-              <span className="absolute bottom-1 right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-400 border-2 border-slate-950 rounded-full" />
+              <span className="absolute bottom-1 right-1 w-3 h-3 bg-emerald-400 border-2 border-slate-950 rounded-full" />
             </div>
             <span className="absolute -inset-1 rounded-full bg-indigo-500/30 animate-ping -z-10" />
           </button>
         </div>
       )}
 
-      {/* CHAT WINDOW MODAL / POPUP */}
+      {/* CHAT WINDOW MODAL / POPUP (PERFECT RESPONSIVE MOBILE SHEET & DESKTOP POPUP) */}
       {isOpen && (
         <div
-          className={`fixed z-[9995] transition-all duration-300 ease-in-out flex flex-col shadow-2xl rounded-2xl sm:rounded-3xl border overflow-hidden ${
+          className={`fixed z-[9995] transition-all duration-300 ease-in-out flex flex-col shadow-2xl border overflow-hidden ${
             isExpanded
-              ? 'inset-2 sm:inset-6 md:inset-10'
+              ? 'inset-2 sm:inset-6 md:inset-10 rounded-2xl sm:rounded-3xl'
               : isMinimized
-              ? 'bottom-20 right-4 lg:bottom-6 lg:right-6 w-72 sm:w-80 h-14 sm:h-16 rounded-2xl'
-              : 'bottom-20 right-2 left-2 sm:left-auto sm:right-6 sm:bottom-6 w-auto sm:w-[420px] md:w-[450px] h-[calc(100dvh-6rem)] sm:h-[600px] max-h-[85vh]'
+              ? 'bottom-18 right-3 left-3 sm:left-auto sm:right-6 sm:bottom-6 sm:w-80 h-14 sm:h-16 rounded-2xl'
+              : 'inset-x-0 bottom-16 top-12 sm:top-auto sm:inset-x-auto sm:bottom-6 sm:right-6 sm:w-[430px] md:w-[460px] sm:h-[620px] rounded-t-3xl sm:rounded-3xl'
           } ${
             isDark
               ? 'bg-slate-950 border-white/10 text-white shadow-indigo-950/60'
               : 'bg-white border-slate-200 text-slate-900 shadow-2xl'
           }`}
         >
+          {/* Mobile Drawer Pull Indicator */}
+          <div className="pt-2 pb-0.5 flex justify-center sm:hidden shrink-0">
+            <div className="w-10 h-1 rounded-full bg-slate-400/30" />
+          </div>
+
           {/* HEADER */}
           <div
             className={`px-4 py-3 flex items-center justify-between border-b shrink-0 select-none ${
