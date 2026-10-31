@@ -87,7 +87,7 @@ function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8 w-full min-w-0">
         {/* Administrator Quick Switch Banner */}
         {user?.role === 'admin' && (
           <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-rose-950/70 via-indigo-950/50 to-slate-900 border border-rose-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl shadow-rose-950/25">
@@ -152,9 +152,8 @@ function Dashboard() {
             </Link>
             <Link
               to="/groups"
-              className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 text-center ${
-                isDark ? 'border-white/10 hover:bg-white/5 text-white' : 'border-slate-300 hover:bg-slate-100 text-slate-800'
-              }`}
+              className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-xl border text-xs sm:text-sm font-semibold transition flex items-center justify-center gap-1.5 sm:gap-2 text-center ${isDark ? 'border-white/10 hover:bg-white/5 text-white' : 'border-slate-300 hover:bg-slate-100 text-slate-800'
+                }`}
             >
               <Search size={15} />
               Explore Groups
