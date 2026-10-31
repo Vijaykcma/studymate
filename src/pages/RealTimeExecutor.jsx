@@ -30,6 +30,10 @@ import {
   Flame,
   Sun,
   Moon,
+  Shuffle,
+  ArrowRight,
+  Trophy,
+  RefreshCw,
 } from 'lucide-react';
 import { DashboardLayout } from '../layouts/DashboardLayout';
 import { executorAPI, groupsAPI } from '../services/api';
@@ -885,6 +889,470 @@ LIMIT 1 OFFSET 1;
 FROM students 
 WHERE cgpa < (SELECT MAX(cgpa) FROM students);`,
   },
+  {
+    id: 'reverse-string',
+    title: 'Reverse String',
+    difficulty: 'Easy',
+    category: 'Strings',
+    description: `Write a function that reverses a string \`s\` and returns the reversed result.`,
+    examples: [
+      { input: 's = "hello"', output: '"olleh"', explanation: 'Reversed characters of hello.' },
+      { input: 's = "Hannah"', output: '"hannaH"', explanation: 'Reversed case sensitive.' },
+    ],
+    constraints: ['1 <= s.length <= 10^5', 's consists of printable ASCII characters.'],
+    starterCode: {
+      javascript: `function reverseString(s) {
+  return s.split('').reverse().join('');
+}
+
+console.log(reverseString("hello"));
+`,
+      python: `def reverse_string(s):
+    return s[::-1]
+
+print(reverse_string("hello"))
+`,
+      cpp: `#include <iostream>
+#include <string>
+#include <algorithm>
+using namespace std;
+
+string reverseString(string s) {
+    reverse(s.begin(), s.end());
+    return s;
+}
+
+int main() {
+    cout << reverseString("hello") << endl;
+    return 0;
+}
+`,
+    },
+    testCases: [
+      { id: 1, input: '"hello"', expected: 'olleh' },
+      { id: 2, input: '"Hannah"', expected: 'hannaH' },
+      { id: 3, input: '"MCA"', expected: 'ACM' },
+    ],
+    hints: [
+      'In JavaScript use .split("").reverse().join("").',
+      'In Python use slice indexing [::-1].',
+      'In C++ use std::reverse(s.begin(), s.end()).',
+    ],
+    referenceSolution: `function reverseString(s) {
+  let res = '';
+  for (let i = s.length - 1; i >= 0; i--) {
+    res += s[i];
+  }
+  return res;
+}`,
+  },
+  {
+    id: 'contains-duplicate',
+    title: 'Contains Duplicate',
+    difficulty: 'Easy',
+    category: 'Arrays & Hashing',
+    description: `Given an integer array \`nums\`, return \`true\` if any value appears at least twice in the array, and return \`false\` if every element is distinct.`,
+    examples: [
+      { input: 'nums = [1, 2, 3, 1]', output: 'true', explanation: '1 appears twice.' },
+      { input: 'nums = [1, 2, 3, 4]', output: 'false', explanation: 'All elements are distinct.' },
+    ],
+    constraints: ['1 <= nums.length <= 10^5', '-10^9 <= nums[i] <= 10^9'],
+    starterCode: {
+      javascript: `function containsDuplicate(nums) {
+  const set = new Set();
+  for (const n of nums) {
+    if (set.has(n)) return true;
+    set.add(n);
+  }
+  return false;
+}
+
+console.log(containsDuplicate([1, 2, 3, 1]));
+`,
+      python: `def contains_duplicate(nums):
+    return len(nums) != len(set(nums))
+
+print(contains_duplicate([1, 2, 3, 1]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '[1, 2, 3, 1]', expected: 'true' },
+      { id: 2, input: '[1, 2, 3, 4]', expected: 'false' },
+      { id: 3, input: '[1, 1, 1, 3, 3, 4, 3, 2, 4, 2]', expected: 'true' },
+    ],
+    hints: [
+      'Use a Hash Set to track seen numbers in O(1) time.',
+      'Target Time: O(n), Target Space: O(n).',
+    ],
+    referenceSolution: `function containsDuplicate(nums) {
+  return new Set(nums).size !== nums.length;
+}`,
+  },
+  {
+    id: 'best-time-to-buy-and-sell-stock',
+    title: 'Best Time to Buy and Sell Stock',
+    difficulty: 'Easy',
+    category: 'Arrays & Greedy',
+    description: `You are given an array \`prices\` where \`prices[i]\` is the price of a given stock on the \`i-th\` day. You want to maximize your profit by choosing a single day to buy one stock and choosing a different day in the future to sell that stock. Return the maximum profit you can achieve. If no profit can be achieved, return \`0\`.`,
+    examples: [
+      { input: 'prices = [7, 1, 5, 3, 6, 4]', output: '5', explanation: 'Buy on day 2 (price = 1) and sell on day 5 (price = 6), profit = 6 - 1 = 5.' },
+      { input: 'prices = [7, 6, 4, 3, 1]', output: '0', explanation: 'No transactions done, max profit = 0.' },
+    ],
+    constraints: ['1 <= prices.length <= 10^5', '0 <= prices[i] <= 10^4'],
+    starterCode: {
+      javascript: `function maxProfit(prices) {
+  let minPrice = Infinity;
+  let maxProfit = 0;
+  for (const p of prices) {
+    minPrice = Math.min(minPrice, p);
+    maxProfit = Math.max(maxProfit, p - minPrice);
+  }
+  return maxProfit;
+}
+
+console.log(maxProfit([7, 1, 5, 3, 6, 4]));
+`,
+      python: `def max_profit(prices):
+    min_price, max_profit = float('inf'), 0
+    for p in prices:
+        min_price = min(min_price, p)
+        max_profit = max(max_profit, p - min_price)
+    return max_profit
+
+print(max_profit([7, 1, 5, 3, 6, 4]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '[7, 1, 5, 3, 6, 4]', expected: '5' },
+      { id: 2, input: '[7, 6, 4, 3, 1]', expected: '0' },
+      { id: 3, input: '[2, 4, 1]', expected: '2' },
+    ],
+    hints: [
+      'Track the minimum price seen so far while iterating.',
+      'Compute the difference between current price and minimum price to check if it beats current max profit.',
+    ],
+    referenceSolution: `function maxProfit(prices) {
+  let minVal = Infinity, best = 0;
+  for (let p of prices) {
+    if (p < minVal) minVal = p;
+    else if (p - minVal > best) best = p - minVal;
+  }
+  return best;
+}`,
+  },
+  {
+    id: 'climbing-stairs',
+    title: 'Climbing Stairs',
+    difficulty: 'Easy',
+    category: 'Dynamic Programming',
+    description: `You are climbing a staircase. It takes \`n\` steps to reach the top. Each time you can either climb \`1\` or \`2\` steps. In how many distinct ways can you climb to the top?`,
+    examples: [
+      { input: 'n = 2', output: '2', explanation: '1 step + 1 step, or 2 steps.' },
+      { input: 'n = 3', output: '3', explanation: '1+1+1, 1+2, or 2+1.' },
+    ],
+    constraints: ['1 <= n <= 45'],
+    starterCode: {
+      javascript: `function climbStairs(n) {
+  if (n <= 2) return n;
+  let prev = 1, curr = 2;
+  for (let i = 3; i <= n; i++) {
+    const next = prev + curr;
+    prev = curr;
+    curr = next;
+  }
+  return curr;
+}
+
+console.log(climbStairs(3));
+`,
+      python: `def climb_stairs(n):
+    if n <= 2:
+        return n
+    a, b = 1, 2
+    for _ in range(3, n + 1):
+        a, b = b, a + b
+    return b
+
+print(climb_stairs(3))
+`,
+    },
+    testCases: [
+      { id: 1, input: '2', expected: '2' },
+      { id: 2, input: '3', expected: '3' },
+      { id: 3, input: '5', expected: '8' },
+    ],
+    hints: [
+      'Notice that ways(n) = ways(n - 1) + ways(n - 2).',
+      'This follows the Fibonacci sequence. Solve iteratively with O(1) space.',
+    ],
+    referenceSolution: `function climbStairs(n) {
+  if (n <= 2) return n;
+  let a = 1, b = 2;
+  for (let i = 3; i <= n; i++) {
+    let temp = a + b;
+    a = b;
+    b = temp;
+  }
+  return b;
+}`,
+  },
+  {
+    id: 'fizz-buzz',
+    title: 'Fizz Buzz',
+    difficulty: 'Easy',
+    category: 'Math & Strings',
+    description: `Given an integer \`n\`, return a string representation for numbers 1 to n:
+- "FizzBuzz" if divisible by 3 and 5.
+- "Fizz" if divisible by 3.
+- "Buzz" if divisible by 5.
+- The number itself as a string otherwise.`,
+    examples: [
+      { input: 'n = 5', output: '["1","2","Fizz","4","Buzz"]', explanation: 'Multiples formatted correctly.' },
+    ],
+    constraints: ['1 <= n <= 10^4'],
+    starterCode: {
+      javascript: `function fizzBuzz(n) {
+  const res = [];
+  for (let i = 1; i <= n; i++) {
+    if (i % 15 === 0) res.push("FizzBuzz");
+    else if (i % 3 === 0) res.push("Fizz");
+    else if (i % 5 === 0) res.push("Buzz");
+    else res.push(String(i));
+  }
+  return res;
+}
+
+console.log(JSON.stringify(fizzBuzz(5)));
+`,
+      python: `def fizz_buzz(n):
+    res = []
+    for i in range(1, n + 1):
+        if i % 15 == 0:
+            res.append("FizzBuzz")
+        elif i % 3 == 0:
+            res.append("Fizz")
+        elif i % 5 == 0:
+            res.append("Buzz")
+        else:
+            res.append(str(i))
+    return res
+
+print(fizz_buzz(5))
+`,
+    },
+    testCases: [
+      { id: 1, input: '3', expected: 'Fizz' },
+      { id: 2, input: '5', expected: 'Buzz' },
+      { id: 3, input: '15', expected: 'FizzBuzz' },
+    ],
+    hints: [
+      'Check i % 15 === 0 first before 3 or 5 individually.',
+      'Target Time: O(n).',
+    ],
+    referenceSolution: `function fizzBuzz(n) {
+  return Array.from({ length: n }, (_, idx) => {
+    const i = idx + 1;
+    return (i % 15 === 0 ? 'FizzBuzz' : i % 3 === 0 ? 'Fizz' : i % 5 === 0 ? 'Buzz' : String(i));
+  });
+}`,
+  },
+  {
+    id: 'single-number',
+    title: 'Single Number',
+    difficulty: 'Easy',
+    category: 'Bit Manipulation',
+    description: `Given a non-empty array of integers \`nums\`, every element appears twice except for one. Find that single one. You must implement a solution with linear runtime complexity \`O(n)\` and use only \`O(1)\` extra space.`,
+    examples: [
+      { input: 'nums = [2, 2, 1]', output: '1', explanation: '1 appears once.' },
+      { input: 'nums = [4, 1, 2, 1, 2]', output: '4', explanation: '4 appears once.' },
+    ],
+    constraints: ['1 <= nums.length <= 3 * 10^4', '-3 * 10^4 <= nums[i] <= 3 * 10^4'],
+    starterCode: {
+      javascript: `function singleNumber(nums) {
+  return nums.reduce((acc, curr) => acc ^ curr, 0);
+}
+
+console.log(singleNumber([4, 1, 2, 1, 2]));
+`,
+      python: `def single_number(nums):
+    res = 0
+    for n in nums:
+        res ^= n
+    return res
+
+print(single_number([4, 1, 2, 1, 2]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '[2, 2, 1]', expected: '1' },
+      { id: 2, input: '[4, 1, 2, 1, 2]', expected: '4' },
+      { id: 3, input: '[1]', expected: '1' },
+    ],
+    hints: [
+      'Bitwise XOR (^) has two magical properties: a ^ a = 0 and a ^ 0 = a.',
+      'XORing all numbers together cancels all pairs and leaves the unique single number.',
+    ],
+    referenceSolution: `function singleNumber(nums) {
+  let ans = 0;
+  for (let x of nums) ans ^= x;
+  return ans;
+}`,
+  },
+  {
+    id: 'longest-common-prefix',
+    title: 'Longest Common Prefix',
+    difficulty: 'Easy',
+    category: 'Strings',
+    description: `Write a function to find the longest common prefix string amongst an array of strings. If there is no common prefix, return an empty string \`""\`.`,
+    examples: [
+      { input: 'strs = ["flower","flow","flight"]', output: '"fl"', explanation: '"fl" is the longest common prefix.' },
+      { input: 'strs = ["dog","racecar","car"]', output: '""', explanation: 'No common prefix.' },
+    ],
+    constraints: ['1 <= strs.length <= 200', '0 <= strs[i].length <= 200'],
+    starterCode: {
+      javascript: `function longestCommonPrefix(strs) {
+  if (!strs.length) return "";
+  let prefix = strs[0];
+  for (let i = 1; i < strs.length; i++) {
+    while (strs[i].indexOf(prefix) !== 0) {
+      prefix = prefix.substring(0, prefix.length - 1);
+      if (!prefix) return "";
+    }
+  }
+  return prefix;
+}
+
+console.log(longestCommonPrefix(["flower","flow","flight"]));
+`,
+      python: `def longest_common_prefix(strs):
+    if not strs:
+        return ""
+    prefix = strs[0]
+    for s in strs[1:]:
+        while not s.startswith(prefix):
+            prefix = prefix[:-1]
+            if not prefix:
+                return ""
+    return prefix
+
+print(longest_common_prefix(["flower","flow","flight"]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '["flower","flow","flight"]', expected: 'fl' },
+      { id: 2, input: '["dog","racecar","car"]', expected: '' },
+      { id: 3, input: '["interspecies","interstellar","interstate"]', expected: 'inters' },
+    ],
+    hints: [
+      'Start with the first word as prefix and shrink it character by character until all words match.',
+      'Target Time: O(S) where S is the sum of characters across all strings.',
+    ],
+    referenceSolution: `function longestCommonPrefix(strs) {
+  if (!strs.length) return '';
+  let pref = strs[0];
+  for (let i = 1; i < strs.length; i++) {
+    while (!strs[i].startsWith(pref)) {
+      pref = pref.slice(0, -1);
+      if (!pref) return '';
+    }
+  }
+  return pref;
+}`,
+  },
+  {
+    id: 'factorial-number',
+    title: 'Factorial & Recursion',
+    difficulty: 'Easy',
+    category: 'Recursion & Math',
+    description: `Write a function to calculate the factorial of a given non-negative integer \`n\`. Factorial of \`n\` (\`n!\`) is the product of all positive integers less than or equal to \`n\`. Note: 0! = 1.`,
+    examples: [
+      { input: 'n = 5', output: '120', explanation: '5 * 4 * 3 * 2 * 1 = 120.' },
+      { input: 'n = 0', output: '1', explanation: '0! is defined as 1.' },
+    ],
+    constraints: ['0 <= n <= 12'],
+    starterCode: {
+      javascript: `function factorial(n) {
+  if (n <= 1) return 1;
+  return n * factorial(n - 1);
+}
+
+console.log(factorial(5));
+`,
+      python: `def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+
+print(factorial(5))
+`,
+    },
+    testCases: [
+      { id: 1, input: '5', expected: '120' },
+      { id: 2, input: '0', expected: '1' },
+      { id: 3, input: '6', expected: '720' },
+    ],
+    hints: [
+      'Base case: if n <= 1 return 1.',
+      'Recursive step: return n * factorial(n - 1).',
+    ],
+    referenceSolution: `function factorial(n) {
+  let ans = 1;
+  for (let i = 2; i <= n; i++) ans *= i;
+  return ans;
+}`,
+  },
+  {
+    id: 'merge-two-sorted-arrays',
+    title: 'Merge Two Sorted Arrays',
+    difficulty: 'Easy',
+    category: 'Arrays & Two Pointers',
+    description: `Given two sorted integer arrays \`arr1\` and \`arr2\`, merge them into a single sorted array and return it.`,
+    examples: [
+      { input: 'arr1 = [1, 3, 5], arr2 = [2, 4, 6]', output: '[1, 2, 3, 4, 5, 6]', explanation: 'Merged sorted elements.' },
+      { input: 'arr1 = [1, 2], arr2 = [3, 4]', output: '[1, 2, 3, 4]', explanation: 'Combined in ascending order.' },
+    ],
+    constraints: ['0 <= arr1.length, arr2.length <= 10^4'],
+    starterCode: {
+      javascript: `function mergeSorted(arr1, arr2) {
+  const res = [];
+  let i = 0, j = 0;
+  while (i < arr1.length && j < arr2.length) {
+    if (arr1[i] < arr2[j]) res.push(arr1[i++]);
+    else res.push(arr2[j++]);
+  }
+  return res.concat(arr1.slice(i)).concat(arr2.slice(j));
+}
+
+console.log(JSON.stringify(mergeSorted([1, 3, 5], [2, 4, 6])));
+`,
+      python: `def merge_sorted(arr1, arr2):
+    res = []
+    i, j = 0, 0
+    while i < len(arr1) and j < len(arr2):
+        if arr1[i] < arr2[j]:
+            res.append(arr1[i])
+            i += 1
+        else:
+            res.append(arr2[j])
+            j += 1
+    return res + arr1[i:] + arr2[j:]
+
+print(merge_sorted([1, 3, 5], [2, 4, 6]))
+`,
+    },
+    testCases: [
+      { id: 1, input: '[1, 3, 5], [2, 4, 6]', expected: '1, 2, 3, 4, 5, 6' },
+      { id: 2, input: '[1, 2], [3, 4]', expected: '1, 2, 3, 4' },
+    ],
+    hints: [
+      'Maintain two indices i and j starting at 0.',
+      'Compare elements at both pointers, append the smaller one, and increment.',
+      'Target Time: O(n + m).',
+    ],
+    referenceSolution: `function mergeSorted(arr1, arr2) {
+  return [...arr1, ...arr2].sort((a, b) => a - b);
+}`,
+  },
 ];
 
 function RealTimeExecutor() {
@@ -916,6 +1384,40 @@ function RealTimeExecutor() {
   const [solvedProblems, setSolvedProblems] = useState(new Set());
   const [showReference, setShowReference] = useState(false);
   const [submissionStatus, setSubmissionStatus] = useState(null);
+  const [countdown, setCountdown] = useState(null);
+  const autoAdvanceTimerRef = useRef(null);
+
+  // Load saved solved problems on mount and pick first unsolved challenge
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('studymate_solved_dsa_problems');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const solvedSet = new Set(parsed);
+          setSolvedProblems(solvedSet);
+          // Auto-select first unsolved problem so user doesn't always start on Two Sum
+          const firstUnsolved = PROBLEM_CATALOG.find((p) => !solvedSet.has(p.id));
+          if (firstUnsolved) {
+            setSelectedProblem(firstUnsolved);
+            if (appMode === 'problem-solving') {
+              const starter = firstUnsolved.starterCode?.[selectedLang] || firstUnsolved.starterCode?.javascript || '';
+              if (starter) setCode(starter);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('Could not load solved DSA progress', e);
+    }
+  }, []);
+
+  // Cleanup auto-advance timer on unmount
+  useEffect(() => {
+    return () => {
+      if (autoAdvanceTimerRef.current) clearInterval(autoAdvanceTimerRef.current);
+    };
+  }, []);
 
   // Sharing Modal
   const [shareModalOpen, setShareModalOpen] = useState(false);
@@ -994,6 +1496,11 @@ function RealTimeExecutor() {
 
   // Switch to problem
   const handleSelectProblem = (problem) => {
+    if (autoAdvanceTimerRef.current) {
+      clearInterval(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    setCountdown(null);
     setSelectedProblem(problem);
     setShowReference(false);
     setSubmissionStatus(null);
@@ -1003,6 +1510,47 @@ function RealTimeExecutor() {
     setOutput('');
     setExecutionTime(null);
     setStatus('ready');
+  };
+
+  // Advance to next unsolved or different DSA problem
+  const handleNextProblem = (currentProb = selectedProblem) => {
+    if (autoAdvanceTimerRef.current) {
+      clearInterval(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    setCountdown(null);
+
+    // Look for unsolved problems first
+    const unsolved = PROBLEM_CATALOG.filter((p) => !solvedProblems.has(p.id) && p.id !== currentProb?.id);
+    let nextProb = null;
+
+    if (unsolved.length > 0) {
+      nextProb = unsolved[0];
+    } else {
+      // If all are solved or only current remains, rotate to next sequential problem
+      const currentIdx = PROBLEM_CATALOG.findIndex((p) => p.id === currentProb?.id);
+      const nextIdx = (currentIdx + 1) % PROBLEM_CATALOG.length;
+      nextProb = PROBLEM_CATALOG[nextIdx];
+    }
+
+    if (nextProb) {
+      handleSelectProblem(nextProb);
+      return nextProb;
+    }
+  };
+
+  // Reset DSA progress
+  const handleResetDSAProgress = () => {
+    if (autoAdvanceTimerRef.current) {
+      clearInterval(autoAdvanceTimerRef.current);
+      autoAdvanceTimerRef.current = null;
+    }
+    setCountdown(null);
+    setSolvedProblems(new Set());
+    try {
+      localStorage.removeItem('studymate_solved_dsa_problems');
+    } catch {}
+    handleSelectProblem(PROBLEM_CATALOG[0]);
   };
 
   // Run Code logic
@@ -1073,8 +1621,37 @@ function RealTimeExecutor() {
       setTestResults(results);
       if (allPassed) {
         setSubmissionStatus('all_passed');
-        setSolvedProblems((prev) => new Set([...prev, selectedProblem.id]));
-        setOutput(`🎉 Accepted!\nAll ${selectedProblem.testCases.length}/${selectedProblem.testCases.length} Test Cases Passed.`);
+        const updatedSolved = new Set([...solvedProblems, selectedProblem.id]);
+        setSolvedProblems(updatedSolved);
+        try {
+          localStorage.setItem('studymate_solved_dsa_problems', JSON.stringify([...updatedSolved]));
+        } catch {}
+
+        // Find next unsolved challenge
+        const remainingUnsolved = PROBLEM_CATALOG.filter((p) => !updatedSolved.has(p.id));
+        const nextProb = remainingUnsolved.length > 0 ? remainingUnsolved[0] : null;
+
+        if (nextProb) {
+          setOutput(`🎉 Accepted!\nAll ${selectedProblem.testCases.length}/${selectedProblem.testCases.length} Test Cases Passed.\n\n✨ Problem Solved! Loading next challenge: "${nextProb.title}" in 3 seconds...`);
+          setCountdown(3);
+
+          if (autoAdvanceTimerRef.current) clearInterval(autoAdvanceTimerRef.current);
+
+          let remaining = 3;
+          const timer = setInterval(() => {
+            remaining -= 1;
+            setCountdown(remaining);
+            if (remaining <= 0) {
+              clearInterval(timer);
+              autoAdvanceTimerRef.current = null;
+              setCountdown(null);
+              handleSelectProblem(nextProb);
+            }
+          }, 1000);
+          autoAdvanceTimerRef.current = timer;
+        } else {
+          setOutput(`🎉 Accepted!\nAll ${selectedProblem.testCases.length}/${selectedProblem.testCases.length} Test Cases Passed.\n\n🏆 Incredible! You have solved all ${PROBLEM_CATALOG.length} DSA challenges in the lab!`);
+        }
         setStatus('success');
       } else {
         setSubmissionStatus('failed');
@@ -1366,7 +1943,7 @@ function RealTimeExecutor() {
 
             {/* Problem selector if in problem-solving mode */}
             {appMode === 'problem-solving' && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'} font-medium`}>Challenge:</span>
                 <select
                   value={selectedProblem.id}
@@ -1378,7 +1955,7 @@ function RealTimeExecutor() {
                     isDark
                       ? 'border-emerald-500/40 bg-slate-950 text-emerald-300'
                       : 'border-emerald-400 bg-white text-emerald-700 font-bold shadow-sm'
-                  } px-3.5 py-2 text-xs font-semibold outline-none focus:border-emerald-400 transition cursor-pointer`}
+                  } px-3 py-2 text-xs font-semibold outline-none focus:border-emerald-400 transition cursor-pointer max-w-[210px] sm:max-w-none`}
                 >
                   {PROBLEM_CATALOG.map((p) => (
                     <option key={p.id} value={p.id} className={isDark ? 'bg-slate-950 text-white' : 'bg-white text-slate-900'}>
@@ -1386,6 +1963,50 @@ function RealTimeExecutor() {
                     </option>
                   ))}
                 </select>
+
+                {/* Progress Pill */}
+                <div
+                  className={`px-2.5 py-1.5 rounded-xl text-[11px] font-bold border flex items-center gap-1.5 ${
+                    isDark
+                      ? 'bg-emerald-950/40 border-emerald-500/30 text-emerald-300'
+                      : 'bg-emerald-50 border-emerald-200 text-emerald-700'
+                  }`}
+                  title={`${solvedProblems.size} of ${PROBLEM_CATALOG.length} DSA problems solved`}
+                >
+                  <Trophy size={13} className="text-amber-400" />
+                  <span>{solvedProblems.size}/{PROBLEM_CATALOG.length} Solved</span>
+                </div>
+
+                {/* Next / Shuffle Challenge Button */}
+                <button
+                  type="button"
+                  onClick={() => handleNextProblem()}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer border ${
+                    isDark
+                      ? 'bg-slate-900 hover:bg-slate-800 text-slate-200 border-white/10'
+                      : 'bg-white hover:bg-slate-50 text-slate-700 border-slate-200 shadow-sm'
+                  }`}
+                  title="Switch to next unsolved DSA problem"
+                >
+                  <Shuffle size={13} className="text-indigo-400" />
+                  <span className="hidden sm:inline">Next Problem</span>
+                </button>
+
+                {/* Reset Progress if all or some solved */}
+                {solvedProblems.size > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleResetDSAProgress}
+                    className={`p-1.5 rounded-xl text-xs transition cursor-pointer border ${
+                      isDark
+                        ? 'bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white border-white/5'
+                        : 'bg-white hover:bg-slate-100 text-slate-400 hover:text-slate-700 border-slate-200'
+                    }`}
+                    title="Reset DSA Solved Progress"
+                  >
+                    <RotateCcw size={13} />
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -1460,6 +2081,39 @@ function RealTimeExecutor() {
               <div className={`p-5 rounded-2xl border ${
                 isDark ? 'border-white/10 bg-slate-900/70' : 'border-slate-200 bg-white shadow-sm'
               } backdrop-blur shadow-xl space-y-4 transition-colors`}>
+                {/* Solved Celebration & Auto-Change Banner */}
+                {submissionStatus === 'all_passed' && (
+                  <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/20 via-teal-500/15 to-emerald-500/10 border border-emerald-500/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 animate-fadeIn">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-400 text-slate-950 flex items-center justify-center font-bold shrink-0 shadow-md">
+                        <Trophy size={18} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-xs font-bold text-emerald-400">Challenge Solved Successfully!</p>
+                          <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500 text-slate-950 uppercase">
+                            ✓ Passed
+                          </span>
+                        </div>
+                        <p className={`text-[11px] ${isDark ? 'text-emerald-200/80' : 'text-emerald-800'}`}>
+                          {countdown !== null && countdown > 0
+                            ? `Loading next unsolved challenge in ${countdown}s...`
+                            : 'Problem completed! Click to jump to the next challenge.'}
+                        </p>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => handleNextProblem()}
+                      className="px-4 py-2 rounded-xl font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 shrink-0 cursor-pointer active:scale-95"
+                    >
+                      <span>Next Challenge</span>
+                      <ArrowRight size={14} />
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <h2 className={`text-lg font-bold flex items-center gap-2 ${isDark ? 'text-white' : 'text-slate-900'}`}>
@@ -1770,14 +2424,26 @@ function RealTimeExecutor() {
                   {submissionStatus === 'all_passed' && (
                     <div className={`p-3.5 rounded-xl ${
                       isDark ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300' : 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    } border flex items-center gap-3 shadow-sm`}>
-                      <CheckCircle size={20} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
-                      <div>
-                        <div className="font-bold text-sm">All Test Cases Passed! Accepted 🎉</div>
-                        <p className={`text-[11px] ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'} mt-0.5`}>
-                          Optimal solution verified. You have earned practical mastery on this MCA problem.
-                        </p>
+                    } border flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-sm`}>
+                      <div className="flex items-center gap-3">
+                        <CheckCircle size={20} className={isDark ? "text-emerald-400" : "text-emerald-600"} />
+                        <div>
+                          <div className="font-bold text-sm">All Test Cases Passed! Accepted 🎉</div>
+                          <p className={`text-[11px] ${isDark ? 'text-emerald-400/80' : 'text-emerald-700'} mt-0.5`}>
+                            {countdown !== null && countdown > 0
+                              ? `Switching to next challenge in ${countdown}s...`
+                              : 'Optimal solution verified. You have earned practical mastery on this problem.'}
+                          </p>
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        onClick={() => handleNextProblem()}
+                        className="px-3.5 py-1.5 rounded-lg font-bold text-xs bg-emerald-500 hover:bg-emerald-400 text-slate-950 transition flex items-center justify-center gap-1.5 shrink-0 cursor-pointer shadow-md"
+                      >
+                        <span>Next Challenge</span>
+                        <ArrowRight size={13} />
+                      </button>
                     </div>
                   )}
 
