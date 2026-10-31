@@ -20,11 +20,15 @@ import {
   Bell,
   Sun,
   Moon,
+  Smartphone,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { usePWAInstall } from '../context/PWAInstallContext';
 import notificationService from '../services/notificationService';
 import { StudyMateAIBot } from '../components/ai/StudyMateAIBot';
+import { MobileInstallBanner } from '../components/common/MobileInstallBanner';
 
 export const DashboardLayout = ({ children, fullHeight = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -33,6 +37,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const { theme, toggleTheme, isDark } = useTheme();
+  const { openInstallModal, isInstalled } = usePWAInstall();
 
   const isFullHeight = fullHeight || location.pathname === '/messages';
 
@@ -94,6 +99,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
     { label: 'Messages', path: '/messages', icon: MessageCircle },
     { label: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { label: 'Real-Time Executor', path: '/executor', icon: Terminal },
+    { label: 'Download App', path: '/download', icon: Smartphone },
   ];
 
   const accountItems = [
@@ -237,6 +243,37 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           </div>
 
           <div>
+            {/* Quick Mobile App Install Card in Sidebar */}
+            <div className="px-4 pb-2">
+              <button
+                onClick={() => openInstallModal()}
+                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition group cursor-pointer ${
+                  isDark
+                    ? 'bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border-indigo-500/30 hover:border-indigo-400/60 text-white shadow-lg shadow-indigo-950/50'
+                    : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 hover:border-indigo-300 text-indigo-950 shadow-sm'
+                }`}
+                title="Get StudyMate Mobile App"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md shrink-0">
+                    <Smartphone size={16} />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-bold leading-tight truncate">Mobile App</span>
+                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500 text-white uppercase shrink-0">
+                        Free
+                      </span>
+                    </div>
+                    <p className={`text-[10px] truncate ${isDark ? 'text-indigo-300/80' : 'text-indigo-600'}`}>
+                      {isInstalled ? 'Installed • Open App' : 'Download / Install'}
+                    </p>
+                  </div>
+                </div>
+                <Download size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition shrink-0 ml-1" />
+              </button>
+            </div>
+
             {/* Theme switch toggle in sidebar */}
           <div className={`px-4 py-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
             <button
@@ -319,7 +356,19 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
             <span className={`font-bold text-sm ${isDark ? 'text-white' : 'text-slate-900'}`}>StudyMate</span>
           </Link>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Quick App Install Button on Mobile Header */}
+            <button
+              onClick={() => openInstallModal()}
+              className={`p-2 rounded-lg transition ${
+                isDark ? 'text-indigo-400 hover:text-white hover:bg-white/10' : 'text-indigo-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
+              title="Download or Install Mobile App"
+              aria-label="Download or Install Mobile App"
+            >
+              <Smartphone size={18} />
+            </button>
+
             <button
               onClick={toggleTheme}
               className={`p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
@@ -367,6 +416,9 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
 
         {/* Floating StudyMate AI Assistant Widget (100% Free) */}
         <StudyMateAIBot />
+
+        {/* Floating Mobile Install Banner */}
+        <MobileInstallBanner />
       </div>
     </div>
   );

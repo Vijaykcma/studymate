@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { PWAInstallProvider } from './context/PWAInstallContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
+import { DownloadAppModal } from './components/common/DownloadAppModal';
 import {
   ProtectedRoute,
   PublicOnlyRoute,
@@ -31,6 +33,7 @@ import ResetPassword from './pages/ResetPassword';
 import EditGroup from './pages/EditGroup';
 import Notifications from './pages/Notifications';
 import RealTimeExecutor from './pages/RealTimeExecutor';
+import DownloadApp from './pages/DownloadApp';
 import NotFound from './pages/NotFound';
 
 // Administrator Pages
@@ -51,10 +54,14 @@ function App() {
     <ErrorBoundary>
       <AuthProvider>
         <ThemeProvider>
-          <BrowserRouter>
-          <Routes>
-            {/* Public Landing */}
-            <Route path="/" element={<Home />} />
+          <PWAInstallProvider>
+            <BrowserRouter>
+              <DownloadAppModal />
+              <Routes>
+                {/* Public Landing & Download */}
+                <Route path="/" element={<Home />} />
+                <Route path="/download" element={<DownloadApp />} />
+                <Route path="/app" element={<DownloadApp />} />
 
             {/* Public Only Auth Routes */}
             <Route
@@ -303,6 +310,7 @@ function App() {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </PWAInstallProvider>
         </ThemeProvider>
       </AuthProvider>
     </ErrorBoundary>

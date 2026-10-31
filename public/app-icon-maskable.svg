@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#6366f1" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+
+    <!-- Ambient Shadow Filter -->
+    <filter id="dropShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="24" flood-color="#1e1b4b" flood-opacity="0.6" />
+    </filter>
+
+    <linearGradient id="capGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffffff" />
+      <stop offset="100%" stop-color="#e0e7ff" />
+    </linearGradient>
+  </defs>
+
+  <!-- Squircle App Background -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)" />
+
+  <!-- Inner Subtle Border -->
+  <rect x="8" y="8" width="496" height="496" rx="120" fill="none" stroke="#ffffff" stroke-width="4" stroke-opacity="0.25" />
+
+  <!-- Graduation Cap Icon Group -->
+  <g filter="url(#dropShadow)" transform="translate(48, 64) scale(0.8125)">
+    <!-- Cap Diamond / Rhombus Board -->
+    <polygon points="256,60 472,170 256,280 40,170" fill="url(#capGlow)" />
+    
+    <!-- Under-Cap Bevel Shadow -->
+    <polygon points="256,280 472,170 450,186 256,290 62,186 40,170" fill="#c7d2fe" />
+
+    <!-- Skull Cap Base Underneath -->
+    <path d="M 120,220 L 120,330 C 120,400 392,400 392,330 L 392,220 C 350,250 290,270 256,270 C 222,270 162,250 120,220 Z" fill="#ffffff" fill-opacity="0.95" />
+
+    <!-- Cap Band Highlight Line -->
+    <path d="M 120,310 C 170,360 342,360 392,310" fill="none" stroke="#6366f1" stroke-width="8" stroke-linecap="round" />
+
+    <!-- Tassel String and Pendant -->
+    <!-- Tassel anchor button on top -->
+    <circle cx="256" cy="170" r="14" fill="#4338ca" />
+    
+    <!-- Tassel ribbon draped to the side -->
+    <path d="M 256,170 C 370,180 440,240 440,320" fill="none" stroke="#fcd34d" stroke-width="10" stroke-linecap="round" />
+
+    <!-- Tassel fringe bundle -->
+    <rect x="428" y="320" width="24" height="60" rx="8" fill="#f59e0b" />
+    <circle cx="440" cy="320" r="14" fill="#fbbf24" />
+
+    <!-- Student Star Accent -->
+    <polygon points="256,380 266,406 294,406 272,422 280,448 256,432 232,448 240,422 218,406 246,406" fill="#fbbf24" />
+  </g>
+</svg>

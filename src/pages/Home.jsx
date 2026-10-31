@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  Smartphone,
+  Download,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { statsAPI } from '../services/api';
@@ -124,6 +126,11 @@ function Home() {
           <div className="hidden md:flex items-center gap-8 text-sm text-slate-300">
             <a href="#features" className="hover:text-white transition">Features</a>
             <a href="#groups" className="hover:text-white transition">Study Groups</a>
+            <Link to="/download" className="hover:text-white transition flex items-center gap-1.5 text-indigo-300 font-medium">
+              <Smartphone size={15} />
+              <span>Mobile App</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[9px] bg-emerald-500 text-white font-bold uppercase">Free</span>
+            </Link>
             <a href="#about" className="hover:text-white transition">About</a>
           </div>
 
@@ -194,6 +201,14 @@ function Home() {
                   className="flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 font-semibold transition"
                 >
                   Create a Group
+                </Link>
+
+                <Link
+                  to="/download"
+                  className="flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl border border-indigo-400/30 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-indigo-300 font-semibold transition shadow-md"
+                >
+                  <Smartphone size={18} className="text-indigo-400" />
+                  <span>Download App</span>
                 </Link>
               </div>
 
