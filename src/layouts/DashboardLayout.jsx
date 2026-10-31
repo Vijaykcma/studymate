@@ -100,7 +100,6 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
     { label: 'Messages', path: '/messages', icon: MessageCircle },
     { label: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { label: 'Real-Time Executor', path: '/executor', icon: Terminal },
-    ...(!isInstalled ? [{ label: 'Download App', path: '/download', icon: Smartphone }] : []),
   ];
 
   const accountItems = [
