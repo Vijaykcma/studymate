@@ -161,6 +161,24 @@ export const StudyMateAIBot = () => {
     }
   }, [messages, isOpen, isMinimized, settingsOpen]);
 
+  // Global event listener to open / toggle StudyMate AI from bottom navigation or any button
+  useEffect(() => {
+    const handleOpenAI = () => {
+      setIsOpen(true);
+      setIsMinimized(false);
+    };
+    const handleToggleAI = () => {
+      setIsOpen((prev) => !prev);
+      setIsMinimized(false);
+    };
+    window.addEventListener('open-studymate-ai', handleOpenAI);
+    window.addEventListener('toggle-studymate-ai', handleToggleAI);
+    return () => {
+      window.removeEventListener('open-studymate-ai', handleOpenAI);
+      window.removeEventListener('toggle-studymate-ai', handleToggleAI);
+    };
+  }, []);
+
   // Handle Save Custom Key
   const handleSaveKey = () => {
     const trimmed = geminiKeyInput.trim();
@@ -285,7 +303,7 @@ export const StudyMateAIBot = () => {
     <>
       {/* FLOATING LAUNCHER ROBOT BUTTON (BOTTOM RIGHT) */}
       {!isOpen && (
-        <div className="fixed bottom-6 right-6 z-[9990] flex items-center gap-3">
+        <div className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-[9990] flex items-center gap-3">
           <div
             onClick={() => setIsOpen(true)}
             className={`hidden sm:flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold shadow-xl border cursor-pointer hover:scale-105 transition-all ${
@@ -301,14 +319,14 @@ export const StudyMateAIBot = () => {
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative w-14 h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-[2px] shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            className="group relative w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-[2px] shadow-2xl hover:scale-110 active:scale-95 transition-all cursor-pointer"
             title="Ask StudyMate AI (100% Free)"
           >
             <div className="w-full h-full rounded-full bg-slate-950 flex items-center justify-center relative overflow-hidden">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-300 flex items-center justify-center text-white shadow-inner">
-                <Bot size={24} className="group-hover:rotate-12 transition-transform duration-300" />
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-gradient-to-tr from-indigo-500 to-cyan-300 flex items-center justify-center text-white shadow-inner">
+                <Bot size={22} className="group-hover:rotate-12 transition-transform duration-300" />
               </div>
-              <span className="absolute bottom-1 right-1 w-3 h-3 bg-emerald-400 border-2 border-slate-950 rounded-full" />
+              <span className="absolute bottom-1 right-1 w-2.5 h-2.5 sm:w-3 sm:h-3 bg-emerald-400 border-2 border-slate-950 rounded-full" />
             </div>
             <span className="absolute -inset-1 rounded-full bg-indigo-500/30 animate-ping -z-10" />
           </button>
@@ -318,12 +336,12 @@ export const StudyMateAIBot = () => {
       {/* CHAT WINDOW MODAL / POPUP */}
       {isOpen && (
         <div
-          className={`fixed z-[9995] transition-all duration-300 ease-in-out flex flex-col shadow-2xl rounded-3xl border overflow-hidden ${
+          className={`fixed z-[9995] transition-all duration-300 ease-in-out flex flex-col shadow-2xl rounded-2xl sm:rounded-3xl border overflow-hidden ${
             isExpanded
-              ? 'inset-3 sm:inset-6 md:inset-10'
+              ? 'inset-2 sm:inset-6 md:inset-10'
               : isMinimized
-              ? 'bottom-6 right-6 w-80 h-16 rounded-2xl'
-              : 'bottom-6 right-6 w-[94vw] sm:w-[420px] md:w-[450px] h-[600px] max-h-[85vh]'
+              ? 'bottom-20 right-4 lg:bottom-6 lg:right-6 w-72 sm:w-80 h-14 sm:h-16 rounded-2xl'
+              : 'bottom-20 right-2 left-2 sm:left-auto sm:right-6 sm:bottom-6 w-auto sm:w-[420px] md:w-[450px] h-[calc(100dvh-6rem)] sm:h-[600px] max-h-[85vh]'
           } ${
             isDark
               ? 'bg-slate-950 border-white/10 text-white shadow-indigo-950/60'

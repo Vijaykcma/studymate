@@ -22,6 +22,7 @@ import {
   Moon,
   Smartphone,
   Download,
+  Bot,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -99,7 +100,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
     { label: 'Messages', path: '/messages', icon: MessageCircle },
     { label: 'Notifications', path: '/notifications', icon: Bell, badge: unreadCount },
     { label: 'Real-Time Executor', path: '/executor', icon: Terminal },
-    { label: 'Download App', path: '/download', icon: Smartphone },
+    ...(!isInstalled ? [{ label: 'Download App', path: '/download', icon: Smartphone }] : []),
   ];
 
   const accountItems = [
@@ -243,36 +244,38 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           </div>
 
           <div>
-            {/* Quick Mobile App Install Card in Sidebar */}
-            <div className="px-4 pb-2">
-              <button
-                onClick={() => openInstallModal()}
-                className={`w-full flex items-center justify-between p-3 rounded-2xl border transition group cursor-pointer ${
-                  isDark
-                    ? 'bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border-indigo-500/30 hover:border-indigo-400/60 text-white shadow-lg shadow-indigo-950/50'
-                    : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 hover:border-indigo-300 text-indigo-950 shadow-sm'
-                }`}
-                title="Get StudyMate Mobile App"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md shrink-0">
-                    <Smartphone size={16} />
-                  </div>
-                  <div className="text-left min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-bold leading-tight truncate">Mobile App</span>
-                      <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500 text-white uppercase shrink-0">
-                        Free
-                      </span>
+            {/* Quick Mobile App Install Card in Sidebar (Only shown if NOT already installed) */}
+            {!isInstalled && (
+              <div className="px-4 pb-2">
+                <button
+                  onClick={() => openInstallModal()}
+                  className={`w-full flex items-center justify-between p-3 rounded-2xl border transition group cursor-pointer ${
+                    isDark
+                      ? 'bg-gradient-to-r from-indigo-950/60 to-purple-950/60 border-indigo-500/30 hover:border-indigo-400/60 text-white shadow-lg shadow-indigo-950/50'
+                      : 'bg-gradient-to-r from-indigo-50 to-purple-50 border-indigo-200 hover:border-indigo-300 text-indigo-950 shadow-sm'
+                  }`}
+                  title="Get StudyMate Mobile App"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-md shrink-0">
+                      <Smartphone size={16} />
                     </div>
-                    <p className={`text-[10px] truncate ${isDark ? 'text-indigo-300/80' : 'text-indigo-600'}`}>
-                      {isInstalled ? 'Installed • Open App' : 'Download / Install'}
-                    </p>
+                    <div className="text-left min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold leading-tight truncate">Mobile App</span>
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-500 text-white uppercase shrink-0">
+                          Free
+                        </span>
+                      </div>
+                      <p className={`text-[10px] truncate ${isDark ? 'text-indigo-300/80' : 'text-indigo-600'}`}>
+                        Download / Install
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <Download size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition shrink-0 ml-1" />
-              </button>
-            </div>
+                  <Download size={14} className="text-indigo-400 group-hover:translate-y-0.5 transition shrink-0 ml-1" />
+                </button>
+              </div>
+            )}
 
             {/* Theme switch toggle in sidebar */}
           <div className={`px-4 py-2 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
@@ -357,17 +360,19 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           </Link>
 
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* Quick App Install Button on Mobile Header */}
-            <button
-              onClick={() => openInstallModal()}
-              className={`p-2 rounded-lg transition ${
-                isDark ? 'text-indigo-400 hover:text-white hover:bg-white/10' : 'text-indigo-600 hover:text-slate-900 hover:bg-slate-100'
-              }`}
-              title="Download or Install Mobile App"
-              aria-label="Download or Install Mobile App"
-            >
-              <Smartphone size={18} />
-            </button>
+            {/* Quick App Install Button on Mobile Header (Only if NOT installed) */}
+            {!isInstalled && (
+              <button
+                onClick={() => openInstallModal()}
+                className={`p-2 rounded-lg transition ${
+                  isDark ? 'text-indigo-400 hover:text-white hover:bg-white/10' : 'text-indigo-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+                title="Download or Install Mobile App"
+                aria-label="Download or Install Mobile App"
+              >
+                <Smartphone size={18} />
+              </button>
+            )}
 
             <button
               onClick={toggleTheme}
@@ -393,7 +398,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           </div>
         </header>
 
-        <main className={`flex-1 min-w-0 max-w-full w-full overflow-x-hidden flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : ''}`}>
+        <main className={`flex-1 min-w-0 max-w-full w-full overflow-x-hidden flex flex-col ${isFullHeight ? 'h-full overflow-hidden' : 'pb-20 lg:pb-0'}`}>
           {user && !user.isEmailVerified && (
             <div className="bg-gradient-to-r from-amber-500/20 via-orange-500/20 to-amber-500/10 border-b border-amber-500/30 px-4 py-2.5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-amber-200 shrink-0">
               <div className="flex items-center gap-2">
@@ -419,6 +424,110 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
 
         {/* Floating Mobile Install Banner */}
         <MobileInstallBanner />
+
+        {/* Native Mobile Bottom Navigation Bar (Phone-sized viewports & installable mobile app) */}
+        <nav
+          aria-label="Mobile Bottom Navigation"
+          className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-xl transition-colors duration-200 ${
+            isDark
+              ? 'bg-slate-950/92 border-white/10 text-white'
+              : 'bg-white/95 border-slate-200 text-slate-800'
+          } pb-[env(safe-area-inset-bottom,0px)] shadow-[0_-4px_20px_rgba(0,0,0,0.15)]`}
+        >
+          <div className="h-16 flex items-center justify-around px-1 max-w-lg mx-auto">
+            {/* 1. Home / Dashboard */}
+            <Link
+              to="/dashboard"
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-95 ${
+                location.pathname === '/dashboard'
+                  ? 'text-indigo-500 font-bold'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <LayoutDashboard size={20} className={location.pathname === '/dashboard' ? 'stroke-[2.5]' : ''} />
+              <span className="text-[10px] mt-1 tracking-tight font-medium">Home</span>
+              {location.pathname === '/dashboard' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-0.5" />
+              )}
+            </Link>
+
+            {/* 2. Groups */}
+            <Link
+              to="/groups"
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-95 ${
+                location.pathname.startsWith('/groups')
+                  ? 'text-indigo-500 font-bold'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Search size={20} className={location.pathname.startsWith('/groups') ? 'stroke-[2.5]' : ''} />
+              <span className="text-[10px] mt-1 tracking-tight font-medium">Groups</span>
+              {location.pathname.startsWith('/groups') && (
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-0.5" />
+              )}
+            </Link>
+
+            {/* 3. StudyMate AI Central Action Button */}
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-studymate-ai'))}
+              className="flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-90 group cursor-pointer"
+              title="StudyMate AI Assistant"
+              aria-label="Open StudyMate AI"
+            >
+              <div className="w-11 h-11 -mt-5 rounded-2xl bg-gradient-to-tr from-indigo-600 via-indigo-500 to-cyan-400 p-[2px] shadow-lg shadow-indigo-600/30 group-hover:scale-105 transition-transform">
+                <div className="w-full h-full rounded-[14px] bg-slate-950 flex items-center justify-center text-white">
+                  <Bot size={21} className="text-cyan-300" />
+                </div>
+              </div>
+              <span className="text-[10px] font-bold text-indigo-400 mt-1">AI Mate</span>
+            </button>
+
+            {/* 4. Messages */}
+            <Link
+              to="/messages"
+              className={`relative flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-95 ${
+                location.pathname === '/messages'
+                  ? 'text-indigo-500 font-bold'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <div className="relative">
+                <MessageCircle size={20} className={location.pathname === '/messages' ? 'stroke-[2.5]' : ''} />
+                {unreadCount > 0 && (
+                  <span className="absolute -top-1 -right-2 px-1.5 py-0.2 rounded-full text-[9px] font-bold bg-indigo-600 text-white min-w-4 text-center">
+                    {unreadCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-[10px] mt-1 tracking-tight font-medium">Messages</span>
+              {location.pathname === '/messages' && (
+                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 mt-0.5" />
+              )}
+            </Link>
+
+            {/* 5. More Menu Drawer */}
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className={`flex flex-col items-center justify-center flex-1 py-1 transition-all active:scale-95 cursor-pointer ${
+                sidebarOpen
+                  ? 'text-indigo-500 font-bold'
+                  : isDark
+                  ? 'text-slate-400 hover:text-white'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+              aria-label="Open More Menu Drawer"
+            >
+              <Menu size={20} />
+              <span className="text-[10px] mt-1 tracking-tight font-medium">More</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );

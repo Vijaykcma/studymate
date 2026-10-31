@@ -79,13 +79,23 @@ export default function DownloadApp() {
               {user ? 'Go to Dashboard' : 'Sign In'}
             </Link>
 
-            <button
-              onClick={handlePrimaryInstall}
-              className="px-4 py-2 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download size={14} />
-              <span>{isInstalled ? 'App Installed' : 'Install App'}</span>
-            </button>
+            {isInstalled ? (
+              <Link
+                to="/dashboard"
+                className="px-4 py-2 rounded-xl font-bold text-xs text-white bg-emerald-600 hover:bg-emerald-500 transition shadow-lg shadow-emerald-600/25 flex items-center gap-1.5"
+              >
+                <Check size={14} />
+                <span>Open App</span>
+              </Link>
+            ) : (
+              <button
+                onClick={handlePrimaryInstall}
+                className="px-4 py-2 rounded-xl font-bold text-xs text-white bg-indigo-600 hover:bg-indigo-500 transition shadow-lg shadow-indigo-600/25 flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download size={14} />
+                <span>Install App</span>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -140,13 +150,23 @@ export default function DownloadApp() {
 
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-3.5 pt-3">
-                <button
-                  onClick={handlePrimaryInstall}
-                  className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
-                >
-                  <Download size={18} />
-                  <span>{isInstalled ? 'App Already Installed' : 'Install StudyMate App'}</span>
-                </button>
+                {isInstalled ? (
+                  <Link
+                    to="/dashboard"
+                    className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-500 hover:to-indigo-500 transition shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Check size={18} />
+                    <span>App is Installed • Open StudyMate</span>
+                  </Link>
+                ) : (
+                  <button
+                    onClick={handlePrimaryInstall}
+                    className="w-full sm:w-auto px-7 py-3.5 rounded-2xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 transition shadow-xl shadow-indigo-600/30 flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+                  >
+                    <Download size={18} />
+                    <span>Install StudyMate App</span>
+                  </button>
+                )}
 
                 <button
                   onClick={openInstallModal}
@@ -157,7 +177,7 @@ export default function DownloadApp() {
                   }`}
                 >
                   <Smartphone size={18} className="text-indigo-400" />
-                  <span>View Install Guides (iOS / Android)</span>
+                  <span>Platform Guides (iOS / Android)</span>
                 </button>
               </div>
 

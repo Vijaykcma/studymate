@@ -13,20 +13,42 @@ export const PWAInstallProvider = ({ children }) => {
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
-    // Check if already running as standalone PWA / WebAPK
+    // Check if already running as standalone PWA / WebAPK or marked installed
     const checkStandalone = () => {
-      const isStandaloneMedia = window.matchMedia('(display-mode: standalone)').matches;
-      const isNavigatorStandalone = window.navigator.standalone === true;
-      const isAndroidApp = document.referrer.includes('android-app://');
-      return Boolean(isStandaloneMedia || isNavigatorStandalone || isAndroidApp);
+      const isStandaloneMedia = window.matchMedia?.('(display-mode: standalone)')?.matches;
+      const isFullscreenMedia = window.matchMedia?.('(display-mode: fullscreen)')?.matches;
+      const isMinimalUiMedia = window.matchMedia?.('(display-mode: minimal-ui)')?.matches;
+      const isNavigatorStandalone = window.navigator?.standalone === true;
+      const isAndroidApp = document.referrer?.includes('android-app://');
+      
+      let isStorageInstalled = false;
+      try {
+        isStorageInstalled = localStorage.getItem('studymate_app_installed') === 'true';
+      } catch {
+        isStorageInstalled = false;
+      }
+
+      return Boolean(
+        isStandaloneMedia ||
+        isFullscreenMedia ||
+        isMinimalUiMedia ||
+        isNavigatorStandalone ||
+        isAndroidApp ||
+        isStorageInstalled
+      );
     };
 
     setIsInstalled(checkStandalone());
 
     // Listen for display-mode changes
-    const mediaQuery = window.matchMedia('(display-mode: standalone)');
+    const mediaQuery = window.matchMedia ? window.matchMedia('(display-mode: standalone)') : null;
     const handleMediaChange = (e) => {
-      setIsInstalled(e.matches);
+      if (e.matches) {
+        try {
+          localStorage.setItem('studymate_app_installed', 'true');
+        } catch {}
+        setIsInstalled(true);
+      }
     };
     if (mediaQuery?.addEventListener) {
       mediaQuery.addEventListener('change', handleMediaChange);
@@ -52,11 +74,17 @@ export const PWAInstallProvider = ({ children }) => {
       // Prevent automatic mini-infobar so our custom UI controls the flow
       e.preventDefault();
       setDeferredPrompt(e);
-      setIsInstallable(true);
+      // Only set installable if not already recognized as installed
+      if (!checkStandalone()) {
+        setIsInstallable(true);
+      }
     };
 
     // App installed event
     const handleAppInstalled = () => {
+      try {
+        localStorage.setItem('studymate_app_installed', 'true');
+      } catch {}
       setIsInstalled(true);
       setIsInstallable(false);
       setDeferredPrompt(null);
@@ -95,6 +123,9 @@ export const PWAInstallProvider = ({ children }) => {
       deferredPrompt.prompt();
       const choiceResult = await deferredPrompt.userChoice;
       if (choiceResult.outcome === 'accepted') {
+        try {
+          localStorage.setItem('studymate_app_installed', 'true');
+        } catch {}
         setIsInstalled(true);
         setIsInstallable(false);
         setDeferredPrompt(null);

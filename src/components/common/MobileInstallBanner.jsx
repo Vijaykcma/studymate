@@ -48,7 +48,7 @@ export const MobileInstallBanner = () => {
   return (
     <aside
       aria-label="Install mobile app prompt"
-      className="fixed bottom-3 inset-x-3 sm:bottom-4 sm:inset-x-auto sm:right-4 z-40 max-w-md animate-slideUp"
+      className="fixed bottom-18 inset-x-3 sm:bottom-4 sm:inset-x-auto sm:right-4 z-40 max-w-md animate-slideUp"
     >
       <div
         className={`p-3.5 rounded-2xl border shadow-2xl backdrop-blur-md flex items-center justify-between gap-3 ${
