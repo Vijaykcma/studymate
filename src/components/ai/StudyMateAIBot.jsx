@@ -149,15 +149,23 @@ export const StudyMateAIBot = () => {
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const chatBodyRef = useRef(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  const scrollToBottom = (instant = false) => {
+    if (chatBodyRef.current) {
+      chatBodyRef.current.scrollTo({
+        top: chatBodyRef.current.scrollHeight,
+        behavior: instant ? 'instant' : 'smooth',
+      });
+    } else {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   useEffect(() => {
     if (isOpen && !isMinimized && !settingsOpen) {
       scrollToBottom();
-      inputRef.current?.focus();
+      inputRef.current?.focus({ preventScroll: true });
     }
   }, [messages, isOpen, isMinimized, settingsOpen]);
 
@@ -521,6 +529,7 @@ export const StudyMateAIBot = () => {
           {!isMinimized && (
             <>
               <div
+                ref={chatBodyRef}
                 className={`flex-1 p-3.5 sm:p-4 overflow-y-auto overflow-x-hidden space-y-4 text-xs ai-transparent-scroll ${
                   isDark ? 'bg-slate-950/70' : 'bg-slate-50'
                 }`}

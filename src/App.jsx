@@ -6,6 +6,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import { PWAInstallProvider } from './context/PWAInstallContext';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { DownloadAppModal } from './components/common/DownloadAppModal';
+import { ScrollToTop } from './components/common/ScrollToTop';
 import {
   ProtectedRoute,
   PublicOnlyRoute,
@@ -56,6 +57,7 @@ function App() {
         <ThemeProvider>
           <PWAInstallProvider>
             <BrowserRouter>
+              <ScrollToTop />
               <DownloadAppModal />
               <Routes>
                 {/* Public Landing & Download */}

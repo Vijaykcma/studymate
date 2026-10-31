@@ -336,7 +336,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
       {/* Main Content Area */}
       <div className={`flex-1 min-w-0 max-w-full w-full flex flex-col ${isFullHeight ? 'h-screen max-h-screen overflow-hidden' : 'min-h-screen'}`}>
         {/* Mobile top bar */}
-        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 ${
+        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 transform-gpu ${
           isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
         } backdrop-blur px-4 flex items-center justify-between`}>
           <Link to="/dashboard" className="flex items-center gap-2.5">
@@ -415,7 +415,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
         {/* Native Mobile Bottom Navigation Bar (Phone-sized viewports & installable mobile app) */}
         <nav
           aria-label="Mobile Bottom Navigation"
-          className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-xl transition-colors duration-200 ${
+          className={`lg:hidden fixed bottom-0 inset-x-0 z-40 border-t backdrop-blur-xl transform-gpu transition-colors duration-200 ${
             isDark
               ? 'bg-slate-950/92 border-white/10 text-white'
               : 'bg-white/95 border-slate-200 text-slate-800'
