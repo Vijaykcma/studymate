@@ -87,7 +87,7 @@ export const setupSocket = (io) => {
     });
 
     // Send group message
-    socket.on('send_message', async ({ groupId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [] }, callback) => {
+    socket.on('send_message', async ({ groupId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [], poll, callInfo }, callback) => {
       try {
         if ((!content || !content.trim()) && messageType !== 'voice' && attachments.length === 0) {
           if (callback) callback({ success: false, message: 'Message content cannot be empty' });
@@ -121,8 +121,8 @@ export const setupSocket = (io) => {
           codeSnippet: codeSnippet || undefined,
           replyTo: replyTo || undefined,
           attachments: attachments || [],
-          poll: arguments[0]?.poll || undefined,
-          callInfo: arguments[0]?.callInfo || undefined,
+          poll: poll || undefined,
+          callInfo: callInfo || undefined,
           status: 'read',
         });
 
@@ -143,7 +143,7 @@ export const setupSocket = (io) => {
     });
 
     // Send direct 1-on-1 personalized message (WhatsApp Style)
-    socket.on('send_direct_message', async ({ recipientId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [] }, callback) => {
+    socket.on('send_direct_message', async ({ recipientId, content, messageType = 'text', voiceDuration = 0, audioUrl = '', codeSnippet, replyTo, attachments = [], poll, callInfo }, callback) => {
       try {
         if ((!content || !content.trim()) && messageType !== 'voice' && attachments.length === 0) {
           if (callback) callback({ success: false, message: 'Message content cannot be empty' });
@@ -170,8 +170,8 @@ export const setupSocket = (io) => {
           codeSnippet: codeSnippet || undefined,
           replyTo: replyTo || undefined,
           attachments: attachments || [],
-          poll: arguments[0]?.poll || undefined,
-          callInfo: arguments[0]?.callInfo || undefined,
+          poll: poll || undefined,
+          callInfo: callInfo || undefined,
           status: isRecipientOnline ? 'delivered' : 'sent',
         });
 

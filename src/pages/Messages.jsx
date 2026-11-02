@@ -242,9 +242,13 @@ export function Messages() {
 
     // Direct message listener
     const handleNewDirectMessage = (msg) => {
+      const senderId = (msg.sender?._id || msg.sender)?.toString();
+      const recipientId = (msg.recipient?._id || msg.recipient)?.toString();
+      const activeId = activeChat?.id?.toString();
+
       const isCurrentConversation =
         activeChat?.type === 'direct' &&
-        (msg.sender?._id === activeChat.id || msg.recipient?._id === activeChat.id);
+        (senderId === activeId || recipientId === activeId);
 
       if (isCurrentConversation) {
         setMessages((prev) => {
@@ -253,7 +257,7 @@ export function Messages() {
         });
 
         // Mark as read immediately if current active conversation
-        if (msg.sender?._id === activeChat.id) {
+        if (senderId === activeId) {
           socket.emit('mark_as_read', { peerId: activeChat.id });
         }
       }
@@ -261,18 +265,18 @@ export function Messages() {
       // Update sidebar conversations list preview
       setDirectConversations((prev) => {
         const partnerId =
-          msg.sender?._id === user?._id ? msg.recipient?._id : msg.sender?._id;
-        const partner = msg.sender?._id === user?._id ? msg.recipient : msg.sender;
+          senderId === user?._id?.toString() ? recipientId : senderId;
+        const partner = senderId === user?._id?.toString() ? msg.recipient : msg.sender;
 
-        const filtered = prev.filter((c) => c.peer._id !== partnerId);
-        const existing = prev.find((c) => c.peer._id === partnerId);
+        const filtered = prev.filter((c) => (c.peer?._id || c.peer)?.toString() !== partnerId);
+        const existing = prev.find((c) => (c.peer?._id || c.peer)?.toString() === partnerId);
 
         return [
           {
             peer: partner || existing?.peer,
             lastMessage: msg,
             unreadCount:
-              isCurrentConversation || msg.sender?._id === user?._id
+              isCurrentConversation || senderId === user?._id?.toString()
                 ? 0
                 : (existing?.unreadCount || 0) + 1,
           },
@@ -284,7 +288,10 @@ export function Messages() {
 
     // Group message listener
     const handleNewGroupMessage = (msg) => {
-      if (activeChat?.type === 'group' && msg.group === activeChat.id) {
+      const groupId = (msg.group?._id || msg.group)?.toString();
+      const activeId = activeChat?.id?.toString();
+
+      if (activeChat?.type === 'group' && groupId === activeId) {
         setMessages((prev) => {
           if (prev.some((m) => m._id === msg._id)) return prev;
           return [...prev, msg];
@@ -539,35 +546,82 @@ export function Messages() {
     try {
       if (activeChat.type === 'direct') {
         if (socket.connected) {
-          socket.emit('send_direct_message', {
-            recipientId: activeChat.id,
-            content: textToSend,
-            messageType: 'text',
-            replyTo: currentReplyTo,
-          });
+          socket.emit(
+            'send_direct_message',
+            {
+              recipientId: activeChat.id,
+              content: textToSend,
+              messageType: 'text',
+              replyTo: currentReplyTo,
+            },
+            (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) =>
+                  prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]
+                );
+              } else if (ack && !ack.success) {
+                // Fallback to HTTP if socket handler returned error
+                messagesAPI
+                  .sendDirect(activeChat.id, { content: textToSend, replyTo: currentReplyTo })
+                  .then((res) => {
+                    if (res?.success && res?.message) {
+                      setMessages((prev) =>
+                        prev.some((m) => m._id === res.message._id) ? prev : [...prev, res.message]
+                      );
+                    }
+                  })
+                  .catch((err) => setError(err.userMessage || 'Failed to send message.'));
+              }
+            }
+          );
         } else {
           const res = await messagesAPI.sendDirect(activeChat.id, {
             content: textToSend,
             replyTo: currentReplyTo,
           });
           if (res.success && res.message) {
-            setMessages((prev) => [...prev, res.message]);
+            setMessages((prev) =>
+              prev.some((m) => m._id === res.message._id) ? prev : [...prev, res.message]
+            );
           }
         }
       } else {
         if (socket.connected) {
-          socket.emit('send_message', {
-            groupId: activeChat.id,
-            content: textToSend,
-            messageType: 'text',
-            replyTo: currentReplyTo,
-          });
+          socket.emit(
+            'send_message',
+            {
+              groupId: activeChat.id,
+              content: textToSend,
+              messageType: 'text',
+              replyTo: currentReplyTo,
+            },
+            (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) =>
+                  prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]
+                );
+              } else if (ack && !ack.success) {
+                messagesAPI
+                  .send(activeChat.id, textToSend, { replyTo: currentReplyTo })
+                  .then((res) => {
+                    if (res?.success && res?.message) {
+                      setMessages((prev) =>
+                        prev.some((m) => m._id === res.message._id) ? prev : [...prev, res.message]
+                      );
+                    }
+                  })
+                  .catch((err) => setError(err.userMessage || 'Failed to send message.'));
+              }
+            }
+          );
         } else {
           const res = await messagesAPI.send(activeChat.id, textToSend, {
             replyTo: currentReplyTo,
           });
           if (res.success && res.message) {
-            setMessages((prev) => [...prev, res.message]);
+            setMessages((prev) =>
+              prev.some((m) => m._id === res.message._id) ? prev : [...prev, res.message]
+            );
           }
         }
       }
@@ -716,14 +770,22 @@ export function Messages() {
         const socket = getSocket();
         if (activeChat.type === 'direct') {
           if (socket.connected) {
-            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload }, (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+              }
+            });
           } else {
             const res = await messagesAPI.sendDirect(activeChat.id, payload);
             if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
           }
         } else {
           if (socket.connected) {
-            socket.emit('send_message', { groupId: activeChat.id, ...payload });
+            socket.emit('send_message', { groupId: activeChat.id, ...payload }, (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+              }
+            });
           } else {
             const res = await messagesAPI.send(activeChat.id, payload.content, payload);
             if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
@@ -770,14 +832,22 @@ export function Messages() {
         const socket = getSocket();
         if (activeChat.type === 'direct') {
           if (socket.connected) {
-            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+            socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload }, (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+              }
+            });
           } else {
             const sendRes = await messagesAPI.sendDirect(activeChat.id, payload);
             if (sendRes.success && sendRes.message) setMessages((prev) => [...prev, sendRes.message]);
           }
         } else {
           if (socket.connected) {
-            socket.emit('send_message', { groupId: activeChat.id, ...payload });
+            socket.emit('send_message', { groupId: activeChat.id, ...payload }, (ack) => {
+              if (ack?.success && ack?.message) {
+                setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+              }
+            });
           } else {
             const sendRes = await messagesAPI.send(activeChat.id, payload.content, payload);
             if (sendRes.success && sendRes.message) setMessages((prev) => [...prev, sendRes.message]);
@@ -804,14 +874,22 @@ export function Messages() {
     const socket = getSocket();
     if (activeChat.type === 'direct') {
       if (socket.connected) {
-        socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+        socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload }, (ack) => {
+          if (ack?.success && ack?.message) {
+            setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+          }
+        });
       } else {
         const res = await messagesAPI.sendDirect(activeChat.id, payload);
         if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
       }
     } else {
       if (socket.connected) {
-        socket.emit('send_message', { groupId: activeChat.id, ...payload });
+        socket.emit('send_message', { groupId: activeChat.id, ...payload }, (ack) => {
+          if (ack?.success && ack?.message) {
+            setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+          }
+        });
       } else {
         const res = await messagesAPI.send(activeChat.id, payload.content, payload);
         if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
@@ -969,14 +1047,22 @@ export function Messages() {
     try {
       if (activeChat.type === 'direct') {
         if (socket.connected) {
-          socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload });
+          socket.emit('send_direct_message', { recipientId: activeChat.id, ...payload }, (ack) => {
+            if (ack?.success && ack?.message) {
+              setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+            }
+          });
         } else {
           const res = await messagesAPI.sendDirect(activeChat.id, payload);
           if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
         }
       } else {
         if (socket.connected) {
-          socket.emit('send_message', { groupId: activeChat.id, ...payload });
+          socket.emit('send_message', { groupId: activeChat.id, ...payload }, (ack) => {
+            if (ack?.success && ack?.message) {
+              setMessages((prev) => prev.some((m) => m._id === ack.message._id) ? prev : [...prev, ack.message]);
+            }
+          });
         } else {
           const res = await messagesAPI.send(activeChat.id, payload.content, payload);
           if (res.success && res.message) setMessages((prev) => [...prev, res.message]);
