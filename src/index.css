@@ -32,6 +32,13 @@ body {
   overflow-x: clip;
 }
 
+/* When an active mobile chat conversation is open, hide the bottom navigation bar so the chat input textfield sits cleanly at the bottom */
+@media (max-width: 1023px) {
+  body.mobile-chat-open nav[aria-label="Mobile Bottom Navigation"] {
+    display: none !important;
+  }
+}
+
 /* Standalone Native Mobile App Performance Rules */
 @media (display-mode: standalone) {
   html, body {

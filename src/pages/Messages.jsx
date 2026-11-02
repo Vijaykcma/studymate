@@ -212,6 +212,18 @@ export function Messages() {
     refreshAllChats();
   }, []);
 
+  // Manage mobile chat open class on body to ensure bottom nav bar doesn't obscure the message textfield
+  useEffect(() => {
+    if (activeChat) {
+      document.body.classList.add('mobile-chat-open');
+    } else {
+      document.body.classList.remove('mobile-chat-open');
+    }
+    return () => {
+      document.body.classList.remove('mobile-chat-open');
+    };
+  }, [activeChat]);
+
   // 2. Socket Listeners & Real-time Room Handling
   useEffect(() => {
     const socket = getSocket();
@@ -1282,7 +1294,7 @@ export function Messages() {
             </div>
 
             {/* Chat List */}
-            <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-transparent">
+            <div className="flex-1 overflow-y-auto overscroll-contain divide-y divide-transparent pb-20 md:pb-0">
               {loadingChats ? (
                 <div className="flex flex-col items-center justify-center p-10 text-xs text-slate-400 gap-2">
                   <Loader2 size={24} className="animate-spin text-indigo-500" />
@@ -2195,15 +2207,15 @@ export function Messages() {
                 /* Bottom Message Input Bar */
                 <form
                   onSubmit={handleSendMessage}
-                  className={`px-4 py-3 flex items-center gap-2 border-t shrink-0 ${
-                    isDark ? 'bg-slate-900/90 border-white/10' : 'bg-white border-slate-200'
-                  }`}
+                  className={`px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-1.5 sm:gap-2 border-t shrink-0 ${
+                    isDark ? 'bg-slate-900/95 border-white/10' : 'bg-white border-slate-200'
+                  } pb-[calc(0.6rem+env(safe-area-inset-bottom,0px))] z-30`}
                 >
                   {/* Emoji toggle */}
                   <button
                     type="button"
                     onClick={() => setEmojiPickerOpen(!emojiPickerOpen)}
-                    className={`p-2 rounded-xl transition cursor-pointer ${
+                    className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
                       emojiPickerOpen
                         ? 'text-indigo-400 bg-indigo-500/10'
                         : isDark
@@ -2226,7 +2238,7 @@ export function Messages() {
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={uploadingFile}
-                    className={`p-2 rounded-xl transition cursor-pointer ${
+                    className={`p-1.5 sm:p-2 rounded-xl transition cursor-pointer shrink-0 ${
                       uploadingFile
                         ? 'animate-pulse text-indigo-400'
                         : isDark
@@ -2238,11 +2250,11 @@ export function Messages() {
                     <Paperclip size={19} />
                   </button>
 
-                  {/* Create Poll Button */}
+                  {/* Create Poll Button (Desktop & Tablet) */}
                   <button
                     type="button"
                     onClick={() => setPollModalOpen(true)}
-                    className={`p-2 rounded-xl transition cursor-pointer ${
+                    className={`hidden sm:inline-flex p-2 rounded-xl transition cursor-pointer shrink-0 ${
                       isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="Create Interactive Poll"
@@ -2250,11 +2262,11 @@ export function Messages() {
                     <BarChart2 size={19} />
                   </button>
 
-                  {/* Share Code Snippet */}
+                  {/* Share Code Snippet (Desktop & Tablet) */}
                   <button
                     type="button"
                     onClick={() => setCodeModalOpen(true)}
-                    className={`p-2 rounded-xl transition cursor-pointer ${
+                    className={`hidden sm:inline-flex p-2 rounded-xl transition cursor-pointer shrink-0 ${
                       isDark ? 'text-slate-400 hover:text-white' : 'text-slate-600 hover:text-slate-900'
                     }`}
                     title="Share Code Snippet"
@@ -2264,7 +2276,7 @@ export function Messages() {
 
                   {/* Text Input Pill */}
                   <div
-                    className={`flex-1 rounded-xl px-4 py-2.5 flex items-center border ${
+                    className={`flex-1 min-w-0 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 flex items-center border ${
                       isDark
                         ? 'bg-slate-950 border-white/10 text-white focus-within:border-indigo-500'
                         : 'bg-slate-100/90 border-slate-200 text-slate-900 focus-within:border-indigo-600'
@@ -2276,7 +2288,7 @@ export function Messages() {
                       value={inputContent}
                       onChange={handleInputChange}
                       placeholder="Type a message or discuss with classmates..."
-                      className="w-full bg-transparent text-xs sm:text-sm outline-none placeholder-slate-400"
+                      className="w-full min-w-0 bg-transparent text-xs sm:text-sm outline-none placeholder-slate-400"
                     />
                   </div>
 
@@ -2284,19 +2296,19 @@ export function Messages() {
                   {inputContent.trim() ? (
                     <button
                       type="submit"
-                      className="w-10 h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white flex items-center justify-center transition shadow-lg shadow-indigo-600/30 cursor-pointer shrink-0"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-r from-indigo-600 to-cyan-500 hover:from-indigo-500 hover:to-cyan-400 text-white flex items-center justify-center transition shadow-lg shadow-indigo-600/30 cursor-pointer shrink-0"
                       title="Send Message"
                     >
-                      <Send size={17} className="ml-0.5" />
+                      <Send size={16} className="ml-0.5" />
                     </button>
                   ) : (
                     <button
                       type="button"
                       onClick={handleStartRealRecording}
-                      className="w-10 h-10 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition border border-indigo-500/20 cursor-pointer shrink-0"
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-400 hover:text-indigo-300 flex items-center justify-center transition border border-indigo-500/20 cursor-pointer shrink-0"
                       title="Record Voice Note"
                     >
-                      <Mic size={18} />
+                      <Mic size={17} />
                     </button>
                   )}
                 </form>

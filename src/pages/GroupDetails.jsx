@@ -212,7 +212,7 @@ function GroupDetails() {
 
   return (
     <DashboardLayout>
-      <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
+      <div className="p-3.5 sm:p-6 lg:p-8 max-w-7xl mx-auto space-y-6 sm:space-y-8 w-full min-w-0">
         {/* Navigation & Header */}
         <div className="flex items-center justify-between">
           <Link
@@ -243,49 +243,49 @@ function GroupDetails() {
         )}
 
         {/* Hero Card */}
-        <div className="relative overflow-hidden rounded-3xl border border-indigo-400/20 bg-gradient-to-br from-indigo-900/30 via-slate-900 to-cyan-900/20 p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-            <div className="flex gap-5">
-              <div className="w-16 h-16 md:w-20 md:h-20 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <GraduationCap size={36} />
+        <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl border border-indigo-400/20 bg-gradient-to-br from-indigo-900/30 via-slate-900 to-cyan-900/20 p-4 sm:p-6 md:p-8 w-full min-w-0">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-5 md:gap-6 w-full min-w-0">
+            <div className="flex items-start gap-3.5 sm:gap-5 min-w-0 flex-1">
+              <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 shrink-0 rounded-2xl bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <GraduationCap className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-white" />
               </div>
 
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-xs font-medium border border-indigo-400/20">
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                  <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-indigo-500/20 text-indigo-300 text-[11px] sm:text-xs font-medium border border-indigo-400/20">
                     {group.subject}
                   </span>
-                  <span className="px-3 py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-xs font-medium border border-cyan-400/20">
+                  <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-cyan-500/20 text-cyan-300 text-[11px] sm:text-xs font-medium border border-cyan-400/20">
                     {group.skillLevel}
                   </span>
                   {group.visibility === 'private' && (
-                    <span className="px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 text-xs font-medium border border-amber-400/20">
+                    <span className="px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-amber-500/20 text-amber-300 text-[11px] sm:text-xs font-medium border border-amber-400/20">
                       Private
                     </span>
                   )}
                 </div>
 
-                <h1 className="text-2xl md:text-3xl font-bold text-white mt-3">
+                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-white mt-2 sm:mt-3 break-words">
                   {group.name}
                 </h1>
 
-                <p className="text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed break-words">
                   {group.description}
                 </p>
 
-                <p className="text-xs text-slate-400 mt-4">
+                <p className="text-[11px] sm:text-xs text-slate-400 mt-3 sm:mt-4">
                   Created by <span className="text-white font-medium">{group.creator?.name || 'Peer'}</span> ({group.creator?.department || 'MCA'})
                 </p>
               </div>
             </div>
 
             {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row md:flex-col gap-3 shrink-0">
+            <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 sm:gap-3 shrink-0 w-full md:w-auto">
               {isMember ? (
                 <>
                   <Link
                     to="/messages"
-                    className="px-5 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2"
+                    className="w-full md:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 font-semibold text-xs transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 text-center"
                   >
                     <MessageCircle size={16} /> Open Discussions
                   </Link>
@@ -293,7 +293,7 @@ function GroupDetails() {
                   {(isCreator || user?.role === 'admin') && (
                     <Link
                       to={`/groups/${group._id}/edit`}
-                      className="px-5 py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 font-semibold text-xs text-indigo-300 transition flex items-center justify-center gap-2"
+                      className="w-full md:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 font-semibold text-xs text-indigo-300 transition flex items-center justify-center gap-2 text-center"
                     >
                       <Edit3 size={16} /> Edit Group Details
                     </Link>
@@ -303,21 +303,21 @@ function GroupDetails() {
                     <button
                       onClick={handleLeave}
                       disabled={actionLoading}
-                      className="px-5 py-3 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs text-rose-400 transition flex items-center justify-center gap-2"
+                      className="w-full md:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-white/10 hover:bg-white/5 font-semibold text-xs text-rose-400 transition flex items-center justify-center gap-2 text-center cursor-pointer"
                     >
                       <UserMinus size={16} /> Leave Group
                     </button>
                   )}
                 </>
               ) : isPending ? (
-                <div className="px-5 py-3.5 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10">
-                  <Clock size={16} /> Awaiting Creator Approval
+                <div className="w-full md:w-auto px-4 sm:px-5 py-2.5 sm:py-3 rounded-xl border border-amber-500/30 bg-amber-500/10 text-amber-300 font-semibold text-xs flex items-center justify-center gap-2 shadow-lg shadow-amber-500/10 text-center">
+                  <Clock size={16} /> Awaiting Approval
                 </div>
               ) : (
                 <button
                   onClick={handleJoin}
                   disabled={actionLoading || (group.members?.length || 0) >= group.maxMembers}
-                  className="px-6 py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full md:w-auto px-5 py-3 sm:px-6 sm:py-3.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 font-semibold text-xs sm:text-sm transition shadow-lg shadow-indigo-600/20 flex items-center justify-center gap-2 cursor-pointer text-center"
                 >
                   {actionLoading ? (
                     <Loader2 size={18} className="animate-spin" />
@@ -335,28 +335,28 @@ function GroupDetails() {
           </div>
 
           {/* Quick info row */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-            <div>
-              <p className="text-xs text-slate-400">Members</p>
-              <p className="text-sm font-semibold text-white mt-1">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/10 w-full min-w-0">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Members</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1 truncate">
                 {group.members?.length || 0} / {group.maxMembers}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Meeting Days</p>
-              <p className="text-sm font-semibold text-white mt-1">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Meeting Days</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1 truncate" title={group.meetingDays?.join(', ') || 'Flexible'}>
                 {group.meetingDays?.join(', ') || 'Flexible'}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Preferred Time</p>
-              <p className="text-sm font-semibold text-white mt-1">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Preferred Time</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1 truncate">
                 {group.meetingTime}
               </p>
             </div>
-            <div>
-              <p className="text-xs text-slate-400">Location</p>
-              <p className="text-sm font-semibold text-white mt-1 truncate">
+            <div className="min-w-0">
+              <p className="text-[11px] sm:text-xs text-slate-400 font-medium">Location</p>
+              <p className="text-xs sm:text-sm font-semibold text-white mt-0.5 sm:mt-1 truncate" title={group.location}>
                 {group.location}
               </p>
             </div>
@@ -389,10 +389,10 @@ function GroupDetails() {
         )}
 
         {/* Tab Controls */}
-        <div className="flex border-b border-white/10 gap-6 overflow-x-auto scrollbar-none">
+        <div className="flex border-b border-white/10 gap-2.5 sm:gap-6 overflow-x-auto no-scrollbar max-w-full pb-0.5">
           <button
             onClick={() => setActiveTab('overview')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`px-1.5 pb-2.5 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'overview'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -402,7 +402,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`px-1.5 pb-2.5 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'sessions'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -412,7 +412,7 @@ function GroupDetails() {
           </button>
           <button
             onClick={() => setActiveTab('materials')}
-            className={`pb-3 text-sm font-semibold transition border-b-2 whitespace-nowrap ${
+            className={`px-1.5 pb-2.5 text-xs sm:text-sm font-semibold transition border-b-2 whitespace-nowrap shrink-0 ${
               activeTab === 'materials'
                 ? 'border-indigo-500 text-indigo-400'
                 : 'border-transparent text-slate-400 hover:text-white'
@@ -423,7 +423,7 @@ function GroupDetails() {
           {isCreator && (
             <button
               onClick={() => setActiveTab('requests')}
-              className={`pb-3 text-sm font-semibold transition border-b-2 flex items-center gap-2 whitespace-nowrap ${
+              className={`px-1.5 pb-2.5 text-xs sm:text-sm font-semibold transition border-b-2 flex items-center gap-2 whitespace-nowrap shrink-0 ${
                 activeTab === 'requests'
                   ? 'border-amber-500 text-amber-400'
                   : 'border-transparent text-slate-400 hover:text-white'
