@@ -23,6 +23,9 @@ import {
   Smartphone,
   Download,
   Bot,
+  CheckCheck,
+  Clock,
+  ArrowRight,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -34,6 +37,10 @@ import { MobileInstallBanner } from '../components/common/MobileInstallBanner';
 export const DashboardLayout = ({ children, fullHeight = false }) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [recentNotifications, setRecentNotifications] = useState([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
@@ -64,12 +71,14 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
     };
   }, [user, location.pathname]);
 
-  // Auto-close mobile sidebar when user navigates
+  // Auto-close mobile sidebar and popovers when user navigates
   useEffect(() => {
     setSidebarOpen(false);
+    setUserMenuOpen(false);
+    setNotificationsOpen(false);
   }, [location.pathname]);
 
-  // Lock body scroll and handle Escape key when mobile sidebar is open
+  // Lock body scroll and handle Escape key when mobile sidebar or menus are open
   useEffect(() => {
     if (sidebarOpen) {
       document.body.style.overflow = 'hidden';
@@ -85,6 +94,107 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
       document.body.style.overflow = '';
     }
   }, [sidebarOpen]);
+
+  // Close menus on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false);
+        setNotificationsOpen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'membership_request':
+      case 'membership_approved':
+      case 'membership_rejected':
+      case 'group_invite':
+        return <Users size={16} className="text-indigo-400" />;
+      case 'session_reminder':
+      case 'new_session':
+        return <CalendarDays size={16} className="text-cyan-400" />;
+      case 'new_material':
+        return <BookOpen size={16} className="text-emerald-400" />;
+      case 'new_message':
+        return <MessageCircle size={16} className="text-amber-400" />;
+      default:
+        return <Bell size={16} className="text-indigo-400" />;
+    }
+  };
+
+  const formatTimeAgo = (dateString) => {
+    if (!dateString) return '';
+    const diffMs = Date.now() - new Date(dateString).getTime();
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return new Date(dateString).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  };
+
+  const toggleNotifications = async () => {
+    const nextState = !notificationsOpen;
+    setNotificationsOpen(nextState);
+    setUserMenuOpen(false);
+    if (nextState) {
+      try {
+        setLoadingNotifications(true);
+        const res = await notificationService.getNotifications({ limit: 5 });
+        if (res.success) {
+          setRecentNotifications(res.notifications || []);
+          setUnreadCount(res.unreadCount || 0);
+        }
+      } catch {
+        // silent fallback
+      } finally {
+        setLoadingNotifications(false);
+      }
+    }
+  };
+
+  const handleMarkNotificationRead = async (item) => {
+    try {
+      if (!item.isRead) {
+        await notificationService.markAsRead(item._id);
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+        setRecentNotifications((prev) =>
+          prev.map((n) => (n._id === item._id ? { ...n, isRead: true } : n))
+        );
+      }
+    } catch {
+      // silent fallback
+    }
+    setNotificationsOpen(false);
+
+    if (item.actionUrl) {
+      navigate(item.actionUrl);
+    } else if (item.relatedGroup) {
+      navigate(`/groups/${item.relatedGroup._id || item.relatedGroup}`);
+    } else if (item.relatedSession) {
+      navigate('/sessions');
+    } else if (item.type === 'new_message') {
+      navigate('/messages');
+    } else {
+      navigate('/notifications');
+    }
+  };
+
+  const handleMarkAllNotificationsRead = async () => {
+    try {
+      await notificationService.markAllAsRead();
+      setUnreadCount(0);
+      setRecentNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
+    } catch {
+      // silent fallback
+    }
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -306,23 +416,25 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
           {/* User profile & logout footer */}
           <div className={`p-4 border-t ${isDark ? 'border-white/10' : 'border-slate-200'}`}>
             <div className={`flex items-center gap-3 p-2.5 rounded-xl ${isDark ? 'bg-white/[0.04]' : 'bg-slate-100'}`}>
-              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shrink-0">
-                {getInitials(user?.name)}
-              </div>
+              <Link to="/profile" className="flex items-center gap-3 flex-1 min-w-0 group" title="View My Profile">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shrink-0 group-hover:scale-105 transition-transform">
+                  {getInitials(user?.name)}
+                </div>
 
-              <div className="flex-1 min-w-0">
-                <p className={`font-medium text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  {user?.name || 'Student'}
-                </p>
-                <p className="text-xs text-slate-400 truncate">
-                  {user?.department || 'MCA'} • {user?.semester || 'Semester'}
-                </p>
-              </div>
+                <div className="flex-1 min-w-0">
+                  <p className={`font-medium text-sm truncate group-hover:text-indigo-400 transition-colors ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                    {user?.name || 'Student'}
+                  </p>
+                  <p className="text-xs text-slate-400 truncate">
+                    {user?.department || 'MCA'} • {user?.semester || 'Semester'}
+                  </p>
+                </div>
+              </Link>
 
               <button
                 onClick={handleLogout}
                 title="Log out"
-                className="text-slate-400 hover:text-rose-400 transition p-1"
+                className="text-slate-400 hover:text-rose-400 transition p-1 cursor-pointer"
                 aria-label="Logout"
               >
                 <LogOut size={18} />
@@ -336,7 +448,7 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
       {/* Main Content Area */}
       <div className={`flex-1 min-h-0 min-w-0 max-w-full w-full flex flex-col ${isFullHeight ? 'h-[100dvh] max-h-[100dvh] overflow-hidden' : 'min-h-screen'}`}>
         {/* Mobile top bar */}
-        <header className={`lg:hidden sticky top-0 z-30 h-16 border-b shrink-0 transform-gpu ${
+        <header className={`lg:hidden sticky top-0 z-40 h-16 border-b shrink-0 transform-gpu ${
           isDark ? 'border-white/10 bg-slate-950/95' : 'border-slate-200 bg-white/95'
         } backdrop-blur px-4 flex items-center justify-between`}>
           <Link to="/dashboard" className="flex items-center gap-2.5">
@@ -363,27 +475,259 @@ export const DashboardLayout = ({ children, fullHeight = false }) => {
 
             <button
               onClick={toggleTheme}
-              className={`p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
+              className={`p-2 rounded-lg transition ${
+                isDark ? 'text-slate-300 hover:text-white hover:bg-white/10' : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+              }`}
               title={`Switch to ${isDark ? 'Light' : 'Dark'} Mode`}
             >
               {isDark ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-indigo-600" />}
             </button>
-            <Link
-              to="/notifications"
-              className={`relative p-2 ${isDark ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
-              aria-label="View notifications"
-            >
-              <Bell size={20} />
-              {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-indigo-500 ring-2 ring-slate-950" />
-              )}
-            </Link>
 
-            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white">
-              {getInitials(user?.name)}
+            {/* Notification Bell Dropdown Anchor */}
+            <div className="relative">
+              <button
+                onClick={toggleNotifications}
+                className={`relative p-2 rounded-xl transition cursor-pointer ${
+                  notificationsOpen
+                    ? isDark
+                      ? 'bg-indigo-600/20 text-indigo-400'
+                      : 'bg-indigo-50 text-indigo-600'
+                    : isDark
+                    ? 'text-slate-300 hover:text-white hover:bg-white/10'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+                aria-label="View notifications"
+                title="Notifications"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-indigo-500 ring-2 ring-slate-950 animate-pulse" />
+                )}
+              </button>
+
+              {/* Notifications Popover Panel */}
+              {notificationsOpen && (
+                <div
+                  className={`fixed inset-x-3 top-16 max-w-sm mx-auto sm:absolute sm:inset-auto sm:right-0 sm:top-full sm:mt-2 sm:w-80 rounded-2xl border shadow-2xl z-50 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150 ${
+                    isDark
+                      ? 'bg-slate-900/98 border-white/15 text-white shadow-black/80'
+                      : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/60'
+                  }`}
+                >
+                  {/* Notifications Header */}
+                  <div className={`p-3.5 border-b flex items-center justify-between ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+                    <div className="flex items-center gap-2">
+                      <Bell size={16} className="text-indigo-400" />
+                      <h4 className="font-bold text-sm">Notifications</h4>
+                      {unreadCount > 0 && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500 text-white shadow-sm">
+                          {unreadCount} new
+                        </span>
+                      )}
+                    </div>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={handleMarkAllNotificationsRead}
+                        className="text-[11px] font-semibold text-indigo-400 hover:text-indigo-300 flex items-center gap-1 transition-colors cursor-pointer"
+                        title="Mark all as read"
+                      >
+                        <CheckCheck size={14} />
+                        <span>Read all</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Notifications Content */}
+                  <div className="max-h-72 overflow-y-auto divide-y divide-white/5">
+                    {loadingNotifications ? (
+                      <div className="p-6 text-center text-xs text-slate-400 space-y-2">
+                        <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto" />
+                        <p>Loading notifications...</p>
+                      </div>
+                    ) : recentNotifications.length === 0 ? (
+                      <div className="py-8 px-4 text-center space-y-2">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mx-auto ${
+                          isDark ? 'bg-white/5 text-slate-500' : 'bg-slate-100 text-slate-400'
+                        }`}>
+                          <Bell size={18} />
+                        </div>
+                        <p className="text-xs font-medium text-slate-400">All caught up! No new notifications.</p>
+                      </div>
+                    ) : (
+                      recentNotifications.map((item) => (
+                        <div
+                          key={item._id}
+                          onClick={() => handleMarkNotificationRead(item)}
+                          className={`p-3 transition-colors cursor-pointer flex items-start gap-3 text-left ${
+                            !item.isRead
+                              ? isDark
+                                ? 'bg-indigo-950/30 hover:bg-indigo-950/50'
+                                : 'bg-indigo-50/70 hover:bg-indigo-100/70'
+                              : isDark
+                              ? 'hover:bg-white/5'
+                              : 'hover:bg-slate-50'
+                          }`}
+                        >
+                          <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                            isDark ? 'bg-slate-800' : 'bg-slate-100'
+                          }`}>
+                            {getNotificationIcon(item.type)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className={`text-xs font-semibold truncate ${
+                                !item.isRead ? (isDark ? 'text-white' : 'text-slate-900') : 'text-slate-400'
+                              }`}>
+                                {item.title}
+                              </p>
+                              {!item.isRead && (
+                                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-[11px] text-slate-400 line-clamp-2 mt-0.5">
+                              {item.message}
+                            </p>
+                            <span className="text-[10px] text-slate-500 flex items-center gap-1 mt-1 font-mono">
+                              <Clock size={10} />
+                              {formatTimeAgo(item.createdAt)}
+                            </span>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Notifications Footer */}
+                  <div className={`p-2.5 border-t text-center ${isDark ? 'border-white/10 bg-slate-950/60' : 'border-slate-100 bg-slate-50'}`}>
+                    <Link
+                      to="/notifications"
+                      onClick={() => setNotificationsOpen(false)}
+                      className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-xl text-xs font-bold text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      <span>View all notifications</span>
+                      <ArrowRight size={14} />
+                    </Link>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* User Profile Avatar Dropdown Anchor */}
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setUserMenuOpen((prev) => !prev);
+                  setNotificationsOpen(false);
+                }}
+                className={`w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-xs text-white shadow-md active:scale-95 transition-all cursor-pointer ring-2 ${
+                  userMenuOpen ? 'ring-indigo-400 ring-offset-2 ring-offset-slate-950' : 'ring-transparent'
+                }`}
+                title="Account menu"
+                aria-label="User account menu"
+              >
+                {getInitials(user?.name)}
+              </button>
+
+              {/* User Profile Popover Panel */}
+              {userMenuOpen && (
+                <div
+                  className={`absolute right-0 top-full mt-2 w-64 max-w-[calc(100vw-1.5rem)] rounded-2xl border shadow-2xl z-50 overflow-hidden transform transition-all animate-in fade-in zoom-in-95 duration-150 ${
+                    isDark
+                      ? 'bg-slate-900/98 border-white/15 text-white shadow-black/80'
+                      : 'bg-white border-slate-200 text-slate-900 shadow-slate-300/60'
+                  }`}
+                >
+                  {/* User Profile Header Card */}
+                  <div className={`p-3.5 border-b ${isDark ? 'border-white/10 bg-white/[0.02]' : 'border-slate-100 bg-slate-50'}`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center font-bold text-sm text-white shrink-0 shadow-md">
+                        {getInitials(user?.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className={`font-bold text-sm truncate ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                          {user?.name || 'Student'}
+                        </p>
+                        <p className="text-[11px] text-slate-400 truncate">
+                          {user?.email || 'student@studymate.edu'}
+                        </p>
+                        <span className={`inline-block mt-1 px-1.5 py-0.2 rounded text-[10px] font-semibold ${
+                          isDark ? 'bg-indigo-500/20 text-indigo-300' : 'bg-indigo-50 text-indigo-700'
+                        }`}>
+                          {user?.department || 'MCA'} • {user?.semester || 'Semester'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Menu Options */}
+                  <div className="p-2 space-y-1">
+                    <Link
+                      to="/profile"
+                      onClick={() => setUserMenuOpen(false)}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        isDark ? 'text-slate-300 hover:text-white hover:bg-white/5' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <User size={15} className="text-indigo-400" />
+                      <span>My Profile</span>
+                    </Link>
+
+                    <Link
+                      to="/settings"
+                      onClick={() => setUserMenuOpen(false)}
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium transition-colors ${
+                        isDark ? 'text-slate-300 hover:text-white hover:bg-white/5' : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <Settings size={15} className="text-indigo-400" />
+                      <span>Settings</span>
+                    </Link>
+
+                    {user?.role === 'admin' && (
+                      <Link
+                        to="/admin/dashboard"
+                        onClick={() => setUserMenuOpen(false)}
+                        className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold text-rose-400 hover:bg-rose-500/10 transition-colors`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <Shield size={15} />
+                          <span>Admin Console</span>
+                        </div>
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      </Link>
+                    )}
+                  </div>
+
+                  {/* Sign Out Button */}
+                  <div className={`p-2 border-t ${isDark ? 'border-white/10' : 'border-slate-100'}`}>
+                    <button
+                      onClick={async () => {
+                        setUserMenuOpen(false);
+                        await handleLogout();
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                    >
+                      <LogOut size={15} />
+                      <span>Log Out</span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         </header>
+
+        {/* Global Backdrop overlay when Notifications or User Menu is open */}
+        {(notificationsOpen || userMenuOpen) && (
+          <div
+            className="fixed inset-0 z-30 bg-black/40 backdrop-blur-[1px] transition-opacity"
+            onClick={() => {
+              setNotificationsOpen(false);
+              setUserMenuOpen(false);
+            }}
+            aria-hidden="true"
+          />
+        )}
 
         <main className={`flex-1 min-h-0 min-w-0 max-w-full w-full overflow-x-hidden flex flex-col ${isFullHeight ? 'overflow-hidden' : 'pb-28 lg:pb-0'}`}>
           {user && !user.isEmailVerified && (
